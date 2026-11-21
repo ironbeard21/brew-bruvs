@@ -1,0 +1,13 @@
+source_key,name,license,url,repo_commit,included
+bt003,Brewtarget DefaultContent003 (hops),GPL-3.0,https://github.com/Brewtarget/brewtarget/blob/develop/data/DefaultContent003-Ingredients-Hops-Yeasts.json,6d9e69d0ef8c4a4c9c355710f643929f817b7987,yes
+bt003y,"Brewtarget DefaultContent003 (yeasts, derived from brewerwall/yeasts)",UNCLEAR (upstream has no formal license),https://github.com/brewerwall/yeasts,6d9e69d0ef8c4a4c9c355710f643929f817b7987,no (excluded: upstream unlicensed)
+bt004,Brewtarget DefaultContent004 (more yeasts),GPL-3.0,https://github.com/Brewtarget/brewtarget/blob/develop/data/DefaultContent004-MoreYeasts.json,6d9e69d0ef8c4a4c9c355710f643929f817b7987,yes
+bt005ba,beer-analytics.com via Brewtarget DefaultContent005,CC-BY-SA-4.0,https://www.beer-analytics.com/,6d9e69d0ef8c4a4c9c355710f643929f817b7987,yes
+bt005sw,The Swaen malthouse via Brewtarget DefaultContent005,GPL-3.0,https://theswaen.com/,6d9e69d0ef8c4a4c9c355710f643929f817b7987,yes
+bt005ch,Canadian Homebrewers Association via Brewtarget DefaultContent005,GPL-3.0,https://canadahomebrews.ca/recipes/,6d9e69d0ef8c4a4c9c355710f643929f817b7987,yes
+bt005db,DotBeer example library via Brewtarget DefaultContent005,GPL-3.0,https://github.com/Brewken/DotBeer,6d9e69d0ef8c4a4c9c355710f643929f817b7987,yes
+bt001,Brewtarget DefaultContent001 (original BeerXML defaults),GPL-3.0,https://github.com/Brewtarget/brewtarget/blob/develop/data/DefaultContent001-OriginalDefaultData.xml,6d9e69d0ef8c4a4c9c355710f643929f817b7987,yes
+wallbrew,Wall Brew Co common-beer-data,MIT,https://github.com/Wall-Brew-Co/common-beer-data,f769eaca36a3b5d07bdb9172953dcb2638ab947d,yes
+beerproto,BeerProto dataset,MIT,https://github.com/beerproto/dataset,095b7255ad050a18f4b812965f829c5f54042273,yes
+starter,Brew-Bruvs starter set (hand-entered; values approximate),CC0-1.0,build_catalog.py (STARTER_* lists),,yes
+bjcpjson,BeerJSON bjcp-json (numeric ranges only),MIT,https://github.com/beerjson/bjcp-json,fe9063dff1e86c3aa9d8c65a1c730b4a807e48c3,yes

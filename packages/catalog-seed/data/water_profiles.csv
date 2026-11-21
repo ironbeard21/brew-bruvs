@@ -1,0 +1,30 @@
+id,name,calcium_ppm,magnesium_ppm,sodium_ppm,sulfate_ppm,chloride_ppm,bicarbonate_ppm,notes,aliases,sources,source_names,licenses,merged_from
+water-balanced-profile,Balanced Profile,80.0,5.0,25.0,80.0,75.0,100.0,Use for dark golden to deep amber beers.,Balanced profile,beerproto; bt001,BeerProto dataset; Brewtarget DefaultContent001 (original BeerXML defaults),GPL-3.0; MIT,2
+water-balanced-profile-2,Balanced Profile 2,150.0,10.0,80.0,160.0,150.0,220.0,,,beerproto,BeerProto dataset,MIT,1
+water-balanced-profile-ii,Balanced profile II,150.0,10.0,80.0,160.0,150.0,220.0,Use for dark golden to deep amber beers.,,bt001,Brewtarget DefaultContent001 (original BeerXML defaults),GPL-3.0,1
+water-burton-on-trent-historic-and-decarbonated,Burton on Trent (historic and decarbonated),187.0,41.0,113.0,720.0,85.0,20.0,,,beerproto,BeerProto dataset,MIT,1
+water-burton-on-trent-historic,Burton on Trent (historic),270.0,41.0,113.0,720.0,85.0,270.0,,,beerproto,BeerProto dataset,MIT,1
+water-burton-on-trent-decarbonated,"Burton On Trent, decarbonated",187.0,41.0,113.0,720.0,85.0,20.0,"Burton's historic profile, after boiling through slaked lime",,bt001,Brewtarget DefaultContent001 (original BeerXML defaults),GPL-3.0,1
+water-burton-on-trent-uk,"Burton on Trent, UK",295.0,45.0,55.0,725.0,25.0,300.0,Use for distinctive pale ales strongly hopped. Very hard water accentuates the hops flavor. Example: Bass Ale,,bt001,Brewtarget DefaultContent001 (original BeerXML defaults),GPL-3.0,1
+water-darkness-english-porter-target,Darkness English Porter target,93.0,9.0,30.0,72.0,99.0,0.0,,,bt005ch,Canadian Homebrewers Association via Brewtarget DefaultContent005,GPL-3.0,1
+water-dortmund-historic-and-decarbonated,Dortmund (historic and decarbonated),155.0,23.0,10.0,300.0,100.0,53.0,,,beerproto,BeerProto dataset,MIT,1
+water-dortmund-historic,Dortmund (historic),250.0,20.0,10.0,300.0,100.0,340.0,"Dortmund profile, based on the 1953 Kolbach article","Dortmund, historic",beerproto; bt001,BeerProto dataset; Brewtarget DefaultContent001 (original BeerXML defaults),GPL-3.0; MIT,2
+water-dortmund-decarbonated,"Dortmund, decarbonated",155.0,23.0,10.0,300.0,100.0,53.0,"Dortmund profile, after boiling through slaked lime",,bt001,Brewtarget DefaultContent001 (original BeerXML defaults),GPL-3.0,1
+water-dublin,Dublin,110.0,4.0,12.0,53.0,19.0,280.0,"Historic Dublin profile, useful for all your stouts and porters",,bt001,Brewtarget DefaultContent001 (original BeerXML defaults),GPL-3.0,1
+water-dublin-dry-stout,Dublin (Dry Stout),110.0,4.0,12.0,53.0,19.0,280.0,,,beerproto,BeerProto dataset,MIT,1
+water-dusseldorf,Dusseldorf,90.0,12.0,45.0,65.0,82.0,223.0,Useful for altbeirs and kolsch-style,,bt001,Brewtarget DefaultContent001 (original BeerXML defaults),GPL-3.0,1
+water-dusseldorf-altbier,Düsseldorf (Altbier),90.0,12.0,45.0,65.0,82.0,223.0,,,beerproto,BeerProto dataset,MIT,1
+water-edinburgh,Edinburgh,100.0,18.0,20.0,105.0,45.0,235.0,"A profile for Edinburgh, Scotland. Use for your darker ales",,bt001,Brewtarget DefaultContent001 (original BeerXML defaults),GPL-3.0,1
+water-edinburgh-scottish-ale,Edinburgh (Scottish Ale),100.0,18.0,20.0,105.0,45.0,235.0,,,beerproto,BeerProto dataset,MIT,1
+water-guelph,Guelph,120.0,30.0,68.0,130.0,127.0,0.0,,,bt005ch,Canadian Homebrewers Association via Brewtarget DefaultContent005,GPL-3.0,1
+water-light-and-hoppy,Light and hoppy,75.0,5.0,10.0,150.0,50.0,0.0,Use light colored beers with a hop-forward profile,,bt001,Brewtarget DefaultContent001 (original BeerXML defaults),GPL-3.0,1
+water-light-colored-and-hoppy,Light colored and hoppy,75.0,5.0,10.0,150.0,50.0,,,,beerproto,BeerProto dataset,MIT,1
+water-light-colored-and-malty,Light colored and malty,60.0,5.0,10.0,55.0,95.0,,,,beerproto,BeerProto dataset,MIT,1
+water-london,London,100.0,5.0,35.0,50.0,60.0,265.0,A profile for London. Useful in your stouts and porters,,bt001,Brewtarget DefaultContent001 (original BeerXML defaults),GPL-3.0,1
+water-london-porter-dark-ales,"London (Porter, dark ales)",100.0,5.0,35.0,50.0,60.0,265.0,,,beerproto,BeerProto dataset,MIT,1
+water-munich-dark-lager,Munich (Dark Lager),82.0,20.0,4.0,16.0,2.0,320.0,,,beerproto,BeerProto dataset,MIT,1
+water-munich-decarbonated,Munich (decarbonated),40.0,20.0,4.0,52.0,75.0,29.0,"Munich profile, decarbonated. Useful for your marzen and maibock",Munich decarbonated,beerproto; bt001,BeerProto dataset; Brewtarget DefaultContent001 (original BeerXML defaults),GPL-3.0; MIT,2
+water-munich-dark,Munich Dark,82.0,20.0,4.0,16.0,2.0,320.0,"Munich profile, suitable for Dunkel, Schwarzbier and Dopplebocks",,bt001,Brewtarget DefaultContent001 (original BeerXML defaults),GPL-3.0,1
+water-pilsen,Pilsen,7.0,3.0,2.0,5.0,5.0,25.0,Use for pilsners and helles styles,,bt001,Brewtarget DefaultContent001 (original BeerXML defaults),GPL-3.0,1
+water-pilsen-light-lager,Pilsen (Light Lager),7.0,3.0,2.0,5.0,5.0,25.0,,,beerproto,BeerProto dataset,MIT,1
+water-toronto,Toronto,40.0,10.0,15.0,30.0,30.0,0.0,,,bt005ch,Canadian Homebrewers Association via Brewtarget DefaultContent005,GPL-3.0,1
