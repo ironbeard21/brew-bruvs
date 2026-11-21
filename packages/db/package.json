@@ -1,0 +1,16 @@
+{
+  "name": "@brew-bruvs/db",
+  "version": "0.1.0",
+  "private": true,
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "db:generate": "node -e \"console.log('not implemented yet (P0-08)')\"",
+    "db:migrate": "node -e \"console.log('not implemented yet (P0-03, P0-08)')\"",
+    "typecheck": "tsc --noEmit -p .",
+    "test": "vitest run --passWithNoTests"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "name": "@brew-bruvs/server",
+  "version": "0.1.0",
+  "private": true,
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "scripts": {
+    "dev": "node -e \"console.log('not implemented yet (P0-10)')\"",
+    "typecheck": "tsc --noEmit -p .",
+    "test": "vitest run --passWithNoTests"
+  }
+}
