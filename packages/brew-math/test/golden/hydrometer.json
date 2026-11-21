@@ -1,0 +1,68 @@
+{
+  "correctHydrometer": [
+    {
+      "args": [
+        1.05,
+        15.56
+      ],
+      "expected": 1.05,
+      "tolerance": 1e-09,
+      "source": "no correction at the calibration temperature"
+    },
+    {
+      "args": [
+        1.05,
+        26.7
+      ],
+      "expected": 1.05245477389398,
+      "tolerance": 1e-09,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        1.06,
+        37.8
+      ],
+      "expected": 1.0662033903495478,
+      "tolerance": 1e-09,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        1.01,
+        4.4
+      ],
+      "expected": 1.0089549409438094,
+      "tolerance": 1e-09,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        1.08,
+        50
+      ],
+      "expected": 1.091822072441236,
+      "tolerance": 1e-09,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        1.04,
+        20
+      ],
+      "expected": 1.040813094163297,
+      "tolerance": 1e-09,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        1.05,
+        20,
+        20
+      ],
+      "expected": 1.05,
+      "tolerance": 1e-09,
+      "source": "no correction when sample equals calibration temperature"
+    }
+  ]
+}

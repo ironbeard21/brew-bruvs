@@ -1,0 +1,145 @@
+{
+  "strikeTemperature": [
+    {
+      "args": [
+        3.129526669507249,
+        21.11111111111111,
+        68.88888888888889
+      ],
+      "expected": 75.27777777777777,
+      "tolerance": 0.3,
+      "source": "Palmer, How to Brew: 1.5 qt/lb, grain 70 \u00b0F, target 156 \u00b0F \u2192 strike 167.5 \u00b0F (metric constant 0.41 differs by <0.3 \u00b0C)"
+    },
+    {
+      "args": [
+        3,
+        20,
+        67
+      ],
+      "expected": 73.42333333333333,
+      "tolerance": 1e-09,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        2.5,
+        18,
+        65
+      ],
+      "expected": 72.708,
+      "tolerance": 1e-09,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        4,
+        22,
+        68
+      ],
+      "expected": 72.715,
+      "tolerance": 1e-09,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        2.6,
+        10,
+        66
+      ],
+      "expected": 74.83076923076923,
+      "tolerance": 1e-09,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        3.5,
+        25,
+        72
+      ],
+      "expected": 77.50571428571429,
+      "tolerance": 1e-09,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    }
+  ],
+  "infusionVolume": [
+    {
+      "args": [
+        {
+          "currentTempC": 40,
+          "targetTempC": 52,
+          "grainKg": 5,
+          "waterInMashL": 15
+        }
+      ],
+      "expected": 4.2625,
+      "tolerance": 1e-09,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        {
+          "currentTempC": 52,
+          "targetTempC": 63,
+          "grainKg": 5,
+          "waterInMashL": 15
+        }
+      ],
+      "expected": 5.06891891891892,
+      "tolerance": 1e-09,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        {
+          "currentTempC": 63,
+          "targetTempC": 72,
+          "grainKg": 4.5,
+          "waterInMashL": 13.5
+        }
+      ],
+      "expected": 4.932321428571429,
+      "tolerance": 1e-09,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        {
+          "currentTempC": 50,
+          "targetTempC": 66,
+          "grainKg": 10,
+          "waterInMashL": 30
+        }
+      ],
+      "expected": 16.04705882352941,
+      "tolerance": 1e-09,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        {
+          "currentTempC": 45,
+          "targetTempC": 55,
+          "grainKg": 2,
+          "waterInMashL": 6
+        }
+      ],
+      "expected": 1.5155555555555555,
+      "tolerance": 1e-09,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        {
+          "currentTempC": 63,
+          "targetTempC": 72,
+          "grainKg": 5,
+          "waterInMashL": 15,
+          "infusionTempC": 95
+        }
+      ],
+      "expected": 6.6717391304347835,
+      "tolerance": 1e-09,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    }
+  ]
+}

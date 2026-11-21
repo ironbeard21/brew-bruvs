@@ -1,0 +1,480 @@
+{
+  "sgToPlato": [
+    {
+      "args": [
+        1.04
+      ],
+      "expected": 10.0,
+      "tolerance": 0.15,
+      "source": "Plato table: 1.040 = 10.0 \u00b0P (beerandbrewing.com SG-Plato reference)"
+    },
+    {
+      "args": [
+        1.048
+      ],
+      "expected": 12.0,
+      "tolerance": 0.15,
+      "source": "Plato table: 1.048 = 12.0 \u00b0P (beerandbrewing.com SG-Plato reference)"
+    },
+    {
+      "args": [
+        1.056
+      ],
+      "expected": 13.8,
+      "tolerance": 0.15,
+      "source": "Plato table: 1.056 = 13.8 \u00b0P (beerandbrewing.com SG-Plato reference)"
+    },
+    {
+      "args": [
+        1.064
+      ],
+      "expected": 15.7,
+      "tolerance": 0.15,
+      "source": "Plato table: 1.064 = 15.7 \u00b0P (beerandbrewing.com SG-Plato reference)"
+    },
+    {
+      "args": [
+        1.08
+      ],
+      "expected": 19.3,
+      "tolerance": 0.15,
+      "source": "Plato table: 1.080 = 19.3 \u00b0P (beerandbrewing.com SG-Plato reference)"
+    },
+    {
+      "args": [
+        1.0
+      ],
+      "expected": -0.002999999999985903,
+      "tolerance": 1e-09,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    }
+  ],
+  "platoToSg": [
+    {
+      "args": [
+        2
+      ],
+      "expected": 1.0078,
+      "tolerance": 6e-05,
+      "source": "Plato to SG table, calculator.academy: 2 \u00b0P = 1.0078"
+    },
+    {
+      "args": [
+        5
+      ],
+      "expected": 1.0197,
+      "tolerance": 6e-05,
+      "source": "Plato to SG table, calculator.academy: 5 \u00b0P = 1.0197"
+    },
+    {
+      "args": [
+        8
+      ],
+      "expected": 1.0318,
+      "tolerance": 6e-05,
+      "source": "Plato to SG table, calculator.academy: 8 \u00b0P = 1.0318"
+    },
+    {
+      "args": [
+        9
+      ],
+      "expected": 1.0359,
+      "tolerance": 6e-05,
+      "source": "Plato to SG table, calculator.academy: 9 \u00b0P = 1.0359"
+    },
+    {
+      "args": [
+        10
+      ],
+      "expected": 1.04,
+      "tolerance": 6e-05,
+      "source": "Plato to SG table, calculator.academy: 10 \u00b0P = 1.0400"
+    },
+    {
+      "args": [
+        0
+      ],
+      "expected": 1.0,
+      "tolerance": 1e-12,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    }
+  ],
+  "cToF": [
+    {
+      "args": [
+        0
+      ],
+      "expected": 32,
+      "tolerance": 1e-09,
+      "source": "definition"
+    },
+    {
+      "args": [
+        100
+      ],
+      "expected": 212,
+      "tolerance": 1e-09,
+      "source": "definition"
+    },
+    {
+      "args": [
+        -40
+      ],
+      "expected": -40,
+      "tolerance": 1e-09,
+      "source": "definition"
+    },
+    {
+      "args": [
+        20
+      ],
+      "expected": 68,
+      "tolerance": 1e-09,
+      "source": "definition"
+    },
+    {
+      "args": [
+        66.7
+      ],
+      "expected": 152.06,
+      "tolerance": 1e-09,
+      "source": "definition"
+    }
+  ],
+  "fToC": [
+    {
+      "args": [
+        32
+      ],
+      "expected": 0,
+      "tolerance": 1e-09,
+      "source": "definition"
+    },
+    {
+      "args": [
+        212
+      ],
+      "expected": 100,
+      "tolerance": 1e-09,
+      "source": "definition"
+    },
+    {
+      "args": [
+        -40
+      ],
+      "expected": -40,
+      "tolerance": 1e-09,
+      "source": "definition"
+    },
+    {
+      "args": [
+        68
+      ],
+      "expected": 20,
+      "tolerance": 1e-09,
+      "source": "definition"
+    },
+    {
+      "args": [
+        152
+      ],
+      "expected": 66.66666666666667,
+      "tolerance": 1e-09,
+      "source": "definition"
+    }
+  ],
+  "gallonsToLiters": [
+    {
+      "args": [
+        1
+      ],
+      "expected": 3.785411784,
+      "tolerance": 1e-12,
+      "source": "US gallon definition"
+    },
+    {
+      "args": [
+        5
+      ],
+      "expected": 18.92705892,
+      "tolerance": 1e-09,
+      "source": "US gallon definition"
+    },
+    {
+      "args": [
+        0.5
+      ],
+      "expected": 1.892705892,
+      "tolerance": 1e-09,
+      "source": "US gallon definition"
+    },
+    {
+      "args": [
+        10
+      ],
+      "expected": 37.85411784,
+      "tolerance": 1e-09,
+      "source": "US gallon definition"
+    },
+    {
+      "args": [
+        0
+      ],
+      "expected": 0,
+      "tolerance": 0,
+      "source": "definition"
+    }
+  ],
+  "lbToKg": [
+    {
+      "args": [
+        1
+      ],
+      "expected": 0.45359237,
+      "tolerance": 1e-12,
+      "source": "international pound definition"
+    },
+    {
+      "args": [
+        10
+      ],
+      "expected": 4.5359237,
+      "tolerance": 1e-09,
+      "source": "definition"
+    },
+    {
+      "args": [
+        2.2
+      ],
+      "expected": 0.997903214,
+      "tolerance": 1e-09,
+      "source": "definition"
+    },
+    {
+      "args": [
+        0.5
+      ],
+      "expected": 0.226796185,
+      "tolerance": 1e-09,
+      "source": "definition"
+    },
+    {
+      "args": [
+        0
+      ],
+      "expected": 0,
+      "tolerance": 0,
+      "source": "definition"
+    }
+  ],
+  "ozToG": [
+    {
+      "args": [
+        1
+      ],
+      "expected": 28.349523125,
+      "tolerance": 1e-09,
+      "source": "avoirdupois ounce definition"
+    },
+    {
+      "args": [
+        2
+      ],
+      "expected": 56.69904625,
+      "tolerance": 1e-09,
+      "source": "definition"
+    },
+    {
+      "args": [
+        0.5
+      ],
+      "expected": 14.1747615625,
+      "tolerance": 1e-09,
+      "source": "definition"
+    },
+    {
+      "args": [
+        16
+      ],
+      "expected": 453.59237,
+      "tolerance": 1e-09,
+      "source": "16 oz = 1 lb"
+    },
+    {
+      "args": [
+        0
+      ],
+      "expected": 0,
+      "tolerance": 0,
+      "source": "definition"
+    }
+  ],
+  "quartsToLiters": [
+    {
+      "args": [
+        1
+      ],
+      "expected": 0.946352946,
+      "tolerance": 1e-12,
+      "source": "US quart definition"
+    },
+    {
+      "args": [
+        4
+      ],
+      "expected": 3.785411784,
+      "tolerance": 1e-09,
+      "source": "4 qt = 1 gal"
+    },
+    {
+      "args": [
+        2
+      ],
+      "expected": 1.892705892,
+      "tolerance": 1e-09,
+      "source": "definition"
+    },
+    {
+      "args": [
+        0.5
+      ],
+      "expected": 0.473176473,
+      "tolerance": 1e-09,
+      "source": "definition"
+    },
+    {
+      "args": [
+        0
+      ],
+      "expected": 0,
+      "tolerance": 0,
+      "source": "definition"
+    }
+  ],
+  "psiToKpa": [
+    {
+      "args": [
+        1
+      ],
+      "expected": 6.894757293,
+      "tolerance": 1e-06,
+      "source": "definition"
+    },
+    {
+      "args": [
+        12
+      ],
+      "expected": 82.73708752,
+      "tolerance": 1e-06,
+      "source": "definition"
+    },
+    {
+      "args": [
+        14.5038
+      ],
+      "expected": 100.0,
+      "tolerance": 0.001,
+      "source": "1 bar = 14.5038 psi"
+    },
+    {
+      "args": [
+        30
+      ],
+      "expected": 206.8427188,
+      "tolerance": 1e-06,
+      "source": "definition"
+    },
+    {
+      "args": [
+        0
+      ],
+      "expected": 0,
+      "tolerance": 0,
+      "source": "definition"
+    }
+  ],
+  "srmToEbc": [
+    {
+      "args": [
+        1
+      ],
+      "expected": 1.97,
+      "tolerance": 1e-09,
+      "source": "EBC = SRM \u00d7 1.97"
+    },
+    {
+      "args": [
+        10
+      ],
+      "expected": 19.7,
+      "tolerance": 1e-09,
+      "source": "EBC = SRM \u00d7 1.97"
+    },
+    {
+      "args": [
+        40
+      ],
+      "expected": 78.8,
+      "tolerance": 1e-09,
+      "source": "EBC = SRM \u00d7 1.97"
+    },
+    {
+      "args": [
+        4
+      ],
+      "expected": 7.88,
+      "tolerance": 1e-09,
+      "source": "EBC = SRM \u00d7 1.97"
+    },
+    {
+      "args": [
+        0
+      ],
+      "expected": 0,
+      "tolerance": 0,
+      "source": "EBC = SRM \u00d7 1.97"
+    }
+  ],
+  "lovibondToSrm": [
+    {
+      "args": [
+        2
+      ],
+      "expected": 1.9492,
+      "tolerance": 1e-09,
+      "source": "SRM = 1.3546 \u00d7 \u00b0L \u2212 0.76"
+    },
+    {
+      "args": [
+        10
+      ],
+      "expected": 12.786,
+      "tolerance": 1e-09,
+      "source": "SRM = 1.3546 \u00d7 \u00b0L \u2212 0.76"
+    },
+    {
+      "args": [
+        40
+      ],
+      "expected": 53.424,
+      "tolerance": 1e-09,
+      "source": "SRM = 1.3546 \u00d7 \u00b0L \u2212 0.76"
+    },
+    {
+      "args": [
+        120
+      ],
+      "expected": 161.792,
+      "tolerance": 1e-09,
+      "source": "SRM = 1.3546 \u00d7 \u00b0L \u2212 0.76"
+    },
+    {
+      "args": [
+        500
+      ],
+      "expected": 676.5400000000001,
+      "tolerance": 1e-09,
+      "source": "SRM = 1.3546 \u00d7 \u00b0L \u2212 0.76"
+    }
+  ]
+}

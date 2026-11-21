@@ -1,0 +1,428 @@
+{
+  "tinsethUtilization": [
+    {
+      "args": [
+        1.03,
+        30
+      ],
+      "expected": 0.212,
+      "tolerance": 0.0006,
+      "source": "Tinseth utilization table (realbeer.com/hops/research.html)"
+    },
+    {
+      "args": [
+        1.05,
+        60
+      ],
+      "expected": 0.231,
+      "tolerance": 0.0006,
+      "source": "Tinseth utilization table (realbeer.com/hops/research.html)"
+    },
+    {
+      "args": [
+        1.05,
+        30
+      ],
+      "expected": 0.177,
+      "tolerance": 0.0006,
+      "source": "Tinseth utilization table (realbeer.com/hops/research.html)"
+    },
+    {
+      "args": [
+        1.05,
+        15
+      ],
+      "expected": 0.114,
+      "tolerance": 0.0006,
+      "source": "Tinseth utilization table (realbeer.com/hops/research.html)"
+    },
+    {
+      "args": [
+        1.07,
+        60
+      ],
+      "expected": 0.193,
+      "tolerance": 0.0006,
+      "source": "Tinseth utilization table (realbeer.com/hops/research.html)"
+    },
+    {
+      "args": [
+        1.08,
+        90
+      ],
+      "expected": 0.188,
+      "tolerance": 0.0006,
+      "source": "Tinseth utilization table (realbeer.com/hops/research.html)"
+    },
+    {
+      "args": [
+        1.04,
+        45
+      ],
+      "expected": 0.232,
+      "tolerance": 0.0006,
+      "source": "Tinseth utilization table (realbeer.com/hops/research.html)"
+    },
+    {
+      "args": [
+        1.1,
+        120
+      ],
+      "expected": 0.161,
+      "tolerance": 0.0006,
+      "source": "Tinseth utilization table (realbeer.com/hops/research.html)"
+    },
+    {
+      "args": [
+        1.06,
+        9
+      ],
+      "expected": 0.07,
+      "tolerance": 0.0006,
+      "source": "Tinseth utilization table (realbeer.com/hops/research.html)"
+    },
+    {
+      "args": [
+        1.12,
+        70
+      ],
+      "expected": 0.127,
+      "tolerance": 0.0006,
+      "source": "Tinseth utilization table (realbeer.com/hops/research.html)"
+    }
+  ],
+  "tinsethIbu": [
+    {
+      "args": [
+        {
+          "alphaAcidPct": 12,
+          "hopGrams": 28,
+          "minutes": 60
+        },
+        {
+          "volumeL": 20,
+          "boilSg": 1.05
+        }
+      ],
+      "expected": 38.75156497818465,
+      "tolerance": 1e-09,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        {
+          "alphaAcidPct": 5.5,
+          "hopGrams": 30,
+          "minutes": 15
+        },
+        {
+          "volumeL": 20,
+          "boilSg": 1.045
+        }
+      ],
+      "expected": 9.876626654564069,
+      "tolerance": 1e-09,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        {
+          "alphaAcidPct": 14,
+          "hopGrams": 20,
+          "minutes": 90
+        },
+        {
+          "volumeL": 23,
+          "boilSg": 1.08
+        }
+      ],
+      "expected": 22.939670099921756,
+      "tolerance": 1e-09,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        {
+          "alphaAcidPct": 6,
+          "hopGrams": 50,
+          "minutes": 5
+        },
+        {
+          "volumeL": 19,
+          "boilSg": 1.06
+        }
+      ],
+      "expected": 6.6365478882232205,
+      "tolerance": 1e-09,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        {
+          "alphaAcidPct": 4,
+          "hopGrams": 40,
+          "minutes": 0
+        },
+        {
+          "volumeL": 20,
+          "boilSg": 1.05
+        }
+      ],
+      "expected": 0.0,
+      "tolerance": 1e-09,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    }
+  ],
+  "ragerUtilization": [
+    {
+      "args": [
+        0
+      ],
+      "expected": 0.05120806364995124,
+      "tolerance": 1e-12,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        15
+      ],
+      "expected": 0.08227765415996506,
+      "tolerance": 1e-12,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        30
+      ],
+      "expected": 0.17110359460252178,
+      "tolerance": 1e-12,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        60
+      ],
+      "expected": 0.3081950635151269,
+      "tolerance": 1e-12,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        90
+      ],
+      "expected": 0.31925090797992334,
+      "tolerance": 1e-12,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    }
+  ],
+  "ragerIbu": [
+    {
+      "args": [
+        {
+          "alphaAcidPct": 12,
+          "hopGrams": 28,
+          "minutes": 60
+        },
+        {
+          "volumeL": 20,
+          "boilSg": 1.05
+        }
+      ],
+      "expected": 51.77677067054132,
+      "tolerance": 1e-09,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        {
+          "alphaAcidPct": 5.5,
+          "hopGrams": 30,
+          "minutes": 15
+        },
+        {
+          "volumeL": 20,
+          "boilSg": 1.045
+        }
+      ],
+      "expected": 6.787906468197117,
+      "tolerance": 1e-09,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        {
+          "alphaAcidPct": 14,
+          "hopGrams": 20,
+          "minutes": 90
+        },
+        {
+          "volumeL": 23,
+          "boilSg": 1.08
+        }
+      ],
+      "expected": 33.795937328687536,
+      "tolerance": 1e-09,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        {
+          "alphaAcidPct": 6,
+          "hopGrams": 50,
+          "minutes": 5
+        },
+        {
+          "volumeL": 19,
+          "boilSg": 1.06
+        }
+      ],
+      "expected": 8.603969992030091,
+      "tolerance": 1e-09,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        {
+          "alphaAcidPct": 4,
+          "hopGrams": 40,
+          "minutes": 0
+        },
+        {
+          "volumeL": 20,
+          "boilSg": 1.05
+        }
+      ],
+      "expected": 4.096645091996099,
+      "tolerance": 1e-09,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    }
+  ],
+  "totalIbu": [
+    {
+      "args": [
+        [
+          {
+            "alphaAcidPct": 12,
+            "hopGrams": 28,
+            "minutes": 60
+          },
+          {
+            "alphaAcidPct": 5.5,
+            "hopGrams": 30,
+            "minutes": 15
+          },
+          {
+            "alphaAcidPct": 14,
+            "hopGrams": 20,
+            "minutes": 90
+          }
+        ],
+        {
+          "volumeL": 20,
+          "boilSg": 1.05
+        }
+      ],
+      "expected": 82.73860394756163,
+      "tolerance": 1e-09,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        [
+          {
+            "alphaAcidPct": 12,
+            "hopGrams": 28,
+            "minutes": 60
+          },
+          {
+            "alphaAcidPct": 5.5,
+            "hopGrams": 30,
+            "minutes": 15
+          },
+          {
+            "alphaAcidPct": 14,
+            "hopGrams": 20,
+            "minutes": 90
+          }
+        ],
+        {
+          "volumeL": 20,
+          "boilSg": 1.06
+        },
+        "rager"
+      ],
+      "expected": 98.34267071993115,
+      "tolerance": 1e-09,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        [],
+        {
+          "volumeL": 20,
+          "boilSg": 1.05
+        }
+      ],
+      "expected": 0,
+      "tolerance": 0,
+      "source": "no hops, no IBUs"
+    },
+    {
+      "args": [
+        [
+          {
+            "alphaAcidPct": 12,
+            "hopGrams": 28,
+            "minutes": 60
+          }
+        ],
+        {
+          "volumeL": 20,
+          "boilSg": 1.05
+        }
+      ],
+      "expected": 38.75156497818465,
+      "tolerance": 1e-09,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        [
+          {
+            "alphaAcidPct": 12,
+            "hopGrams": 28,
+            "minutes": 60
+          },
+          {
+            "alphaAcidPct": 5.5,
+            "hopGrams": 30,
+            "minutes": 15
+          },
+          {
+            "alphaAcidPct": 14,
+            "hopGrams": 20,
+            "minutes": 90
+          },
+          {
+            "alphaAcidPct": 6,
+            "hopGrams": 50,
+            "minutes": 5
+          },
+          {
+            "alphaAcidPct": 4,
+            "hopGrams": 40,
+            "minutes": 0
+          }
+        ],
+        {
+          "volumeL": 40,
+          "boilSg": 1.07
+        },
+        "rager"
+      ],
+      "expected": 52.699504279533556,
+      "tolerance": 1e-09,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    }
+  ]
+}

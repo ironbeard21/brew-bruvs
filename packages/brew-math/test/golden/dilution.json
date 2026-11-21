@@ -1,0 +1,82 @@
+{
+  "gravityAdjustment": [
+    {
+      "args": [
+        20,
+        1.06,
+        1.05
+      ],
+      "expected": {
+        "finalVolumeL": 24.0,
+        "changeL": 4.0
+      },
+      "tolerance": 1e-09,
+      "source": "worked example: 20 L \u00d7 60 points = 24 L \u00d7 50 points"
+    },
+    {
+      "args": [
+        25,
+        1.04,
+        1.048
+      ],
+      "expected": {
+        "finalVolumeL": 20.833333333333332,
+        "changeL": -4.166666666666668
+      },
+      "tolerance": 1e-09,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        19,
+        1.07,
+        1.06
+      ],
+      "expected": {
+        "finalVolumeL": 22.166666666666668,
+        "changeL": 3.166666666666668
+      },
+      "tolerance": 1e-09,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        10,
+        1.1,
+        1.08
+      ],
+      "expected": {
+        "finalVolumeL": 12.5,
+        "changeL": 2.5
+      },
+      "tolerance": 1e-09,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        30,
+        1.045,
+        1.045
+      ],
+      "expected": {
+        "finalVolumeL": 30.0,
+        "changeL": 0.0
+      },
+      "tolerance": 1e-09,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        5,
+        1.03,
+        1.05
+      ],
+      "expected": {
+        "finalVolumeL": 3.0,
+        "changeL": -2.0
+      },
+      "tolerance": 1e-09,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    }
+  ]
+}

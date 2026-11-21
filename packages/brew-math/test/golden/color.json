@@ -1,0 +1,200 @@
+{
+  "mcu": [
+    {
+      "args": [
+        [
+          {
+            "kg": 4.5,
+            "lovibond": 2
+          }
+        ],
+        20
+      ],
+      "expected": 3.7554320034086994,
+      "tolerance": 1e-09,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        [
+          {
+            "kg": 4.5,
+            "lovibond": 2
+          },
+          {
+            "kg": 0.3,
+            "lovibond": 60
+          }
+        ],
+        20
+      ],
+      "expected": 11.266296010226096,
+      "tolerance": 1e-09,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        [
+          {
+            "kg": 5,
+            "lovibond": 3
+          },
+          {
+            "kg": 0.5,
+            "lovibond": 40
+          },
+          {
+            "kg": 0.2,
+            "lovibond": 350
+          }
+        ],
+        23
+      ],
+      "expected": 38.09858554182738,
+      "tolerance": 1e-09,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        [
+          {
+            "kg": 3.6,
+            "lovibond": 1.8
+          }
+        ],
+        19
+      ],
+      "expected": 2.8462221499518563,
+      "tolerance": 1e-09,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        [
+          {
+            "kg": 6,
+            "lovibond": 4
+          },
+          {
+            "kg": 0.4,
+            "lovibond": 120
+          },
+          {
+            "kg": 0.3,
+            "lovibond": 500
+          }
+        ],
+        25
+      ],
+      "expected": 74.10719153393165,
+      "tolerance": 1e-09,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        [
+          {
+            "kg": 4.535923700000001,
+            "lovibond": 10
+          }
+        ],
+        37.85411784
+      ],
+      "expected": 10.0,
+      "tolerance": 1e-09,
+      "source": "worked example: 10 lb of 10 \u00b0L in 10 gal = 10 MCU"
+    }
+  ],
+  "moreySrm": [
+    {
+      "args": [
+        [
+          {
+            "kg": 4.5,
+            "lovibond": 2
+          }
+        ],
+        20
+      ],
+      "expected": 3.6981648215724467,
+      "tolerance": 1e-09,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        [
+          {
+            "kg": 4.5,
+            "lovibond": 2
+          },
+          {
+            "kg": 0.3,
+            "lovibond": 60
+          }
+        ],
+        20
+      ],
+      "expected": 7.856764427403448,
+      "tolerance": 1e-09,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        [
+          {
+            "kg": 5,
+            "lovibond": 3
+          },
+          {
+            "kg": 0.5,
+            "lovibond": 40
+          },
+          {
+            "kg": 0.2,
+            "lovibond": 350
+          }
+        ],
+        23
+      ],
+      "expected": 18.120593478186652,
+      "tolerance": 1e-09,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        [
+          {
+            "kg": 3.6,
+            "lovibond": 1.8
+          }
+        ],
+        19
+      ],
+      "expected": 3.0578065142666917,
+      "tolerance": 1e-09,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        [
+          {
+            "kg": 6,
+            "lovibond": 4
+          },
+          {
+            "kg": 0.4,
+            "lovibond": 120
+          },
+          {
+            "kg": 0.3,
+            "lovibond": 500
+          }
+        ],
+        25
+      ],
+      "expected": 28.599882780103854,
+      "tolerance": 1e-09,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    }
+  ]
+}

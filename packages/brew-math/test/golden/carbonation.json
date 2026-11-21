@@ -1,0 +1,158 @@
+{
+  "residualCo2": [
+    {
+      "args": [
+        2
+      ],
+      "expected": 1.5921402479999998,
+      "tolerance": 1e-09,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        10
+      ],
+      "expected": 1.1985749999999995,
+      "tolerance": 1e-09,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        18
+      ],
+      "expected": 0.9151386479999994,
+      "tolerance": 1e-09,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        20
+      ],
+      "expected": 0.8614871999999993,
+      "tolerance": 1e-09,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        24
+      ],
+      "expected": 0.7748334719999999,
+      "tolerance": 1e-09,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    }
+  ],
+  "primingSugar": [
+    {
+      "args": [
+        {
+          "volumeL": 19,
+          "beerTempC": 20,
+          "targetVolumes": 2.4,
+          "sugar": "corn-sugar"
+        }
+      ],
+      "expected": 117.33897479830961,
+      "tolerance": 1e-09,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        {
+          "volumeL": 19,
+          "beerTempC": 20,
+          "targetVolumes": 2.4,
+          "sugar": "table-sugar"
+        }
+      ],
+      "expected": 106.77846706646174,
+      "tolerance": 1e-09,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        {
+          "volumeL": 23,
+          "beerTempC": 18,
+          "targetVolumes": 2.6,
+          "sugar": "corn-sugar"
+        }
+      ],
+      "expected": 155.55342541399986,
+      "tolerance": 1e-09,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        {
+          "volumeL": 10,
+          "beerTempC": 22,
+          "targetVolumes": 3.0,
+          "sugar": "corn-sugar"
+        }
+      ],
+      "expected": 87.71924854461224,
+      "tolerance": 1e-09,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        {
+          "volumeL": 40,
+          "beerTempC": 15,
+          "targetVolumes": 2.2,
+          "sugar": "table-sugar"
+        }
+      ],
+      "expected": 174.09053105491694,
+      "tolerance": 1e-09,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    }
+  ],
+  "kegPressure": [
+    {
+      "args": [
+        3.3,
+        2.5
+      ],
+      "expected": 77.32792517830333,
+      "tolerance": 1e-09,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        1,
+        2.4
+      ],
+      "expected": 56.12587940348494,
+      "tolerance": 1e-09,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        4,
+        2.7
+      ],
+      "expected": 96.5163587206471,
+      "tolerance": 1e-09,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        7,
+        2.2
+      ],
+      "expected": 77.07780216480545,
+      "tolerance": 1e-09,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        2,
+        3.0
+      ],
+      "expected": 103.72038669813512,
+      "tolerance": 1e-09,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    }
+  ]
+}

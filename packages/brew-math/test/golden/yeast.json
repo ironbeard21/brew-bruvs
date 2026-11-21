@@ -1,0 +1,194 @@
+{
+  "cellsNeeded": [
+    {
+      "args": [
+        20,
+        1.05,
+        0.75
+      ],
+      "expected": 185.81470687500044,
+      "tolerance": 1e-09,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        20,
+        1.05,
+        1.5
+      ],
+      "expected": 371.6294137500009,
+      "tolerance": 1e-09,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        23,
+        1.065,
+        0.75
+      ],
+      "expected": 274.3330626569064,
+      "tolerance": 1e-09,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        19,
+        1.04,
+        0.75
+      ],
+      "expected": 142.4078624639996,
+      "tolerance": 1e-09,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        40,
+        1.08,
+        1.0
+      ],
+      "expected": 773.2396825600006,
+      "tolerance": 1e-09,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    }
+  ],
+  "packsNeeded": [
+    {
+      "args": [
+        180,
+        100
+      ],
+      "expected": 2,
+      "tolerance": 0,
+      "source": "ceiling of cells needed / cells per pack"
+    },
+    {
+      "args": [
+        200,
+        100
+      ],
+      "expected": 2,
+      "tolerance": 0,
+      "source": "ceiling of cells needed / cells per pack"
+    },
+    {
+      "args": [
+        201,
+        100
+      ],
+      "expected": 3,
+      "tolerance": 0,
+      "source": "ceiling of cells needed / cells per pack"
+    },
+    {
+      "args": [
+        90,
+        100
+      ],
+      "expected": 1,
+      "tolerance": 0,
+      "source": "ceiling of cells needed / cells per pack"
+    },
+    {
+      "args": [
+        450,
+        90
+      ],
+      "expected": 5,
+      "tolerance": 0,
+      "source": "ceiling of cells needed / cells per pack"
+    }
+  ],
+  "starterCells": [
+    {
+      "args": [
+        {
+          "initialCellsBillion": 100,
+          "starterVolumeL": 1
+        }
+      ],
+      "expected": {
+        "extractG": 93.49279332433233,
+        "newCellsBillion": 130.88991065406526,
+        "totalCellsBillion": 230.88991065406526
+      },
+      "tolerance": 1e-09,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        {
+          "initialCellsBillion": 100,
+          "starterVolumeL": 2
+        }
+      ],
+      "expected": {
+        "extractG": 186.98558664866465,
+        "newCellsBillion": 261.7798213081305,
+        "totalCellsBillion": 361.7798213081305
+      },
+      "tolerance": 1e-09,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        {
+          "initialCellsBillion": 200,
+          "starterVolumeL": 1
+        }
+      ],
+      "expected": {
+        "extractG": 93.49279332433233,
+        "newCellsBillion": 83.83820844569432,
+        "totalCellsBillion": 283.8382084456943
+      },
+      "tolerance": 1e-09,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        {
+          "initialCellsBillion": 300,
+          "starterVolumeL": 1
+        }
+      ],
+      "expected": {
+        "extractG": 93.49279332433233,
+        "newCellsBillion": 16.83820844569433,
+        "totalCellsBillion": 316.8382084456943
+      },
+      "tolerance": 1e-09,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        {
+          "initialCellsBillion": 50,
+          "starterVolumeL": 2
+        }
+      ],
+      "expected": {
+        "extractG": 186.98558664866465,
+        "newCellsBillion": 261.7798213081305,
+        "totalCellsBillion": 311.7798213081305
+      },
+      "tolerance": 1e-09,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        {
+          "initialCellsBillion": 150,
+          "starterVolumeL": 1.5,
+          "starterSg": 1.04
+        }
+      ],
+      "expected": {
+        "extractG": 155.89913364479955,
+        "newCellsBillion": 218.25878710271937,
+        "totalCellsBillion": 368.25878710271934
+      },
+      "tolerance": 1e-09,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    }
+  ]
+}
