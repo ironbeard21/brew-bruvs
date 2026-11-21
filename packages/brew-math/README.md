@@ -4,19 +4,19 @@ Every brewing calculation in Brew-Bruvs. Pure TypeScript, no dependencies, works
 
 Calculators return `{ ok: true, value }` or `{ ok: false, error: { code, message } }` instead of throwing.
 
-| Module | Functions |
-| --- | --- |
-| `units` | mass, volume, temperature, pressure, SG ↔ °Plato/Brix, SRM ↔ EBC ↔ °L |
-| `gravity` | `abvStandard`, `abvAlternate`, `apparentAttenuation`, `realAttenuation`, `caloriesPer355ml` |
-| `hydrometer` | `correctHydrometer` |
-| `refractometer` | `refractometerSg`, `refractometerFinalGravity` (Terrill cubic) |
-| `mash-water` | `strikeTemperature`, `infusionVolume` (Palmer) |
-| `dilution` | `gravityAdjustment` |
-| `carbonation` | `residualCo2`, `primingSugar`, `kegPressure` |
-| `yeast` | `cellsNeeded`, `packsNeeded`, `starterCells` (Troester stir-plate model) |
-| `ibu` | `tinsethUtilization`, `tinsethIbu`, `ragerUtilization`, `ragerIbu`, `totalIbu` |
-| `color` | `mcu`, `moreySrm` |
-| `mead-wine` | `sugarToRaiseGravity`, `yanTarget`, `nutrientPlan`, `freeSo2Needed`, `potassiumMetabisulfite`, `acidAddition`, `blend` |
+| Module          | Functions                                                                                                              |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `units`         | mass, volume, temperature, pressure, SG ↔ °Plato/Brix, SRM ↔ EBC ↔ °L                                                  |
+| `gravity`       | `abvStandard`, `abvAlternate`, `apparentAttenuation`, `realAttenuation`, `caloriesPer355ml`                            |
+| `hydrometer`    | `correctHydrometer`                                                                                                    |
+| `refractometer` | `refractometerSg`, `refractometerFinalGravity` (Terrill cubic)                                                         |
+| `mash-water`    | `strikeTemperature`, `infusionVolume` (Palmer)                                                                         |
+| `dilution`      | `gravityAdjustment`                                                                                                    |
+| `carbonation`   | `residualCo2`, `primingSugar`, `kegPressure`                                                                           |
+| `yeast`         | `cellsNeeded`, `packsNeeded`, `starterCells` (Troester stir-plate model)                                               |
+| `ibu`           | `tinsethUtilization`, `tinsethIbu`, `ragerUtilization`, `ragerIbu`, `totalIbu`                                         |
+| `color`         | `mcu`, `moreySrm`                                                                                                      |
+| `mead-wine`     | `sugarToRaiseGravity`, `yanTarget`, `nutrientPlan`, `freeSo2Needed`, `potassiumMetabisulfite`, `acidAddition`, `blend` |
 
 ## Tests
 

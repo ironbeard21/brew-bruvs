@@ -30,8 +30,7 @@ export const sgToPlato = (sg: number): number =>
   ((135.997 * sg - 630.272) * sg + 1111.14) * sg - 616.868;
 
 /** °Plato → specific gravity. Common inverse approximation used with the ASBC polynomial. */
-export const platoToSg = (plato: number): number =>
-  1 + plato / (258.6 - (plato / 258.2) * 227.1);
+export const platoToSg = (plato: number): number => 1 + plato / (258.6 - (plato / 258.2) * 227.1);
 
 /** Brix and Plato are interchangeable for brewing, wine and mead purposes. */
 export const sgToBrix = sgToPlato;

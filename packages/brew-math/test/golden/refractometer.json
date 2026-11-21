@@ -1,58 +1,43 @@
 {
   "refractometerSg": [
     {
-      "args": [
-        5
-      ],
+      "args": [5],
       "expected": 1.0189002870747181,
       "tolerance": 1e-12,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     },
     {
-      "args": [
-        10
-      ],
+      "args": [10],
       "expected": 1.0384395846328651,
       "tolerance": 1e-12,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     },
     {
-      "args": [
-        12.5
-      ],
+      "args": [12.5],
       "expected": 1.0484590758592531,
       "tolerance": 1e-12,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     },
     {
-      "args": [
-        15
-      ],
+      "args": [15],
       "expected": 1.0586508569276356,
       "tolerance": 1e-12,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     },
     {
-      "args": [
-        20
-      ],
+      "args": [20],
       "expected": 1.079569375225457,
       "tolerance": 1e-12,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     },
     {
-      "args": [
-        25
-      ],
+      "args": [25],
       "expected": 1.101232923221275,
       "tolerance": 1e-12,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     },
     {
-      "args": [
-        12,
-        1.0
-      ],
+      "args": [12, 1.0],
       "expected": 1.0483782421572725,
       "tolerance": 1e-12,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
@@ -60,65 +45,43 @@
   ],
   "refractometerFinalGravity": [
     {
-      "args": [
-        12,
-        6
-      ],
+      "args": [12, 6],
       "expected": 1.0113751897473828,
       "tolerance": 1e-12,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     },
     {
-      "args": [
-        15,
-        7.5
-      ],
+      "args": [15, 7.5],
       "expected": 1.0131490288381528,
       "tolerance": 1e-12,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     },
     {
-      "args": [
-        20,
-        9
-      ],
+      "args": [20, 9],
       "expected": 1.0113733900275947,
       "tolerance": 1e-12,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     },
     {
-      "args": [
-        10,
-        5
-      ],
+      "args": [10, 5],
       "expected": 1.0100110130646907,
       "tolerance": 1e-12,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     },
     {
-      "args": [
-        25,
-        12
-      ],
+      "args": [25, 12],
       "expected": 1.0138710464553937,
       "tolerance": 1e-12,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     },
     {
-      "args": [
-        12,
-        12
-      ],
+      "args": [12, 12],
       "expected": 1.0373963108784705,
       "tolerance": 1e-12,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     },
     {
-      "args": [
-        18,
-        8,
-        1.0
-      ],
+      "args": [18, 8, 1.0],
       "expected": 1.0111272959999997,
       "tolerance": 1e-12,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"

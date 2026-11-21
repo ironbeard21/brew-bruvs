@@ -19,7 +19,8 @@ const pairs: [string, (x: number) => number, (x: number) => number][] = [
 describe("unit round trips", () => {
   for (const [name, to, back] of pairs) {
     it(name, () => {
-      for (const v of values) expect(Math.abs(back(to(v)) - v)).toBeLessThanOrEqual(1e-9 * Math.max(1, v));
+      for (const v of values)
+        expect(Math.abs(back(to(v)) - v)).toBeLessThanOrEqual(1e-9 * Math.max(1, v));
     });
   }
 

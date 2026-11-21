@@ -37,7 +37,7 @@ function expectClose(actual: unknown, expected: unknown, tolerance: number): voi
   } else if (Array.isArray(expected)) {
     expect(Array.isArray(actual)).toBe(true);
     expect((actual as unknown[]).length).toBe(expected.length);
-    expected.forEach((e, i) => expectClose((actual as unknown[])[i], e, tolerance));
+    for (const [i, e] of expected.entries()) expectClose((actual as unknown[])[i], e, tolerance);
   } else if (expected !== null && typeof expected === "object") {
     const a = actual as Record<string, unknown>;
     expect(Object.keys(a).sort()).toEqual(Object.keys(expected).sort());

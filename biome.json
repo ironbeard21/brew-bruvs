@@ -1,7 +1,14 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.2.0/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.6.8/schema.json",
   "files": {
-    "includes": ["**", "!**/node_modules", "!**/coverage", "!**/dist", "!packages/catalog-seed/data", "!packages/api-contract/src/generated"]
+    "includes": [
+      "**",
+      "!**/node_modules",
+      "!**/coverage",
+      "!**/dist",
+      "!packages/catalog-seed/data",
+      "!packages/api-contract/src/generated"
+    ]
   },
   "formatter": {
     "indentStyle": "space",
@@ -10,7 +17,7 @@
   },
   "linter": {
     "rules": {
-      "recommended": true
+      "preset": "recommended"
     }
   },
   "javascript": {

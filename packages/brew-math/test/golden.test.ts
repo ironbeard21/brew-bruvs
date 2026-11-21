@@ -10,7 +10,6 @@ import * as meadWine from "../src/mead-wine.ts";
 import * as refractometer from "../src/refractometer.ts";
 import * as units from "../src/units.ts";
 import * as yeast from "../src/yeast.ts";
-import { type GoldenCase, runGolden } from "./golden.ts";
 import carbonationCases from "./golden/carbonation.json" with { type: "json" };
 import colorCases from "./golden/color.json" with { type: "json" };
 import dilutionCases from "./golden/dilution.json" with { type: "json" };
@@ -22,6 +21,7 @@ import meadWineCases from "./golden/mead-wine.json" with { type: "json" };
 import refractometerCases from "./golden/refractometer.json" with { type: "json" };
 import unitsCases from "./golden/units.json" with { type: "json" };
 import yeastCases from "./golden/yeast.json" with { type: "json" };
+import { type GoldenCase, runGolden } from "./golden.ts";
 
 type Golden = Record<string, GoldenCase[]>;
 

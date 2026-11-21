@@ -15,6 +15,7 @@ Behavioral guidelines to reduce common LLM coding mistakes.
 **Don't assume. Don't hide confusion. Surface tradeoffs.**
 
 Before implementing:
+
 - State your assumptions explicitly. If uncertain, ask.
 - If multiple interpretations exist, present them - don't pick silently.
 - If a simpler approach exists, say so. Push back when warranted.
@@ -37,12 +38,14 @@ Ask yourself: "Would a senior engineer say this is overcomplicated?" If yes, sim
 **Touch only what you must. Clean up only your own mess.**
 
 When editing existing code:
+
 - Don't "improve" adjacent code, comments, or formatting.
 - Don't refactor things that aren't broken.
 - Match existing style, even if you'd do it differently.
 - If you notice unrelated dead code, mention it - don't delete it.
 
 When your changes create orphans:
+
 - Remove imports/variables/functions that YOUR changes made unused.
 - Don't remove pre-existing dead code unless asked.
 
@@ -53,11 +56,13 @@ The test: Every changed line should trace directly to the user's request.
 **Define success criteria. Loop until verified.**
 
 Transform tasks into verifiable goals:
+
 - "Add validation" → "Write tests for invalid inputs, then make them pass"
 - "Fix the bug" → "Write a test that reproduces it, then make it pass"
 - "Refactor X" → "Ensure tests pass before and after"
 
 For multi-step tasks, state a brief plan:
+
 ```
 1. [Step] → verify: [check]
 2. [Step] → verify: [check]
@@ -101,18 +106,18 @@ Stack: TypeScript (strict) everywhere, Node.js LTS, pnpm workspaces + Turborepo,
 
 These are the contract. If one doesn't exist yet, the scaffold issue creates it; don't invent alternatives.
 
-| Command | Does |
-| --- | --- |
-| `pnpm install` | Install everything |
-| `pnpm dev` | Run server + app in dev mode |
-| `pnpm lint` / `pnpm format` | Biome check / fix |
-| `pnpm typecheck` | TypeScript across the workspace |
-| `pnpm test` | Unit tests (Vitest) |
-| `pnpm test:e2e` | End-to-end tests (Playwright) |
-| `pnpm db:generate` / `pnpm db:migrate` | Create / apply migrations |
-| `pnpm api:generate` | Regenerate API types from the OpenAPI spec |
-| `pnpm seed` | Load the catalog seed into the database |
-| `docker compose -f docker/compose.dev.yml up` | Postgres for local dev |
+| Command                                       | Does                                       |
+| --------------------------------------------- | ------------------------------------------ |
+| `pnpm install`                                | Install everything                         |
+| `pnpm dev`                                    | Run server + app in dev mode               |
+| `pnpm lint` / `pnpm format`                   | Biome check / fix                          |
+| `pnpm typecheck`                              | TypeScript across the workspace            |
+| `pnpm test`                                   | Unit tests (Vitest)                        |
+| `pnpm test:e2e`                               | End-to-end tests (Playwright)              |
+| `pnpm db:generate` / `pnpm db:migrate`        | Create / apply migrations                  |
+| `pnpm api:generate`                           | Regenerate API types from the OpenAPI spec |
+| `pnpm seed`                                   | Load the catalog seed into the database    |
+| `docker compose -f docker/compose.dev.yml up` | Postgres for local dev                     |
 
 Before saying a task is done, run `pnpm lint && pnpm typecheck && pnpm test` and report the result.
 
@@ -126,10 +131,10 @@ Before saying a task is done, run `pnpm lint && pnpm typecheck && pnpm test` and
 - **Review:** a different agent reviews every PR (see owners below). The human maintainer is the only one who merges.
 - **Stuck or unsure:** stop and ask in the issue. Don't guess at product decisions.
 
-| Area | Lead | Reviewer |
-| --- | --- | --- |
-| `packages/brew-math` | Claude | Codex |
-| `apps/server`, `packages/db`, `packages/api-contract`, federation | Claude | Codex |
-| `apps/app` (mobile + web UI) | Antigravity | Claude |
-| Integrations, importers, `packages/catalog-seed` | Codex | Claude |
-| Tests, CI, Docker | Codex | Antigravity |
+| Area                                                              | Lead        | Reviewer    |
+| ----------------------------------------------------------------- | ----------- | ----------- |
+| `packages/brew-math`                                              | Claude      | Codex       |
+| `apps/server`, `packages/db`, `packages/api-contract`, federation | Claude      | Codex       |
+| `apps/app` (mobile + web UI)                                      | Antigravity | Claude      |
+| Integrations, importers, `packages/catalog-seed`                  | Codex       | Claude      |
+| Tests, CI, Docker                                                 | Codex       | Antigravity |

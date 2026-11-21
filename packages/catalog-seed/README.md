@@ -6,18 +6,18 @@ Built 2026-11-21 from the repo commits listed in `data/sources.csv`.
 
 ## What's in `data/`
 
-| File | Rows | What it is |
-| --- | --- | --- |
-| `hops.csv` | 494 | Hop varieties: alpha/beta acids (with min-max across sources), oils, substitutes |
-| `fermentables.csv` | 1,248 | Malts, sugars, extracts, adjuncts, fruit, honey and juices |
-| `yeasts.csv` | 842 | Beer, wine, mead and cider yeasts and bacteria from 32 producers |
-| `miscs.csv` | 130 | Spices, finings, water agents, wine/mead/cider additives |
-| `styles.csv` | 649 | Numeric style ranges: BJCP 2021, 2015 (incl. 13 mead + 11 cider), 2008 (incl. 9 mead + 9 cider), Brewers Association 2017 and an undated BA set |
-| `water_profiles.csv` | 29 | Classic brewing water profiles |
-| `equipment.csv` | 32 | All-in-one systems and common setups |
-| `catalog.json` | all | Same data in one JSON file, plus source and commit info |
-| `sources.csv` | 12 | Every source, its license, URL and exact commit |
-| `build_report.csv` | 7 | Entries read vs rows after merging |
+| File                 | Rows  | What it is                                                                                                                                      |
+| -------------------- | ----- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `hops.csv`           | 494   | Hop varieties: alpha/beta acids (with min-max across sources), oils, substitutes                                                                |
+| `fermentables.csv`   | 1,248 | Malts, sugars, extracts, adjuncts, fruit, honey and juices                                                                                      |
+| `yeasts.csv`         | 842   | Beer, wine, mead and cider yeasts and bacteria from 32 producers                                                                                |
+| `miscs.csv`          | 130   | Spices, finings, water agents, wine/mead/cider additives                                                                                        |
+| `styles.csv`         | 649   | Numeric style ranges: BJCP 2021, 2015 (incl. 13 mead + 11 cider), 2008 (incl. 9 mead + 9 cider), Brewers Association 2017 and an undated BA set |
+| `water_profiles.csv` | 29    | Classic brewing water profiles                                                                                                                  |
+| `equipment.csv`      | 32    | All-in-one systems and common setups                                                                                                            |
+| `catalog.json`       | all   | Same data in one JSON file, plus source and commit info                                                                                         |
+| `sources.csv`        | 12    | Every source, its license, URL and exact commit                                                                                                 |
+| `build_report.csv`   | 7     | Entries read vs rows after merging                                                                                                              |
 
 Units: temperatures in °C, volumes in liters, color in °Lovibond (plus EBC for fermentables), style color in SRM, percentages as 0-100.
 

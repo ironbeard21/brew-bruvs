@@ -26,7 +26,8 @@ export function sugarToRaiseGravity(input: {
     outside("Points per pound per gallon", pointsPerPoundPerGallon, 10, 50) ??
     (targetSg < currentSg ? "Target gravity must be at least the current gravity" : null);
   if (err) return fail(err);
-  const pounds = ((targetSg - currentSg) * 1000 * litersToGallons(volumeL)) / pointsPerPoundPerGallon;
+  const pounds =
+    ((targetSg - currentSg) * 1000 * litersToGallons(volumeL)) / pointsPerPoundPerGallon;
   return ok(lbToKg(pounds));
 }
 
@@ -107,7 +108,11 @@ export function potassiumMetabisulfite(ppm: number, volumeL: number): CalcResult
 }
 
 /** Grams of each acid equivalent to 1 g of tartaric acid in titratable acidity (by equivalent weight). */
-export const ACID_EQUIVALENT = { tartaric: 1, malic: 67.05 / 75.04, citric: 64.04 / 75.04 } as const;
+export const ACID_EQUIVALENT = {
+  tartaric: 1,
+  malic: 67.05 / 75.04,
+  citric: 64.04 / 75.04,
+} as const;
 export type Acid = keyof typeof ACID_EQUIVALENT;
 
 /** Grams of acid to raise titratable acidity (expressed as tartaric, g/L) to the target. */
@@ -137,7 +142,9 @@ export interface Lot {
 /** Volume-weighted blend of lots. A property is returned only when every lot has it. */
 export function blend(lots: Lot[]): CalcResult<Lot> {
   if (lots.length < 2) return fail("A blend needs at least two lots", "invalid_input");
-  const err = lots.map((l) => outside("Lot volume", l.volumeL, 0.01, 100000)).find((e) => e !== null);
+  const err = lots
+    .map((l) => outside("Lot volume", l.volumeL, 0.01, 100000))
+    .find((e) => e !== null);
   if (err) return fail(err);
   const volumeL = lots.reduce((s, l) => s + l.volumeL, 0);
   const result: Lot = { volumeL };

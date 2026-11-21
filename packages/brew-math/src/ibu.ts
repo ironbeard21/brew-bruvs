@@ -38,7 +38,9 @@ export const tinsethUtilization = (boilSg: number, minutes: number): number =>
 /** IBUs from one addition, Tinseth: utilization × mg/L of added alpha acids. */
 export function tinsethIbu(hop: HopAddition, wort: Wort): CalcResult<number> {
   const err = check(hop, wort);
-  return err ? fail(err) : ok(tinsethUtilization(wort.boilSg, hop.minutes) * alphaMgPerL(hop, wort));
+  return err
+    ? fail(err)
+    : ok(tinsethUtilization(wort.boilSg, hop.minutes) * alphaMgPerL(hop, wort));
 }
 
 /** Rager decimal utilization (Jackie Rager, 1990): (18.11 + 13.86 × tanh((t − 31.32) / 18.27)) / 100. */

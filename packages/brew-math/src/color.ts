@@ -12,7 +12,10 @@ export function mcu(grains: GrainColor[], volumeL: number): CalcResult<number> {
   const err =
     outside("Volume", volumeL, 0.1, 100000) ??
     grains
-      .map((g) => outside("Grain weight", g.kg, 0, 100000) ?? outside("Grain color", g.lovibond, 0, 700))
+      .map(
+        (g) =>
+          outside("Grain weight", g.kg, 0, 100000) ?? outside("Grain color", g.lovibond, 0, 700),
+      )
       .find((e) => e !== null) ??
     null;
   if (err) return fail(err);

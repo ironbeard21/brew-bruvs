@@ -1,299 +1,203 @@
 {
   "abvStandard": [
     {
-      "args": [
-        1.05,
-        1.01
-      ],
+      "args": [1.05, 1.01],
       "expected": 5.25,
-      "tolerance": 1e-09,
+      "tolerance": 1e-9,
       "source": "worked example: (1.050 \u2212 1.010) \u00d7 131.25"
     },
     {
-      "args": [
-        1.05,
-        1.01
-      ],
+      "args": [1.05, 1.01],
       "expected": 5.250000000000004,
-      "tolerance": 1e-09,
+      "tolerance": 1e-9,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     },
     {
-      "args": [
-        1.04,
-        1.008
-      ],
+      "args": [1.04, 1.008],
       "expected": 4.200000000000004,
-      "tolerance": 1e-09,
+      "tolerance": 1e-9,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     },
     {
-      "args": [
-        1.065,
-        1.012
-      ],
+      "args": [1.065, 1.012],
       "expected": 6.956249999999992,
-      "tolerance": 1e-09,
+      "tolerance": 1e-9,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     },
     {
-      "args": [
-        1.09,
-        1.02
-      ],
+      "args": [1.09, 1.02],
       "expected": 9.187500000000009,
-      "tolerance": 1e-09,
+      "tolerance": 1e-9,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     },
     {
-      "args": [
-        1.12,
-        1.0
-      ],
+      "args": [1.12, 1.0],
       "expected": 15.750000000000014,
-      "tolerance": 1e-09,
+      "tolerance": 1e-9,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     },
     {
-      "args": [
-        1.035,
-        1.035
-      ],
+      "args": [1.035, 1.035],
       "expected": 0.0,
-      "tolerance": 1e-09,
+      "tolerance": 1e-9,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     }
   ],
   "abvAlternate": [
     {
-      "args": [
-        1.05,
-        1.01
-      ],
+      "args": [1.05, 1.01],
       "expected": 5.339411100495098,
-      "tolerance": 1e-09,
+      "tolerance": 1e-9,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     },
     {
-      "args": [
-        1.04,
-        1.008
-      ],
+      "args": [1.04, 1.008],
       "expected": 4.20506944944225,
-      "tolerance": 1e-09,
+      "tolerance": 1e-9,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     },
     {
-      "args": [
-        1.065,
-        1.012
-      ],
+      "args": [1.065, 1.012],
       "expected": 7.238490935537651,
-      "tolerance": 1e-09,
+      "tolerance": 1e-9,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     },
     {
-      "args": [
-        1.09,
-        1.02
-      ],
+      "args": [1.09, 1.02],
       "expected": 9.987519535200144,
-      "tolerance": 1e-09,
+      "tolerance": 1e-9,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     },
     {
-      "args": [
-        1.12,
-        1.0
-      ],
+      "args": [1.12, 1.0],
       "expected": 17.55455996308191,
-      "tolerance": 1e-09,
+      "tolerance": 1e-9,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     },
     {
-      "args": [
-        1.035,
-        1.035
-      ],
+      "args": [1.035, 1.035],
       "expected": 0.0,
-      "tolerance": 1e-09,
+      "tolerance": 1e-9,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     }
   ],
   "apparentAttenuation": [
     {
-      "args": [
-        1.05,
-        1.01
-      ],
+      "args": [1.05, 1.01],
       "expected": 80.0,
-      "tolerance": 1e-09,
+      "tolerance": 1e-9,
       "source": "worked example: 40 of 50 points"
     },
     {
-      "args": [
-        1.05,
-        1.01
-      ],
+      "args": [1.05, 1.01],
       "expected": 80.0,
-      "tolerance": 1e-09,
+      "tolerance": 1e-9,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     },
     {
-      "args": [
-        1.04,
-        1.008
-      ],
+      "args": [1.04, 1.008],
       "expected": 80.0,
-      "tolerance": 1e-09,
+      "tolerance": 1e-9,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     },
     {
-      "args": [
-        1.065,
-        1.012
-      ],
+      "args": [1.065, 1.012],
       "expected": 81.5384615384615,
-      "tolerance": 1e-09,
+      "tolerance": 1e-9,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     },
     {
-      "args": [
-        1.09,
-        1.02
-      ],
+      "args": [1.09, 1.02],
       "expected": 77.77777777777779,
-      "tolerance": 1e-09,
+      "tolerance": 1e-9,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     },
     {
-      "args": [
-        1.12,
-        1.0
-      ],
+      "args": [1.12, 1.0],
       "expected": 100.0,
-      "tolerance": 1e-09,
+      "tolerance": 1e-9,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     },
     {
-      "args": [
-        1.035,
-        1.035
-      ],
+      "args": [1.035, 1.035],
       "expected": 0.0,
-      "tolerance": 1e-09,
+      "tolerance": 1e-9,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     }
   ],
   "realAttenuation": [
     {
-      "args": [
-        1.05,
-        1.01
-      ],
+      "args": [1.05, 1.01],
       "expected": 64.98547456466697,
-      "tolerance": 1e-09,
+      "tolerance": 1e-9,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     },
     {
-      "args": [
-        1.04,
-        1.008
-      ],
+      "args": [1.04, 1.008],
       "expected": 65.10291363792012,
-      "tolerance": 1e-09,
+      "tolerance": 1e-9,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     },
     {
-      "args": [
-        1.065,
-        1.012
-      ],
+      "args": [1.065, 1.012],
       "expected": 66.11499851086396,
-      "tolerance": 1e-09,
+      "tolerance": 1e-9,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     },
     {
-      "args": [
-        1.09,
-        1.02
-      ],
+      "args": [1.09, 1.02],
       "expected": 62.6220104913922,
-      "tolerance": 1e-09,
+      "tolerance": 1e-9,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     },
     {
-      "args": [
-        1.12,
-        1.0
-      ],
+      "args": [1.12, 1.0],
       "expected": 81.92875787664948,
-      "tolerance": 1e-09,
+      "tolerance": 1e-9,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     },
     {
-      "args": [
-        1.035,
-        1.035
-      ],
+      "args": [1.035, 1.035],
       "expected": 0.0,
-      "tolerance": 1e-09,
+      "tolerance": 1e-9,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     }
   ],
   "caloriesPer355ml": [
     {
-      "args": [
-        1.05,
-        1.01
-      ],
+      "args": [1.05, 1.01],
       "expected": 165.18049875862064,
-      "tolerance": 1e-06,
+      "tolerance": 1e-6,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     },
     {
-      "args": [
-        1.04,
-        1.008
-      ],
+      "args": [1.04, 1.008],
       "expected": 130.4577144685719,
-      "tolerance": 1e-06,
+      "tolerance": 1e-6,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     },
     {
-      "args": [
-        1.065,
-        1.012
-      ],
+      "args": [1.065, 1.012],
       "expected": 218.21413801464792,
-      "tolerance": 1e-06,
+      "tolerance": 1e-6,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     },
     {
-      "args": [
-        1.09,
-        1.02
-      ],
+      "args": [1.09, 1.02],
       "expected": 312.8852650510953,
-      "tolerance": 1e-06,
+      "tolerance": 1e-6,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     },
     {
-      "args": [
-        1.12,
-        1.0
-      ],
+      "args": [1.12, 1.0],
       "expected": 420.25179236641253,
-      "tolerance": 1e-06,
+      "tolerance": 1e-6,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     },
     {
-      "args": [
-        1.035,
-        1.035
-      ],
+      "args": [1.035, 1.035],
       "expected": 127.12904999999985,
-      "tolerance": 1e-06,
+      "tolerance": 1e-6,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     }
   ]

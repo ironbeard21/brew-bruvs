@@ -32,7 +32,8 @@ export function primingSugar(input: {
   sugar: PrimingSugar;
 }): CalcResult<number> {
   const err =
-    outside("Volume", input.volumeL, 0.1, 10000) ?? outside("Target CO2", input.targetVolumes, 1, 5);
+    outside("Volume", input.volumeL, 0.1, 10000) ??
+    outside("Target CO2", input.targetVolumes, 1, 5);
   if (err) return fail(err);
   const residual = residualCo2(input.beerTempC);
   if (!residual.ok) return residual;

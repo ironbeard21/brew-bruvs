@@ -17,7 +17,10 @@ export function cellsNeeded(volumeL: number, og: number, pitchRate: number): Cal
 }
 
 /** Whole packs needed when each pack holds `viableCellsPerPack` billion live cells. */
-export function packsNeeded(cellsNeededBillion: number, viableCellsPerPack: number): CalcResult<number> {
+export function packsNeeded(
+  cellsNeededBillion: number,
+  viableCellsPerPack: number,
+): CalcResult<number> {
   const err =
     outside("Cells needed", cellsNeededBillion, 0, 100000) ??
     outside("Cells per pack", viableCellsPerPack, 1, 10000);
@@ -44,5 +47,9 @@ export function starterCells(input: {
   const rate = initialCellsBillion / extractG;
   const growthPerGram = rate < 1.4 ? 1.4 : rate < 3.5 ? 2.33 - 0.67 * rate : 0;
   const newCellsBillion = growthPerGram * extractG;
-  return ok({ extractG, newCellsBillion, totalCellsBillion: initialCellsBillion + newCellsBillion });
+  return ok({
+    extractG,
+    newCellsBillion,
+    totalCellsBillion: initialCellsBillion + newCellsBillion,
+  });
 }

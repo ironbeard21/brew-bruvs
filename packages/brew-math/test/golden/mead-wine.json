@@ -10,7 +10,7 @@
         }
       ],
       "expected": 0.45359237,
-      "tolerance": 1e-09,
+      "tolerance": 1e-9,
       "source": "worked example: 1 lb honey at 35 PPG in 1 gal raises gravity 35 points"
     },
     {
@@ -23,7 +23,7 @@
         }
       ],
       "expected": 6.504863197202966,
-      "tolerance": 1e-09,
+      "tolerance": 1e-9,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     },
     {
@@ -36,7 +36,7 @@
         }
       ],
       "expected": 0.5991321365844837,
-      "tolerance": 1e-09,
+      "tolerance": 1e-9,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     },
     {
@@ -49,7 +49,7 @@
         }
       ],
       "expected": 0.7293782532332845,
-      "tolerance": 1e-09,
+      "tolerance": 1e-9,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     },
     {
@@ -62,7 +62,7 @@
         }
       ],
       "expected": 2.2253479358852215,
-      "tolerance": 1e-09,
+      "tolerance": 1e-9,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     },
     {
@@ -75,171 +75,117 @@
         }
       ],
       "expected": 1.5629533997856098,
-      "tolerance": 1e-09,
+      "tolerance": 1e-9,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     }
   ],
   "yanTarget": [
     {
-      "args": [
-        1.0829844579302224,
-        "low"
-      ],
+      "args": [1.0829844579302224, "low"],
       "expected": 150,
       "tolerance": 2,
       "source": "Scott Labs Winemaking Handbook table: 20 \u00b0Brix \u2192 150/180/250 ppm (input SG from 20 \u00b0Brix via platoToSg)"
     },
     {
-      "args": [
-        1.0829844579302224,
-        "high"
-      ],
+      "args": [1.0829844579302224, "high"],
       "expected": 250,
       "tolerance": 3,
       "source": "Scott Labs Winemaking Handbook table: 20 \u00b0Brix \u2192 150/180/250 ppm (input SG from 20 \u00b0Brix via platoToSg)"
     },
     {
-      "args": [
-        1.0829844579302224,
-        "medium"
-      ],
+      "args": [1.0829844579302224, "medium"],
       "expected": 180.02429354645795,
-      "tolerance": 1e-09,
+      "tolerance": 1e-9,
       "source": "Scott Labs Winemaking Handbook 2016 formula: sugar (g/L) x 0.90 for medium-need strains"
     },
     {
-      "args": [
-        1.0919540676449373,
-        "low"
-      ],
+      "args": [1.0919540676449373, "low"],
       "expected": 165,
       "tolerance": 2,
       "source": "Scott Labs Winemaking Handbook table: 22 \u00b0Brix \u2192 165/200/275 ppm (input SG from 22 \u00b0Brix via platoToSg)"
     },
     {
-      "args": [
-        1.0919540676449373,
-        "high"
-      ],
+      "args": [1.0919540676449373, "high"],
       "expected": 275,
       "tolerance": 3,
       "source": "Scott Labs Winemaking Handbook table: 22 \u00b0Brix \u2192 165/200/275 ppm (input SG from 22 \u00b0Brix via platoToSg)"
     },
     {
-      "args": [
-        1.0919540676449373,
-        "medium"
-      ],
+      "args": [1.0919540676449373, "medium"],
       "expected": 198.0122305745085,
-      "tolerance": 1e-09,
+      "tolerance": 1e-9,
       "source": "Scott Labs Winemaking Handbook 2016 formula: sugar (g/L) x 0.90 for medium-need strains"
     },
     {
-      "args": [
-        1.1010565537053743,
-        "low"
-      ],
+      "args": [1.1010565537053743, "low"],
       "expected": 180,
       "tolerance": 2,
       "source": "Scott Labs Winemaking Handbook table: 24 \u00b0Brix \u2192 180/220/300 ppm (input SG from 24 \u00b0Brix via platoToSg)"
     },
     {
-      "args": [
-        1.1010565537053743,
-        "high"
-      ],
+      "args": [1.1010565537053743, "high"],
       "expected": 300,
       "tolerance": 3,
       "source": "Scott Labs Winemaking Handbook table: 24 \u00b0Brix \u2192 180/220/300 ppm (input SG from 24 \u00b0Brix via platoToSg)"
     },
     {
-      "args": [
-        1.1010565537053743,
-        "medium"
-      ],
+      "args": [1.1010565537053743, "medium"],
       "expected": 215.9931231478578,
-      "tolerance": 1e-09,
+      "tolerance": 1e-9,
       "source": "Scott Labs Winemaking Handbook 2016 formula: sugar (g/L) x 0.90 for medium-need strains"
     },
     {
-      "args": [
-        1.1102948908026036,
-        "low"
-      ],
+      "args": [1.1102948908026036, "low"],
       "expected": 195,
       "tolerance": 2,
       "source": "Scott Labs Winemaking Handbook table: 26 \u00b0Brix \u2192 195/240/325 ppm (input SG from 26 \u00b0Brix via platoToSg)"
     },
     {
-      "args": [
-        1.1102948908026036,
-        "high"
-      ],
+      "args": [1.1102948908026036, "high"],
       "expected": 325,
       "tolerance": 3,
       "source": "Scott Labs Winemaking Handbook table: 26 \u00b0Brix \u2192 195/240/325 ppm (input SG from 26 \u00b0Brix via platoToSg)"
     },
     {
-      "args": [
-        1.1102948908026036,
-        "medium"
-      ],
+      "args": [1.1102948908026036, "medium"],
       "expected": 233.96630849398306,
-      "tolerance": 1e-09,
+      "tolerance": 1e-9,
       "source": "Scott Labs Winemaking Handbook 2016 formula: sugar (g/L) x 0.90 for medium-need strains"
     },
     {
-      "args": [
-        1.1196721430874672,
-        "low"
-      ],
+      "args": [1.1196721430874672, "low"],
       "expected": 210,
       "tolerance": 2,
       "source": "Scott Labs Winemaking Handbook table: 28 \u00b0Brix \u2192 210/260/350 ppm (input SG from 28 \u00b0Brix via platoToSg)"
     },
     {
-      "args": [
-        1.1196721430874672,
-        "high"
-      ],
+      "args": [1.1196721430874672, "high"],
       "expected": 350,
       "tolerance": 3,
       "source": "Scott Labs Winemaking Handbook table: 28 \u00b0Brix \u2192 210/260/350 ppm (input SG from 28 \u00b0Brix via platoToSg)"
     },
     {
-      "args": [
-        1.1196721430874672,
-        "medium"
-      ],
+      "args": [1.1196721430874672, "medium"],
       "expected": 251.93126150889046,
-      "tolerance": 1e-09,
+      "tolerance": 1e-9,
       "source": "Scott Labs Winemaking Handbook 2016 formula: sugar (g/L) x 0.90 for medium-need strains"
     },
     {
-      "args": [
-        1.1291914675590318,
-        "low"
-      ],
+      "args": [1.1291914675590318, "low"],
       "expected": 225,
       "tolerance": 2,
       "source": "Scott Labs Winemaking Handbook table: 30 \u00b0Brix \u2192 225/280/375 ppm (input SG from 30 \u00b0Brix via platoToSg)"
     },
     {
-      "args": [
-        1.1291914675590318,
-        "high"
-      ],
+      "args": [1.1291914675590318, "high"],
       "expected": 375,
       "tolerance": 3,
       "source": "Scott Labs Winemaking Handbook table: 30 \u00b0Brix \u2192 225/280/375 ppm (input SG from 30 \u00b0Brix via platoToSg)"
     },
     {
-      "args": [
-        1.1291914675590318,
-        "medium"
-      ],
+      "args": [1.1291914675590318, "medium"],
       "expected": 269.88761263482576,
-      "tolerance": 1e-09,
+      "tolerance": 1e-9,
       "source": "Scott Labs Winemaking Handbook 2016 formula: sugar (g/L) x 0.90 for medium-need strains"
     }
   ],
@@ -271,7 +217,7 @@
         ],
         "oneThirdBreakSg": 1.0666666666666667
       },
-      "tolerance": 1e-09,
+      "tolerance": 1e-9,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     },
     {
@@ -301,7 +247,7 @@
         ],
         "oneThirdBreakSg": 1.0586666666666666
       },
-      "tolerance": 1e-09,
+      "tolerance": 1e-9,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     },
     {
@@ -331,7 +277,7 @@
         ],
         "oneThirdBreakSg": 1.0833333333333335
       },
-      "tolerance": 1e-09,
+      "tolerance": 1e-9,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     },
     {
@@ -361,7 +307,7 @@
         ],
         "oneThirdBreakSg": 1.0616666666666665
       },
-      "tolerance": 1e-09,
+      "tolerance": 1e-9,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     },
     {
@@ -391,7 +337,7 @@
         ],
         "oneThirdBreakSg": 1.0533333333333335
       },
-      "tolerance": 1e-09,
+      "tolerance": 1e-9,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     },
     {
@@ -420,104 +366,75 @@
         ],
         "oneThirdBreakSg": 1.0533333333333335
       },
-      "tolerance": 1e-09,
+      "tolerance": 1e-9,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     }
   ],
   "freeSo2Needed": [
     {
-      "args": [
-        3.4
-      ],
+      "args": [3.4],
       "expected": 31.92361159954244,
-      "tolerance": 1e-09,
+      "tolerance": 1e-9,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     },
     {
-      "args": [
-        3.2
-      ],
+      "args": [3.2],
       "expected": 20.437671325480252,
-      "tolerance": 1e-09,
+      "tolerance": 1e-9,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     },
     {
-      "args": [
-        3.6
-      ],
+      "args": [3.6],
       "expected": 50.12760014891858,
-      "tolerance": 1e-09,
+      "tolerance": 1e-9,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     },
     {
-      "args": [
-        3.5,
-        0.5
-      ],
+      "args": [3.5, 0.5],
       "expected": 24.988940968422305,
-      "tolerance": 1e-09,
+      "tolerance": 1e-9,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     },
     {
-      "args": [
-        3.0
-      ],
+      "args": [3.0],
       "expected": 13.19053295129985,
-      "tolerance": 1e-09,
+      "tolerance": 1e-9,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     },
     {
-      "args": [
-        3.81,
-        1.0
-      ],
+      "args": [3.81, 1.0],
       "expected": 101.0,
-      "tolerance": 1e-09,
+      "tolerance": 1e-9,
       "source": "worked example: pH 3.81 is 2 above pKa 1.81, so free = molecular \u00d7 101"
     }
   ],
   "potassiumMetabisulfite": [
     {
-      "args": [
-        50,
-        23
-      ],
+      "args": [50, 23],
       "expected": 1.9965277777777777,
       "tolerance": 1e-12,
       "source": "57.6% SO2 by weight: 50 mg/L \u00d7 23 L / 576"
     },
     {
-      "args": [
-        30,
-        19
-      ],
+      "args": [30, 19],
       "expected": 0.9895833333333334,
       "tolerance": 1e-12,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     },
     {
-      "args": [
-        25,
-        100
-      ],
+      "args": [25, 100],
       "expected": 4.340277777777778,
       "tolerance": 1e-12,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     },
     {
-      "args": [
-        10,
-        5
-      ],
+      "args": [10, 5],
       "expected": 0.08680555555555555,
       "tolerance": 1e-12,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     },
     {
-      "args": [
-        0,
-        20
-      ],
+      "args": [0, 20],
       "expected": 0,
       "tolerance": 0,
       "source": "no increase, no metabisulfite"
@@ -534,7 +451,7 @@
         }
       ],
       "expected": 28.5,
-      "tolerance": 1e-09,
+      "tolerance": 1e-9,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     },
     {
@@ -547,7 +464,7 @@
         }
       ],
       "expected": 33.953891257995735,
-      "tolerance": 1e-09,
+      "tolerance": 1e-9,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     },
     {
@@ -560,7 +477,7 @@
         }
       ],
       "expected": 29.44269722814499,
-      "tolerance": 1e-09,
+      "tolerance": 1e-9,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     },
     {
@@ -573,7 +490,7 @@
         }
       ],
       "expected": 0.0,
-      "tolerance": 1e-09,
+      "tolerance": 1e-9,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     },
     {
@@ -586,7 +503,7 @@
         }
       ],
       "expected": 35.740938166311295,
-      "tolerance": 1e-09,
+      "tolerance": 1e-9,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     }
   ],
@@ -614,7 +531,7 @@
         "sg": 1.005,
         "ta": 7
       },
-      "tolerance": 1e-09,
+      "tolerance": 1e-9,
       "source": "worked example: equal volumes average"
     },
     {
@@ -634,7 +551,7 @@
         "volumeL": 20,
         "abv": 8.0
       },
-      "tolerance": 1e-09,
+      "tolerance": 1e-9,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     },
     {
@@ -654,7 +571,7 @@
         "volumeL": 23,
         "abv": 11.76086956521739
       },
-      "tolerance": 1e-09,
+      "tolerance": 1e-9,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     },
     {
@@ -674,7 +591,7 @@
         "volumeL": 125,
         "abv": 11.8
       },
-      "tolerance": 1e-09,
+      "tolerance": 1e-9,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     },
     {
@@ -699,7 +616,7 @@
         "volumeL": 20,
         "abv": 10.0
       },
-      "tolerance": 1e-09,
+      "tolerance": 1e-9,
       "source": "TA dropped because one lot has none; ABV weighted (50 + 60 + 90) / 20"
     }
   ]

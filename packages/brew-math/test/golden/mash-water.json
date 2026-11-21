@@ -1,63 +1,39 @@
 {
   "strikeTemperature": [
     {
-      "args": [
-        3.129526669507249,
-        21.11111111111111,
-        68.88888888888889
-      ],
+      "args": [3.129526669507249, 21.11111111111111, 68.88888888888889],
       "expected": 75.27777777777777,
       "tolerance": 0.3,
       "source": "Palmer, How to Brew: 1.5 qt/lb, grain 70 \u00b0F, target 156 \u00b0F \u2192 strike 167.5 \u00b0F (metric constant 0.41 differs by <0.3 \u00b0C)"
     },
     {
-      "args": [
-        3,
-        20,
-        67
-      ],
+      "args": [3, 20, 67],
       "expected": 73.42333333333333,
-      "tolerance": 1e-09,
+      "tolerance": 1e-9,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     },
     {
-      "args": [
-        2.5,
-        18,
-        65
-      ],
+      "args": [2.5, 18, 65],
       "expected": 72.708,
-      "tolerance": 1e-09,
+      "tolerance": 1e-9,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     },
     {
-      "args": [
-        4,
-        22,
-        68
-      ],
+      "args": [4, 22, 68],
       "expected": 72.715,
-      "tolerance": 1e-09,
+      "tolerance": 1e-9,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     },
     {
-      "args": [
-        2.6,
-        10,
-        66
-      ],
+      "args": [2.6, 10, 66],
       "expected": 74.83076923076923,
-      "tolerance": 1e-09,
+      "tolerance": 1e-9,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     },
     {
-      "args": [
-        3.5,
-        25,
-        72
-      ],
+      "args": [3.5, 25, 72],
       "expected": 77.50571428571429,
-      "tolerance": 1e-09,
+      "tolerance": 1e-9,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     }
   ],
@@ -72,7 +48,7 @@
         }
       ],
       "expected": 4.2625,
-      "tolerance": 1e-09,
+      "tolerance": 1e-9,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     },
     {
@@ -85,7 +61,7 @@
         }
       ],
       "expected": 5.06891891891892,
-      "tolerance": 1e-09,
+      "tolerance": 1e-9,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     },
     {
@@ -98,7 +74,7 @@
         }
       ],
       "expected": 4.932321428571429,
-      "tolerance": 1e-09,
+      "tolerance": 1e-9,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     },
     {
@@ -111,7 +87,7 @@
         }
       ],
       "expected": 16.04705882352941,
-      "tolerance": 1e-09,
+      "tolerance": 1e-9,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     },
     {
@@ -124,7 +100,7 @@
         }
       ],
       "expected": 1.5155555555555555,
-      "tolerance": 1e-09,
+      "tolerance": 1e-9,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     },
     {
@@ -138,7 +114,7 @@
         }
       ],
       "expected": 6.6717391304347835,
-      "tolerance": 1e-09,
+      "tolerance": 1e-9,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     }
   ]
