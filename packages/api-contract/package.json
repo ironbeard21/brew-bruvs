@@ -8,8 +8,14 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "generate": "node -e \"console.log('not implemented yet (P0-10)')\"",
+    "generate": "pnpm --filter @brew-bruvs/server openapi \"$PWD/openapi.json\" && openapi-typescript openapi.json -o src/generated/schema.ts && biome format --write openapi.json",
     "typecheck": "tsc --noEmit -p .",
     "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "openapi-fetch": "^0.17.0"
+  },
+  "devDependencies": {
+    "openapi-typescript": "^7.13.0"
   }
 }
