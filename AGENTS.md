@@ -131,6 +131,18 @@ Before saying a task is done, run `pnpm lint && pnpm typecheck && pnpm test` and
 - **Review:** a different agent reviews every PR (see owners below). The human maintainer is the only one who merges.
 - **Stuck or unsure:** stop and ask in the issue. Don't guess at product decisions.
 
+### Git and pull requests
+
+`main` is protected: nothing is pushed to it directly, and a PR merges only when the `checks`, `postgres` and `smoke` jobs pass. Every agent works like this:
+
+1. **Pull first.** `git fetch origin`, then start your branch from the latest `main` in your own worktree: `git worktree add ../Brew-Bruvs-<branch> -b <branch> origin/main`. Never switch branches in the maintainer's checkout or in another agent's worktree.
+2. **Do the work** on that branch and commit. Run `pnpm lint && pnpm typecheck && pnpm test`; for database code also run the Postgres tests with `TEST_DATABASE_URL` set.
+3. **Push and open the PR.** `git push -u origin <branch>`, then `gh pr create` with the plan, verification results and `Closes #<issue>` in the description.
+4. **Keep it current.** If `main` moves, rebase onto `origin/main` and `git push --force-with-lease`. Force-push only your own branch.
+5. **Fix review comments** with new commits on the same branch and push again. Never merge a PR, yours or anyone's.
+
+**Reviewing:** pull the PR into your own worktree (`gh pr checkout <number>`), run the checks, then post the review with `gh pr review <number> --comment`, ending with "Approve" or "Changes requested". Agents share the maintainer's GitHub account, so `--approve` is not available.
+
 | Area                                                              | Lead        | Reviewer    |
 | ----------------------------------------------------------------- | ----------- | ----------- |
 | `packages/brew-math`                                              | Claude      | Codex       |
