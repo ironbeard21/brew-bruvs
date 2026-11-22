@@ -1,3 +1,5 @@
+name: brew-bruvs
+
 services:
   app:
     image: ${BREW_BRUVS_IMAGE:-ghcr.io/ironbeard21/brew-bruvs:latest}

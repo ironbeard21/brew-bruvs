@@ -1,9 +1,9 @@
 # syntax=docker/dockerfile:1
-FROM node:24-bookworm-slim AS workspace
+FROM node:26-bookworm-slim AS workspace
 WORKDIR /workspace
 ENV CI=true
-RUN corepack enable
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+RUN npm install --global "$(node -p 'require("./package.json").packageManager')"
 COPY apps/app/package.json apps/app/
 COPY apps/server/package.json apps/server/
 COPY packages/api-contract/package.json packages/api-contract/
@@ -22,7 +22,7 @@ FROM workspace AS production-dependencies
 RUN --mount=type=cache,target=/pnpm/store pnpm --filter '@brew-bruvs/server...' install \
   --prod --frozen-lockfile --store-dir /pnpm/store
 
-FROM node:24-bookworm-slim AS runtime
+FROM node:26-bookworm-slim AS runtime
 WORKDIR /srv/brew-bruvs
 ENV NODE_ENV=production PORT=8080 WEB_DIR=/srv/brew-bruvs/web
 COPY --from=production-dependencies /workspace/ ./
