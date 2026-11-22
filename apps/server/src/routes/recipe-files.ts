@@ -47,6 +47,38 @@ const importRoute = createRoute({
   },
 });
 
+const importUrlRoute = createRoute({
+  tags,
+  security,
+  method: "post",
+  path: "/api/recipes/import-url",
+  operationId: "importRecipeUrl",
+  summary: "Read one public recipe page into a private draft",
+  middleware: [
+    requireImportSession,
+    bodyLimit({
+      maxSize: 8 * 1024,
+      onError: (c) =>
+        c.json(errorBody("request_too_large", "Recipe URL request is too large"), 413),
+    }),
+  ],
+  request: body(
+    z.strictObject({
+      url: z.url({ protocol: /^https?$/ }).max(2_000),
+      batchSizeL: z.number().positive().max(100_000).optional().openapi({
+        description: "Batch volume in litres for a page without a usable recipe yield",
+      }),
+    }),
+  ),
+  responses: {
+    200: json(
+      z.object({ draft: ImportedRecipeDraft, excerpt: z.string().max(240) }),
+      "Draft recipe",
+    ),
+    ...errorResponses(400, 401, 403, 413),
+  },
+});
+
 const exportRoute = createRoute({
   tags,
   security: [...security, {}],
@@ -86,6 +118,10 @@ export function registerRecipeFileRoutes(
   app.openapi(importRoute, async (c) => {
     const { format, contents } = c.req.valid("json");
     return c.json(await files.preview(c.get("session")?.user ?? null, format, contents), 200);
+  });
+  app.openapi(importUrlRoute, async (c) => {
+    const { url, batchSizeL } = c.req.valid("json");
+    return c.json(await files.previewUrl(c.get("session")?.user ?? null, url, batchSizeL), 200);
   });
   app.openapi(exportRoute, async (c) => {
     const { id, version } = c.req.valid("param");

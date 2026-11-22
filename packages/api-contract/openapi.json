@@ -5422,6 +5422,108 @@
         }
       }
     },
+    "/api/recipes/import-url": {
+      "post": {
+        "tags": ["recipes"],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "operationId": "importRecipeUrl",
+        "summary": "Read one public recipe page into a private draft",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "url": {
+                    "type": "string",
+                    "maxLength": 2000,
+                    "format": "uri"
+                  },
+                  "batchSizeL": {
+                    "type": "number",
+                    "exclusiveMinimum": 0,
+                    "maximum": 100000,
+                    "description": "Batch volume in litres for a page without a usable recipe yield"
+                  }
+                },
+                "required": ["url"],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Draft recipe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "draft": {
+                      "$ref": "#/components/schemas/ImportedRecipeDraft"
+                    },
+                    "excerpt": {
+                      "type": "string",
+                      "maxLength": 240
+                    }
+                  },
+                  "required": ["draft", "excerpt"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/recipes/{id}/versions/{version}/export": {
       "get": {
         "tags": ["recipes"],
