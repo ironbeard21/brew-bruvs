@@ -7,10 +7,15 @@ import { HTTPException } from "hono/http-exception";
 import { describe, expect, it } from "vitest";
 import { createApp, OPENAPI_INFO } from "../src/app.ts";
 import { createLogger } from "../src/logger.ts";
+import { offlineDeps } from "./helpers.ts";
 
 function setup(webDir?: string) {
   const lines: string[] = [];
-  const app = createApp({ logger: createLogger("debug", (l) => lines.push(l)), webDir });
+  const app = createApp({
+    ...offlineDeps(),
+    logger: createLogger("debug", (l) => lines.push(l)),
+    webDir,
+  });
   return { app, logs: () => lines.map((l) => JSON.parse(l)) };
 }
 

@@ -13,12 +13,17 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@brew-bruvs/db": "workspace:*",
     "@hono/node-server": "^2.1.11",
     "@hono/zod-openapi": "^1.6.3",
+    "drizzle-orm": "^0.45.4",
     "hono": "^4.13.19",
+    "openid-client": "^6.9.1",
     "zod": "^4.6.7"
   },
   "devDependencies": {
-    "@types/node": "^26.6.6"
+    "@types/node": "^26.6.6",
+    "@types/pg": "^8.23.1",
+    "pg": "^8.23.1"
   }
 }

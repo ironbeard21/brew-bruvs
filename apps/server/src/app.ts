@@ -3,8 +3,10 @@
 import { serveStatic } from "@hono/node-server/serve-static";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { HTTPException } from "hono/http-exception";
-import { ErrorSchema, errorBody } from "./errors.ts";
+import { type AppEnv, sessionMiddleware } from "./auth/middleware.ts";
+import { ApiError, ErrorSchema, errorBody } from "./errors.ts";
 import type { Logger } from "./logger.ts";
+import { type AuthRouteDeps, registerAuthRoutes } from "./routes/auth.ts";
 import { registerHealthRoutes } from "./routes/health.ts";
 
 export const OPENAPI_PATH = "/api/openapi.json";
@@ -22,10 +24,11 @@ export interface AppDeps {
   logger: Logger;
   /** Absolute path to the static web build; undefined serves the API only. */
   webDir: string | undefined;
+  auth: AuthRouteDeps;
 }
 
-export function createApp({ logger, webDir }: AppDeps) {
-  const app = new OpenAPIHono({
+export function createApp({ logger, webDir, auth }: AppDeps) {
+  const app = new OpenAPIHono<AppEnv>({
     defaultHook: (result, c) => {
       if (!result.success) {
         const message = result.error.issues
@@ -49,7 +52,9 @@ export function createApp({ logger, webDir }: AppDeps) {
   });
 
   app.openAPIRegistry.register("Error", ErrorSchema);
+  app.use("/api/*", sessionMiddleware(auth.auth));
   registerHealthRoutes(app);
+  registerAuthRoutes(app, auth);
   app.doc31(OPENAPI_PATH, OPENAPI_INFO);
 
   if (webDir) {
@@ -66,6 +71,7 @@ export function createApp({ logger, webDir }: AppDeps) {
   app.notFound((c) => c.json(errorBody("not_found", "Not found"), 404));
 
   app.onError((err, c) => {
+    if (err instanceof ApiError) return c.json(errorBody(err.code, err.message), err.status);
     if (err instanceof HTTPException) {
       return c.json(errorBody("http_error", err.message || "Request failed"), err.status);
     }

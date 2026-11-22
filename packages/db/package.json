@@ -5,7 +5,8 @@
   "license": "AGPL-3.0-or-later",
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./testing": "./test/test-database.ts"
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json --noEmit false --rewriteRelativeImportExtensions --outDir dist",

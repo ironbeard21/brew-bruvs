@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { createRoute, type OpenAPIHono, z } from "@hono/zod-openapi";
+import type { AppEnv } from "../auth/middleware.ts";
 
 const healthz = createRoute({
   method: "get",
@@ -16,6 +17,6 @@ const healthz = createRoute({
   },
 });
 
-export function registerHealthRoutes(app: OpenAPIHono) {
+export function registerHealthRoutes(app: OpenAPIHono<AppEnv>) {
   app.openapi(healthz, (c) => c.json({ status: "ok" as const }, 200));
 }
