@@ -1641,9 +1641,10 @@
         "type": "object",
         "properties": {
           "sourceUrl": {
-            "type": "string",
+            "type": ["string", "null"],
             "maxLength": 2000,
-            "format": "uri"
+            "format": "uri",
+            "description": "The original source URL, or null for an imported file without a URL"
           },
           "site": {
             "type": "string",
@@ -2036,6 +2037,58 @@
             "maximum": 100000
           }
         },
+        "additionalProperties": false
+      },
+      "ImportedRecipeDraft": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/RecipeFile"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "visibility": {
+                "type": "string",
+                "enum": ["private"]
+              }
+            },
+            "required": ["visibility"],
+            "additionalProperties": false
+          }
+        ],
+        "description": "Review this draft before saving it as a recipe."
+      },
+      "RecipeFile": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "batchSizeL": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 100000
+          },
+          "styleId": {
+            "type": ["string", "null"],
+            "minLength": 1,
+            "maxLength": 200,
+            "description": "Catalog style id"
+          },
+          "content": {
+            "$ref": "#/components/schemas/RecipeContent"
+          },
+          "beverage": {
+            "type": "string",
+            "enum": ["beer", "mead", "wine", "cider"]
+          },
+          "credit": {
+            "$ref": "#/components/schemas/CreditInput"
+          }
+        },
+        "required": ["name", "batchSizeL", "content", "beverage"],
         "additionalProperties": false
       },
       "BatchPage": {
@@ -5257,6 +5310,205 @@
             }
           },
           "403": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/recipes/import": {
+      "post": {
+        "tags": ["recipes"],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "operationId": "importRecipeFile",
+        "summary": "Parse one recipe file into a private draft",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "format": {
+                    "type": "string",
+                    "enum": ["beerxml", "beerjson"]
+                  },
+                  "contents": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 8388608
+                  }
+                },
+                "required": ["format", "contents"],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Draft recipe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportedRecipeDraft"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/recipes/{id}/versions/{version}/export": {
+      "get": {
+        "tags": ["recipes"],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          },
+          {}
+        ],
+        "operationId": "exportRecipeVersion",
+        "summary": "Download a recipe version in BeerXML or BeerJSON",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0
+            },
+            "required": true,
+            "name": "version",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": ["beerxml", "beerjson"]
+            },
+            "required": true,
+            "name": "format",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Downloaded recipe file",
+            "headers": {
+              "Content-Disposition": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/xml": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "beerjson": {
+                      "type": "object",
+                      "properties": {
+                        "version": {
+                          "type": "number",
+                          "enum": [1]
+                        },
+                        "recipes": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "additionalProperties": {}
+                          }
+                        }
+                      },
+                      "required": ["version", "recipes"]
+                    }
+                  },
+                  "required": ["beerjson"]
+                }
+              }
+            }
+          },
+          "400": {
             "description": "Error",
             "content": {
               "application/json": {

@@ -136,7 +136,9 @@ export const ScaledRecipe = z
 
 export const CreditInput = z
   .strictObject({
-    sourceUrl: z.url().max(2_000),
+    sourceUrl: z.url().max(2_000).nullable().openapi({
+      description: "The original source URL, or null for an imported file without a URL",
+    }),
     site: z.string().trim().min(1).max(200).optional(),
     author: z.string().trim().min(1).max(200).optional(),
     license: z.string().trim().min(1).max(200).optional(),

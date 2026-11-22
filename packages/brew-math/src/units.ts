@@ -17,6 +17,34 @@ export const gallonsToLiters = (gal: number): number => gal * L_PER_US_GALLON;
 export const litersToQuarts = (l: number): number => l / L_PER_US_QUART;
 export const quartsToLiters = (qt: number): number => qt * L_PER_US_QUART;
 
+const MASS_KG = { mg: 0.000001, g: 0.001, kg: 1, lb: KG_PER_LB, oz: G_PER_OZ / 1_000 };
+const L_PER_IMPERIAL_GALLON = 4.54609;
+const VOLUME_L = {
+  ml: 0.001,
+  l: 1,
+  tsp: L_PER_US_GALLON / 768,
+  tbsp: L_PER_US_GALLON / 256,
+  floz: L_PER_US_GALLON / 128,
+  cup: L_PER_US_GALLON / 16,
+  pt: L_PER_US_GALLON / 8,
+  qt: L_PER_US_QUART,
+  gal: L_PER_US_GALLON,
+  bbl: L_PER_US_GALLON * 31,
+  ifloz: L_PER_IMPERIAL_GALLON / 160,
+  ipt: L_PER_IMPERIAL_GALLON / 8,
+  iqt: L_PER_IMPERIAL_GALLON / 4,
+  igal: L_PER_IMPERIAL_GALLON,
+  ibbl: L_PER_IMPERIAL_GALLON * 36,
+};
+const TIME_MINUTES = { sec: 1 / 60, min: 1, hr: 60, day: 1_440, week: 10_080 };
+
+export const massToKg = (value: number, unit: keyof typeof MASS_KG) => value * MASS_KG[unit];
+export const volumeToLiters = (value: number, unit: keyof typeof VOLUME_L) =>
+  value * VOLUME_L[unit];
+export const timeToMinutes = (value: number, unit: keyof typeof TIME_MINUTES) =>
+  value * TIME_MINUTES[unit];
+export const minutesToDays = (value: number) => value / TIME_MINUTES.day;
+
 export const cToF = (c: number): number => (c * 9) / 5 + 32;
 export const fToC = (f: number): number => ((f - 32) * 5) / 9;
 
