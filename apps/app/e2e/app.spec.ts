@@ -95,6 +95,22 @@ test.describe("Brew-Bruvs app shell", () => {
     await page.getByRole("tab", { name: "Brewing unit converter" }).click();
     await expect(page.getByTestId("converter-result-plato")).toHaveText("12.39");
 
+    // Verify new P1-11 calculators and formula-on-tap disclosure also work offline.
+    await page.getByRole("tab", { name: "Strike and sparge water calculator" }).click();
+    await expect(page.getByTestId("strike-temp-result")).toContainText("°F");
+    await page.getByTestId("formula-toggle").click();
+    await expect(page.getByTestId("formula-content")).toContainText("0.41 / r");
+
+    await page
+      .getByRole("tab", { name: "Carbonation priming sugar and keg PSI calculator" })
+      .click();
+    await expect(page.getByTestId("carb-priming-result")).toContainText("oz");
+
+    await page
+      .getByRole("tab", { name: "Stabilize with sorbate and backsweeten calculator" })
+      .click();
+    await expect(page.getByTestId("stabilize-sorbate-result")).toContainText("g");
+
     await context.setOffline(false);
   });
 });

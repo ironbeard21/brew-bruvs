@@ -5,6 +5,7 @@ import { StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { type UnitSystem, useUnits } from "../../state/units";
 import { colors, DESKTOP_BREAKPOINT, spacing } from "../../theme";
 import { Banner, Card, ResultRow, TextField } from "../ui";
+import { FormulaDisclosure, SaveToBatchNote } from "./CalculatorExtras";
 import { formatFixed, parseNumber } from "./parseNumber";
 
 export function HydrometerCalculator() {
@@ -57,7 +58,7 @@ export function HydrometerCalculator() {
 
   return (
     <View style={[styles.layout, isDesktop && styles.layoutDesktop]}>
-      <Card style={styles.column}>
+      <Card style={isDesktop ? styles.column : undefined}>
         <Text style={styles.sectionTitle}>Hydrometer Temperature Correction</Text>
         <Text style={styles.sectionSubtitle}>
           Adjust a hydrometer reading taken above or below the instrument&apos;s calibration
@@ -97,7 +98,7 @@ export function HydrometerCalculator() {
         />
       </Card>
 
-      <Card style={styles.column}>
+      <Card style={isDesktop ? styles.column : undefined}>
         <Text style={styles.sectionTitle}>Corrected Gravity</Text>
 
         {errorMessage ? (
@@ -122,8 +123,17 @@ export function HydrometerCalculator() {
               value={`${formatFixed(units.sgToPlato(result.value), 1)} °P`}
               testID="hydro-plato-result"
             />
+            <SaveToBatchNote
+              calculatorName="Hydrometer Correction"
+              noteBody={`Measured ${readingText} SG at ${sampleTempText}${tempUnit} (cal ${calTempText}${tempUnit}) → ${formatFixed(result.value, 3)} SG (${deltaFormatted})`}
+            />
           </View>
         ) : null}
+
+        <FormulaDisclosure
+          formula="SG_corrected = SG_measured × density(T_sample) / density(T_cal)"
+          notes="Water density cubic polynomial in °F: 1.00130346 − 0.000134722124·T + 2.04052596e−6·T² − 2.32820948e−9·T³."
+        />
       </Card>
     </View>
   );

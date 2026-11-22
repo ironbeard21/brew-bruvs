@@ -11,6 +11,7 @@ import { useState } from "react";
 import { StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { colors, DESKTOP_BREAKPOINT, spacing } from "../../theme";
 import { Banner, Card, ResultRow, SegmentedControl, TextField } from "../ui";
+import { FormulaDisclosure, SaveToBatchNote } from "./CalculatorExtras";
 import { formatFixed, parseNumber } from "./parseNumber";
 
 type RefractometerMode = "unfermented" | "fermenting";
@@ -71,7 +72,7 @@ export function RefractometerCalculator() {
 
   return (
     <View style={[styles.layout, isDesktop && styles.layoutDesktop]}>
-      <Card style={styles.column}>
+      <Card style={isDesktop ? styles.column : undefined}>
         <Text style={styles.sectionTitle}>Refractometer Correction</Text>
         <Text style={styles.sectionSubtitle}>
           Convert Brix to specific gravity with wort correction, or adjust readings during and after
@@ -118,7 +119,7 @@ export function RefractometerCalculator() {
         />
       </Card>
 
-      <Card style={styles.column}>
+      <Card style={isDesktop ? styles.column : undefined}>
         <Text style={styles.sectionTitle}>Results</Text>
 
         {errorMessage ? (
@@ -136,6 +137,10 @@ export function RefractometerCalculator() {
               label="Corrected Extract"
               value={`${formatFixed(units.sgToPlato(unfermentedResult.value), 1)} °P`}
               testID="refrac-unfermented-plato"
+            />
+            <SaveToBatchNote
+              calculatorName="Refractometer"
+              noteBody={`Unfermented ${ogBrixText}°Bx (WCF ${wcfText}) → ${formatFixed(unfermentedResult.value, 3)} SG`}
             />
           </View>
         ) : mode === "fermenting" && fermentingOgResult?.ok && fermentingFgResult?.ok ? (
@@ -167,8 +172,17 @@ export function RefractometerCalculator() {
                 testID="refrac-abv-alt"
               />
             ) : null}
+            <SaveToBatchNote
+              calculatorName="Refractometer"
+              noteBody={`OG ${ogBrixText}°Bx → ${formatFixed(fermentingOgResult.value, 3)} SG, Current ${currentBrixText}°Bx (WCF ${wcfText}) → FG ${formatFixed(fermentingFgResult.value, 3)} SG${stdAbv?.ok ? `, ~${formatFixed(stdAbv.value, 2)}% ABV` : ""}`}
+            />
           </View>
         ) : null}
+
+        <FormulaDisclosure
+          formula="Unfermented: platoToSg(Brix / WCF) · Fermenting (Terrill 2011): 1 − 0.0044993·OB + 0.011774·FB + 0.00027581·OB² − 0.0012717·FB² − 0.00000728·OB³ + 0.000063293·FB³"
+          notes="OB = original Brix / WCF and FB = current Brix / WCF."
+        />
       </Card>
     </View>
   );

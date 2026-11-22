@@ -13,7 +13,7 @@ import { colors, radii, spacing } from "../theme";
 
 export interface CardProps {
   children: ReactNode;
-  style?: ViewStyle;
+  style?: ViewStyle | undefined;
 }
 
 export function Card({ children, style }: CardProps) {
@@ -320,6 +320,7 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
+    minWidth: 0,
     minHeight: 44,
     paddingHorizontal: spacing.md,
     paddingVertical: 10,
@@ -327,6 +328,7 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   unitBadge: {
+    flexShrink: 0,
     paddingHorizontal: spacing.md,
     paddingVertical: 10,
     backgroundColor: colors.surfaceSubtle,

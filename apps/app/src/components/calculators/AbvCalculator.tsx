@@ -12,6 +12,7 @@ import { StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { useUnits } from "../../state/units";
 import { colors, DESKTOP_BREAKPOINT, spacing } from "../../theme";
 import { Banner, Card, ResultRow, SegmentedControl, TextField } from "../ui";
+import { FormulaDisclosure, SaveToBatchNote } from "./CalculatorExtras";
 import { formatFixed, parseNumber } from "./parseNumber";
 
 type GravityScale = "sg" | "plato";
@@ -75,7 +76,7 @@ export function AbvCalculator() {
 
   return (
     <View style={[styles.layout, isDesktop && styles.layoutDesktop]}>
-      <Card style={styles.column}>
+      <Card style={isDesktop ? styles.column : undefined}>
         <Text style={styles.sectionTitle}>ABV, Attenuation & Calories</Text>
         <Text style={styles.sectionSubtitle}>
           Calculate alcohol by volume, fermentation attenuation, and calories from original and
@@ -112,7 +113,7 @@ export function AbvCalculator() {
         />
       </Card>
 
-      <Card style={styles.column}>
+      <Card style={isDesktop ? styles.column : undefined}>
         <Text style={styles.sectionTitle}>Results</Text>
 
         {errorMessage ? (
@@ -153,8 +154,17 @@ export function AbvCalculator() {
               value={`${Math.round(calResult.value)} kcal`}
               testID="abv-calories-result"
             />
+            <SaveToBatchNote
+              calculatorName="ABV & Attenuation"
+              noteBody={`OG ${formatFixed(ogSg ?? 0, 3)}, FG ${formatFixed(fgSg ?? 0, 3)} → ${formatFixed(stdResult.value, 2)}% ABV (std), ${formatFixed(altResult.value, 2)}% ABV (alt), ${Math.round(calResult.value)} kcal/${unitSystem === "us" ? "12 fl oz" : "355 mL"}`}
+            />
           </View>
         ) : null}
+
+        <FormulaDisclosure
+          formula="Standard: (OG − FG) × 131.25 · Alternate: (76.08 × (OG − FG) / (1.775 − OG)) × (FG / 0.794)"
+          notes="Apparent attenuation = (OG − FG) / (OG − 1) × 100. Real attenuation uses Balling real extract RE = 0.1808 × OE + 0.8192 × AE (°P)."
+        />
       </Card>
     </View>
   );
