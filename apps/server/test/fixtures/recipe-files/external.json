@@ -1,0 +1,63 @@
+{
+  "beerjson": {
+    "version": 1,
+    "recipes": [
+      {
+        "name": "Orchard Cider",
+        "type": "cider",
+        "author": "Robin Brewer",
+        "batch_size": { "unit": "gal", "value": 5 },
+        "efficiency": { "brewhouse": { "unit": "%", "value": 100 } },
+        "ingredients": {
+          "fermentable_additions": [
+            {
+              "name": "House apple juice",
+              "type": "juice",
+              "amount": { "unit": "gal", "value": 5 },
+              "yield": { "potential": { "unit": "sg", "value": 1.045 } },
+              "color": { "unit": "EBC", "value": 5 }
+            },
+            {
+              "name": "House sugar",
+              "type": "sugar",
+              "amount": { "unit": "lb", "value": 1.5 },
+              "yield": { "fine_grind": { "unit": "%", "value": 100 } },
+              "color": { "unit": "EBC", "value": 0 }
+            }
+          ],
+          "culture_additions": [
+            {
+              "name": "Prise de Mousse Wine Yeast",
+              "type": "wine",
+              "form": "dry",
+              "amount": { "unit": "pkg", "value": 1 }
+            }
+          ],
+          "miscellaneous_additions": [
+            {
+              "name": "Campden tablets",
+              "type": "other",
+              "amount": { "unit": "each", "value": 2 },
+              "timing": {
+                "use": "add_to_fermentation",
+                "step": 2,
+                "time": { "unit": "hr", "value": 24 }
+              }
+            }
+          ]
+        },
+        "fermentation": {
+          "name": "Cider fermentation",
+          "fermentation_steps": [
+            {
+              "name": "Primary",
+              "start_temperature": { "unit": "F", "value": 68 },
+              "step_time": { "unit": "week", "value": 2 }
+            }
+          ]
+        },
+        "original_gravity": { "unit": "plato", "value": 12 }
+      }
+    ]
+  }
+}

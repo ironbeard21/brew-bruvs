@@ -12,6 +12,7 @@ import { createBatchService } from "../src/services/batches.ts";
 import { createCatalogService } from "../src/services/catalog.ts";
 import { createEquipmentProfileService } from "../src/services/equipment-profiles.ts";
 import { createNoteService } from "../src/services/notes.ts";
+import { createRecipeFileService } from "../src/services/recipe-files.ts";
 import { createRecipeService } from "../src/services/recipes.ts";
 
 export const BASE_URL = "http://brew.test";
@@ -29,6 +30,7 @@ function deps(
     catalog: createCatalogService(db),
     profiles,
     recipes: createRecipeService(db, { baseUrl: BASE_URL, profiles }),
+    recipeFiles: createRecipeFileService(db),
     batches: createBatchService(db, { baseUrl: BASE_URL, profiles }),
     notes: createNoteService(db, { baseUrl: BASE_URL }),
     auth: {

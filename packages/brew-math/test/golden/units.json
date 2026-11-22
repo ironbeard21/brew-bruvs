@@ -1,4 +1,192 @@
 {
+  "massToKg": [
+    {
+      "args": [250000, "mg"],
+      "expected": 0.25,
+      "tolerance": 1e-9,
+      "source": "NIST SP 811 Appendix B mass conversion factors"
+    },
+    {
+      "args": [500, "g"],
+      "expected": 0.5,
+      "tolerance": 1e-9,
+      "source": "NIST SP 811 Appendix B mass conversion factors"
+    },
+    {
+      "args": [2, "kg"],
+      "expected": 2,
+      "tolerance": 1e-9,
+      "source": "NIST SP 811 Appendix B mass conversion factors"
+    },
+    {
+      "args": [1, "lb"],
+      "expected": 0.45359237,
+      "tolerance": 1e-9,
+      "source": "NIST SP 811 Appendix B mass conversion factors"
+    },
+    {
+      "args": [1, "oz"],
+      "expected": 0.028349523125,
+      "tolerance": 1e-9,
+      "source": "NIST SP 811 Appendix B mass conversion factors"
+    }
+  ],
+  "volumeToLiters": [
+    {
+      "args": [1000, "ml"],
+      "expected": 1,
+      "tolerance": 1e-9,
+      "source": "NIST SP 811 Appendix B customary and imperial volume factors; US beer barrel 31 US gallons, UK brewery barrel 36 imperial gallons"
+    },
+    {
+      "args": [2, "l"],
+      "expected": 2,
+      "tolerance": 1e-9,
+      "source": "NIST SP 811 Appendix B customary and imperial volume factors; US beer barrel 31 US gallons, UK brewery barrel 36 imperial gallons"
+    },
+    {
+      "args": [1, "tsp"],
+      "expected": 0.00492892159375,
+      "tolerance": 1e-9,
+      "source": "NIST SP 811 Appendix B customary and imperial volume factors; US beer barrel 31 US gallons, UK brewery barrel 36 imperial gallons"
+    },
+    {
+      "args": [1, "tbsp"],
+      "expected": 0.01478676478125,
+      "tolerance": 1e-9,
+      "source": "NIST SP 811 Appendix B customary and imperial volume factors; US beer barrel 31 US gallons, UK brewery barrel 36 imperial gallons"
+    },
+    {
+      "args": [1, "floz"],
+      "expected": 0.0295735295625,
+      "tolerance": 1e-9,
+      "source": "NIST SP 811 Appendix B customary and imperial volume factors; US beer barrel 31 US gallons, UK brewery barrel 36 imperial gallons"
+    },
+    {
+      "args": [1, "cup"],
+      "expected": 0.2365882365,
+      "tolerance": 1e-9,
+      "source": "NIST SP 811 Appendix B customary and imperial volume factors; US beer barrel 31 US gallons, UK brewery barrel 36 imperial gallons"
+    },
+    {
+      "args": [1, "pt"],
+      "expected": 0.473176473,
+      "tolerance": 1e-9,
+      "source": "NIST SP 811 Appendix B customary and imperial volume factors; US beer barrel 31 US gallons, UK brewery barrel 36 imperial gallons"
+    },
+    {
+      "args": [1, "qt"],
+      "expected": 0.946352946,
+      "tolerance": 1e-9,
+      "source": "NIST SP 811 Appendix B customary and imperial volume factors; US beer barrel 31 US gallons, UK brewery barrel 36 imperial gallons"
+    },
+    {
+      "args": [1, "gal"],
+      "expected": 3.785411784,
+      "tolerance": 1e-9,
+      "source": "NIST SP 811 Appendix B customary and imperial volume factors; US beer barrel 31 US gallons, UK brewery barrel 36 imperial gallons"
+    },
+    {
+      "args": [1, "bbl"],
+      "expected": 117.347765304,
+      "tolerance": 1e-9,
+      "source": "NIST SP 811 Appendix B customary and imperial volume factors; US beer barrel 31 US gallons, UK brewery barrel 36 imperial gallons"
+    },
+    {
+      "args": [1, "ifloz"],
+      "expected": 0.0284130625,
+      "tolerance": 1e-9,
+      "source": "NIST SP 811 Appendix B customary and imperial volume factors; US beer barrel 31 US gallons, UK brewery barrel 36 imperial gallons"
+    },
+    {
+      "args": [1, "ipt"],
+      "expected": 0.56826125,
+      "tolerance": 1e-9,
+      "source": "NIST SP 811 Appendix B customary and imperial volume factors; US beer barrel 31 US gallons, UK brewery barrel 36 imperial gallons"
+    },
+    {
+      "args": [1, "iqt"],
+      "expected": 1.1365225,
+      "tolerance": 1e-9,
+      "source": "NIST SP 811 Appendix B customary and imperial volume factors; US beer barrel 31 US gallons, UK brewery barrel 36 imperial gallons"
+    },
+    {
+      "args": [1, "igal"],
+      "expected": 4.54609,
+      "tolerance": 1e-9,
+      "source": "NIST SP 811 Appendix B customary and imperial volume factors; US beer barrel 31 US gallons, UK brewery barrel 36 imperial gallons"
+    },
+    {
+      "args": [1, "ibbl"],
+      "expected": 163.65924,
+      "tolerance": 1e-9,
+      "source": "NIST SP 811 Appendix B customary and imperial volume factors; US beer barrel 31 US gallons, UK brewery barrel 36 imperial gallons"
+    }
+  ],
+  "timeToMinutes": [
+    {
+      "args": [60, "sec"],
+      "expected": 1,
+      "tolerance": 1e-9,
+      "source": "Definitions of minutes, hours, days, and weeks"
+    },
+    {
+      "args": [2, "min"],
+      "expected": 2,
+      "tolerance": 1e-9,
+      "source": "Definitions of minutes, hours, days, and weeks"
+    },
+    {
+      "args": [1, "hr"],
+      "expected": 60,
+      "tolerance": 1e-9,
+      "source": "Definitions of minutes, hours, days, and weeks"
+    },
+    {
+      "args": [1, "day"],
+      "expected": 1440,
+      "tolerance": 1e-9,
+      "source": "Definitions of minutes, hours, days, and weeks"
+    },
+    {
+      "args": [1, "week"],
+      "expected": 10080,
+      "tolerance": 1e-9,
+      "source": "Definitions of minutes, hours, days, and weeks"
+    }
+  ],
+  "minutesToDays": [
+    {
+      "args": [0],
+      "expected": 0,
+      "tolerance": 1e-9,
+      "source": "1 day is 1,440 minutes"
+    },
+    {
+      "args": [720],
+      "expected": 0.5,
+      "tolerance": 1e-9,
+      "source": "1 day is 1,440 minutes"
+    },
+    {
+      "args": [1440],
+      "expected": 1,
+      "tolerance": 1e-9,
+      "source": "1 day is 1,440 minutes"
+    },
+    {
+      "args": [2880],
+      "expected": 2,
+      "tolerance": 1e-9,
+      "source": "1 day is 1,440 minutes"
+    },
+    {
+      "args": [10080],
+      "expected": 7,
+      "tolerance": 1e-9,
+      "source": "1 day is 1,440 minutes"
+    }
+  ],
   "ppgToPotentialSg": [
     {
       "args": [0],

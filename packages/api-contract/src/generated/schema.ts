@@ -1461,6 +1461,40 @@ export interface paths {
         patch: operations["updateEquipmentProfile"];
         trace?: never;
     };
+    "/api/recipes/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Parse one recipe file into a private draft */
+        post: operations["importRecipeFile"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/recipes/{id}/versions/{version}/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Download a recipe version in BeerXML or BeerJSON */
+        get: operations["exportRecipeVersion"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/batches": {
         parameters: {
             query?: never;
@@ -2108,8 +2142,11 @@ export interface components {
         };
         /** @description For imported recipes; permanent once saved */
         CreditInput: {
-            /** Format: uri */
-            sourceUrl: string;
+            /**
+             * Format: uri
+             * @description The original source URL, or null for an imported file without a URL
+             */
+            sourceUrl: string | null;
             site?: string;
             author?: string;
             license?: string;
@@ -2238,6 +2275,21 @@ export interface components {
             grainAbsorptionLPerKg?: number | null;
             efficiencyPct?: number | null;
             fermenterLossL?: number | null;
+        };
+        /** @description Review this draft before saving it as a recipe. */
+        ImportedRecipeDraft: components["schemas"]["RecipeFile"] & {
+            /** @enum {string} */
+            visibility: "private";
+        };
+        RecipeFile: {
+            name: string;
+            batchSizeL: number;
+            /** @description Catalog style id */
+            styleId?: string | null;
+            content: components["schemas"]["RecipeContent"];
+            /** @enum {string} */
+            beverage: "beer" | "mead" | "wine" | "cider";
+            credit?: components["schemas"]["CreditInput"];
         };
         BatchPage: {
             items: components["schemas"]["Batch"][];
@@ -3487,6 +3539,123 @@ export interface operations {
             };
             /** @description Error */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    importRecipeFile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    format: "beerxml" | "beerjson";
+                    contents: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Draft recipe */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportedRecipeDraft"];
+                };
+            };
+            /** @description Error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    exportRecipeVersion: {
+        parameters: {
+            query: {
+                format: "beerxml" | "beerjson";
+            };
+            header?: never;
+            path: {
+                id: string;
+                version: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Downloaded recipe file */
+            200: {
+                headers: {
+                    "Content-Disposition"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/xml": string;
+                    "application/json": {
+                        beerjson: {
+                            /** @enum {number} */
+                            version: 1;
+                            recipes: {
+                                [key: string]: unknown;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Error */
+            400: {
                 headers: {
                     [name: string]: unknown;
                 };

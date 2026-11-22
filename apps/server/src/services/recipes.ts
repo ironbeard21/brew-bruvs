@@ -262,6 +262,33 @@ export function createRecipeService(
       });
     },
 
+    async versionForExport(viewer: User | null, id: string, version: number) {
+      return db.transaction(async (tx) => {
+        const recipe = await authorize(tx, viewer, "read", id);
+        const row = await versionRow(tx, id, version);
+        const { name, beverage, styleId, batchSizeL } = row;
+        const [style] = styleId ? await tx.select().from(styles).where(eq(styles.id, styleId)) : [];
+        const { credit } = viewRecipe(recipe);
+        return {
+          style,
+          name,
+          beverage,
+          styleId,
+          batchSizeL,
+          content: RecipeContent.parse(row.content),
+          ...(credit && {
+            credit: {
+              sourceUrl: credit.sourceUrl,
+              ...(credit.site && { site: credit.site }),
+              ...(credit.author && { author: credit.author }),
+              ...(credit.license && { license: credit.license }),
+              publicSharingBlocked: recipe.publicSharingBlocked,
+            },
+          }),
+        };
+      });
+    },
+
     /** Saving never changes a version: it adds the next one. */
     async saveVersion(viewer: User | null, id: string, input: z.infer<typeof RecipeVersionInput>) {
       const user = signedIn(viewer);
