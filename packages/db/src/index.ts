@@ -1,3 +1,4 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Drizzle schema and migrations land here in P0-08.
-export {};
+// Drizzle schema v1 and migration helpers.
+export * from "./migrations.ts";
+export * as schema from "./schema.ts";

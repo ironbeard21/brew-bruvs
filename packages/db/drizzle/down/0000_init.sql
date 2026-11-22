@@ -1,0 +1,25 @@
+-- Reverses 0000_init.sql. Hand-written; keep in step with the up migration.
+DROP TABLE "shares";
+DROP TABLE "notes";
+DROP TABLE "readings";
+DROP TABLE "batches";
+DROP TABLE "recipe_versions";
+DROP TABLE "recipes";
+DROP TABLE "inventory_items";
+DROP TABLE "equipment_items";
+DROP TABLE "memberships";
+DROP TABLE "breweries";
+DROP TABLE "users";
+DROP TABLE "equipment";
+DROP TABLE "hops";
+DROP TABLE "fermentables";
+DROP TABLE "yeasts";
+DROP TABLE "miscs";
+DROP TABLE "styles";
+DROP TABLE "water_profiles";
+DROP TYPE "public"."beverage";
+DROP TYPE "public"."brewery_role";
+DROP TYPE "public"."quantity_unit";
+DROP TYPE "public"."share_level";
+DROP TYPE "public"."shareable_type";
+DROP TYPE "public"."visibility";
