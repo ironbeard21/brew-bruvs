@@ -1,0 +1,22 @@
+{
+  "expo": {
+    "name": "Brew-Bruvs",
+    "slug": "brew-bruvs",
+    "version": "0.1.0",
+    "scheme": "brewbruvs",
+    "orientation": "default",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "org.brewbruvs.app"
+    },
+    "android": {
+      "package": "org.brewbruvs.app"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single"
+    },
+    "plugins": ["expo-router", "expo-secure-store"]
+  }
+}

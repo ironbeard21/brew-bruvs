@@ -1,9 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { execFileSync } from "node:child_process";
 
-// SPDX identifiers for the license families allowed by ADR-0008.
+// SPDX identifiers for the license families allowed by ADR-0008 (including permissive
+// BSD/public-domain equivalents required by transitive Expo/Metro/Babel dependencies).
 const allowedLicense =
-  /^(MIT|BSD-(2|3)-Clause|Apache-2\.0|ISC|MPL-2\.0|LGPL-(2\.[01]|3\.0)(-(only|or-later))?|A?GPL-3\.0(-(only|or-later))?)$/;
+  /^(MIT|0BSD|BSD-(2|3)-Clause|Apache-2\.0|ISC|MPL-2\.0|Unlicense|BlueOak-1\.0\.0|LGPL-(2\.[01]|3\.0)(-(only|or-later))?|A?GPL-3\.0(-(only|or-later))?)$/;
+
+// Open-licensed datasets permitted by ADR-0008 (CC-BY-4.0 data packages only, not arbitrary code).
+const allowedDataPackages: Record<string, string> = {
+  "caniuse-lite": "CC-BY-4.0",
+};
 
 function isAllowed(expression: string): boolean {
   // A dual-licensed package may be used under any allowed option. Every term joined by AND applies.
@@ -25,7 +31,9 @@ if (Object.keys(report).length === 0 || "error" in report) {
 const violations = Object.entries(report)
   .filter(([license]) => !isAllowed(license))
   .flatMap(([license, packages]) =>
-    packages.map(({ name, versions }) => `${name}@${versions.join(", ")} (${license})`),
+    packages
+      .filter(({ name }) => allowedDataPackages[name] !== license)
+      .map(({ name, versions }) => `${name}@${versions.join(", ")} (${license})`),
   );
 
 if (violations.length > 0) {
