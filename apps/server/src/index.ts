@@ -7,6 +7,7 @@ import { createOidc } from "./auth/oidc.ts";
 import { loadConfig } from "./config.ts";
 import { createLogger } from "./logger.ts";
 import { createAuthService } from "./services/auth.ts";
+import { createCatalogService } from "./services/catalog.ts";
 
 const config = loadConfig(process.env);
 const logger = createLogger(config.logLevel);
@@ -14,6 +15,7 @@ const { db } = createDb(config.databaseUrl);
 const app = createApp({
   logger,
   webDir: config.webDir,
+  catalog: createCatalogService(db),
   auth: {
     auth: createAuthService(db, { baseUrl: config.baseUrl, signupMode: config.signupMode }),
     oidc:

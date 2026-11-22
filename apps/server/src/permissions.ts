@@ -14,7 +14,7 @@ export interface User {
 }
 
 export interface Resource {
-  owner: Principal;
+  owner: Principal | null;
   visibility: Visibility;
   shares: { to: Principal; level: ShareLevel }[];
 }
@@ -36,12 +36,12 @@ export function can(user: User | null, action: Action, resource: Resource): bool
   const { owner } = resource;
 
   if (user) {
-    if (owner.type === "user" && owner.id === user.id) return true;
+    if (owner?.type === "user" && owner.id === user.id) return true;
 
     const roleOf = (breweryId: string) =>
       user.memberships.find((m) => m.breweryId === breweryId)?.role;
 
-    if (owner.type === "brewery") {
+    if (owner?.type === "brewery") {
       const role = roleOf(owner.id);
       if (role && ROLE_ACTIONS[role].includes(action)) return true;
     }

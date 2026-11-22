@@ -8,7 +8,9 @@ import { RecipeContent } from "./contracts/recipe-content.ts";
 import { ApiError, ErrorSchema, errorBody } from "./errors.ts";
 import type { Logger } from "./logger.ts";
 import { type AuthRouteDeps, registerAuthRoutes } from "./routes/auth.ts";
+import { registerCatalogRoutes } from "./routes/catalog.ts";
 import { registerHealthRoutes } from "./routes/health.ts";
+import type { CatalogService } from "./services/catalog.ts";
 
 export const OPENAPI_PATH = "/api/openapi.json";
 
@@ -26,9 +28,10 @@ export interface AppDeps {
   /** Absolute path to the static web build; undefined serves the API only. */
   webDir: string | undefined;
   auth: AuthRouteDeps;
+  catalog: CatalogService;
 }
 
-export function createApp({ logger, webDir, auth }: AppDeps) {
+export function createApp({ logger, webDir, auth, catalog }: AppDeps) {
   const app = new OpenAPIHono<AppEnv>({
     defaultHook: (result, c) => {
       if (!result.success) {
@@ -58,6 +61,7 @@ export function createApp({ logger, webDir, auth }: AppDeps) {
   app.use("/api/*", sessionMiddleware(auth.auth));
   registerHealthRoutes(app);
   registerAuthRoutes(app, auth);
+  registerCatalogRoutes(app, catalog);
   app.doc31(OPENAPI_PATH, OPENAPI_INFO);
 
   if (webDir) {

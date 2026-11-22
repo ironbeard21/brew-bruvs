@@ -711,6 +711,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/catalog/sources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get catalog sources and attribution */
+        get: operations["getCatalogSources"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/catalog/{catalog}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Search catalog items by name or alias */
+        get: operations["listCatalogItems"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/catalog/{catalog}/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a catalog item with its sources and licenses */
+        get: operations["getCatalogItem"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -872,6 +923,195 @@ export interface components {
             code: string;
             expiresAt: string;
         };
+        CatalogAttribution: {
+            /** @description Sources keyed by their catalog source ID. */
+            sources: {
+                [key: string]: components["schemas"]["CatalogSource"];
+            };
+            /** @description Catalog attribution in Markdown. */
+            attribution: string;
+        };
+        CatalogSource: {
+            name: string;
+            /** @description Source URL or local source reference. */
+            url: string;
+            license: string;
+            commit: string | null;
+        };
+        CatalogPage: {
+            items: components["schemas"]["CatalogItem"][];
+            nextOffset: number | null;
+        };
+        CatalogItem: components["schemas"]["CatalogHop"] | components["schemas"]["CatalogFermentable"] | components["schemas"]["CatalogYeast"] | components["schemas"]["CatalogMisc"] | components["schemas"]["CatalogStyle"] | components["schemas"]["CatalogWaterProfile"] | components["schemas"]["CatalogEquipment"];
+        CatalogHop: {
+            id: string;
+            name: string;
+            aliases: string[];
+            sources: string[];
+            licenses: string[];
+            notes: string | null;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            catalog: "hops";
+            origin: string | null;
+            hopType: string | null;
+            alphaAcidPct: number | null;
+            alphaAcidMinPct: number | null;
+            alphaAcidMaxPct: number | null;
+            betaAcidPct: number | null;
+            cohumulonePct: number | null;
+            totalOilMlPer100g: number | null;
+            myrcenePct: number | null;
+            humulenePct: number | null;
+            caryophyllenePct: number | null;
+            farnesenePct: number | null;
+            hsi: number | null;
+            substitutes: string | null;
+            beverages: ("beer" | "mead" | "wine" | "cider")[];
+        };
+        CatalogFermentable: {
+            id: string;
+            name: string;
+            aliases: string[];
+            sources: string[];
+            licenses: string[];
+            notes: string | null;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            catalog: "fermentables";
+            fermentableType: string | null;
+            producer: string | null;
+            productId: string | null;
+            origin: string | null;
+            category: string | null;
+            colorEbc: number | null;
+            yieldPct: number | null;
+            /** @description Specific gravity of 1 lb in 1 US gal, e.g. 1.037. */
+            potentialSg: number | null;
+            maxInBatchPct: number | null;
+            diastaticPowerLintner: number | null;
+            proteinPct: number | null;
+            moisturePct: number | null;
+            beverages: ("beer" | "mead" | "wine" | "cider")[];
+        };
+        CatalogYeast: {
+            id: string;
+            name: string;
+            aliases: string[];
+            sources: string[];
+            licenses: string[];
+            notes: string | null;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            catalog: "yeasts";
+            producer: string | null;
+            productId: string | null;
+            yeastType: string | null;
+            form: string | null;
+            tempMinC: number | null;
+            tempMaxC: number | null;
+            attenuationMinPct: number | null;
+            attenuationMaxPct: number | null;
+            flocculation: string | null;
+            alcoholTolerancePct: number | null;
+            bestFor: string | null;
+            beverages: ("beer" | "mead" | "wine" | "cider")[];
+        };
+        CatalogMisc: {
+            id: string;
+            name: string;
+            aliases: string[];
+            sources: string[];
+            licenses: string[];
+            notes: string | null;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            catalog: "miscs";
+            miscType: string | null;
+            waterAgentType: string | null;
+            use: string | null;
+            useFor: string | null;
+            category: string | null;
+            beverages: ("beer" | "mead" | "wine" | "cider")[];
+        };
+        CatalogStyle: {
+            id: string;
+            name: string;
+            aliases: string[];
+            sources: string[];
+            licenses: string[];
+            notes: string | null;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            catalog: "styles";
+            styleGuide: string;
+            styleId: string;
+            category: string | null;
+            /** @enum {string} */
+            beverage: "beer" | "mead" | "wine" | "cider";
+            ogMin: number | null;
+            ogMax: number | null;
+            fgMin: number | null;
+            fgMax: number | null;
+            ibuMin: number | null;
+            ibuMax: number | null;
+            colorEbcMin: number | null;
+            colorEbcMax: number | null;
+            abvMinPct: number | null;
+            abvMaxPct: number | null;
+            carbVolsMin: number | null;
+            carbVolsMax: number | null;
+        };
+        CatalogWaterProfile: {
+            id: string;
+            name: string;
+            aliases: string[];
+            sources: string[];
+            licenses: string[];
+            notes: string | null;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            catalog: "water_profiles";
+            calciumPpm: number | null;
+            magnesiumPpm: number | null;
+            sodiumPpm: number | null;
+            sulfatePpm: number | null;
+            chloridePpm: number | null;
+            bicarbonatePpm: number | null;
+        };
+        CatalogEquipment: {
+            id: string;
+            name: string;
+            aliases: string[];
+            sources: string[];
+            licenses: string[];
+            notes: string | null;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            catalog: "equipment";
+            category: string | null;
+            batchSizeL: number | null;
+            boilSizeL: number | null;
+            kettleVolumeL: number | null;
+            kettleLossL: number | null;
+            boilRateLPerHr: number | null;
+            mashTunVolumeL: number | null;
+            grainAbsorptionLPerKg: number | null;
+        };
     };
     responses: never;
     parameters: never;
@@ -880,4 +1120,137 @@ export interface components {
     pathItems: never;
 }
 export type $defs = Record<string, never>;
-export type operations = Record<string, never>;
+export interface operations {
+    getCatalogSources: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Catalog attribution */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogAttribution"];
+                };
+            };
+            /** @description Error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listCatalogItems: {
+        parameters: {
+            query?: {
+                q?: string;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                catalog: "hops" | "fermentables" | "yeasts" | "miscs" | "styles" | "water_profiles" | "equipment";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Matching catalog items ordered by name and ID */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogPage"];
+                };
+            };
+            /** @description Error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getCatalogItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                catalog: "hops" | "fermentables" | "yeasts" | "miscs" | "styles" | "water_profiles" | "equipment";
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Catalog item */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogItem"];
+                };
+            };
+            /** @description Error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+}
