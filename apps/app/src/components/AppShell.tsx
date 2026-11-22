@@ -29,6 +29,7 @@ export function AppShell({ children, title, subtitle }: AppShellProps) {
   const { serverUrl, offlineMode } = useServer();
 
   const onCalculators = pathname === "/calculators";
+  const onRecipes = pathname === "/recipes" || pathname.startsWith("/recipes/");
   const onServer = pathname === "/connect" || pathname === "/login";
 
   return (
@@ -77,6 +78,19 @@ export function AppShell({ children, title, subtitle }: AppShellProps) {
               >
                 <Text style={[styles.navLinkText, onCalculators && styles.navLinkTextActive]}>
                   Calculators
+                </Text>
+              </Pressable>
+
+              <Pressable
+                onPress={() => router.push("/recipes")}
+                accessibilityRole="tab"
+                accessibilityLabel="Recipes"
+                accessibilityState={{ selected: onRecipes }}
+                testID="nav-recipes"
+                style={[styles.navLink, onRecipes && styles.navLinkActive]}
+              >
+                <Text style={[styles.navLinkText, onRecipes && styles.navLinkTextActive]}>
+                  Recipes
                 </Text>
               </Pressable>
 
