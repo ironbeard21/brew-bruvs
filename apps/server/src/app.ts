@@ -4,6 +4,7 @@ import { serveStatic } from "@hono/node-server/serve-static";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { HTTPException } from "hono/http-exception";
 import { type AppEnv, sessionMiddleware } from "./auth/middleware.ts";
+import { RecipeContent } from "./contracts/recipe-content.ts";
 import { ApiError, ErrorSchema, errorBody } from "./errors.ts";
 import type { Logger } from "./logger.ts";
 import { type AuthRouteDeps, registerAuthRoutes } from "./routes/auth.ts";
@@ -52,6 +53,8 @@ export function createApp({ logger, webDir, auth }: AppDeps) {
   });
 
   app.openAPIRegistry.register("Error", ErrorSchema);
+  // Not used by a route yet (recipes arrive in P1-05); registered so the contract publishes it.
+  app.openAPIRegistry.register("RecipeContent", RecipeContent);
   app.use("/api/*", sessionMiddleware(auth.auth));
   registerHealthRoutes(app);
   registerAuthRoutes(app, auth);

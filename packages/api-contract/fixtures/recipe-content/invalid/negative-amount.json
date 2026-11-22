@@ -1,0 +1,133 @@
+{
+  "why": "Amounts must be positive",
+  "path": "hops.0.amountKg",
+  "content": {
+    "schemaVersion": 1,
+    "efficiencyPct": 72,
+    "boilTimeMin": 60,
+    "fermentables": [
+      {
+        "name": "Pale Malt, 2-Row",
+        "catalogId": "ferm-pale-malt-2-row",
+        "kind": "grain",
+        "amountKg": 4.5,
+        "use": "mash"
+      },
+      {
+        "name": "Caramel/Crystal Malt – 40L",
+        "catalogId": "ferm-caramel-crystal-malt-40l",
+        "kind": "grain",
+        "amountKg": 0.35,
+        "use": "mash",
+        "colorEbc": 79
+      }
+    ],
+    "hops": [
+      {
+        "name": "Centennial",
+        "catalogId": "hop-centennial",
+        "amountKg": -0.01,
+        "alphaAcidPct": 10,
+        "form": "pellet",
+        "use": "boil",
+        "timeMin": 60
+      },
+      {
+        "name": "Cascade",
+        "catalogId": "hop-cascade-ar",
+        "amountKg": 0.028,
+        "alphaAcidPct": 5.5,
+        "form": "pellet",
+        "use": "boil",
+        "timeMin": 10
+      },
+      {
+        "name": "Cascade",
+        "catalogId": "hop-cascade-ar",
+        "amountKg": 0.028,
+        "form": "pellet",
+        "use": "whirlpool",
+        "timeMin": 20,
+        "tempC": 80
+      },
+      {
+        "name": "Cascade",
+        "catalogId": "hop-cascade-ar",
+        "amountKg": 0.028,
+        "form": "pellet",
+        "use": "dry_hop",
+        "days": 5
+      }
+    ],
+    "yeasts": [
+      {
+        "name": "US-05 Safale American",
+        "catalogId": "yeast-dcl-fermentis-us-05",
+        "form": "dry",
+        "packs": 1,
+        "attenuationPct": 78
+      }
+    ],
+    "miscs": [
+      {
+        "name": "Irish Moss",
+        "catalogId": "misc-irish-moss",
+        "kind": "fining",
+        "amountKg": 0.001,
+        "use": "boil",
+        "timeMin": 15
+      },
+      {
+        "name": "Orange zest from the farmers market",
+        "kind": "flavor",
+        "amountKg": 0.01,
+        "use": "boil",
+        "timeMin": 5
+      }
+    ],
+    "mash": [
+      {
+        "name": "Saccharification",
+        "type": "infusion",
+        "tempC": 67,
+        "timeMin": 60,
+        "infuseL": 15
+      },
+      {
+        "name": "Mash out",
+        "type": "temperature",
+        "tempC": 76,
+        "timeMin": 10
+      }
+    ],
+    "fermentation": [
+      {
+        "name": "Primary",
+        "stage": "primary",
+        "tempC": 19,
+        "days": 14
+      },
+      {
+        "name": "Cold crash",
+        "stage": "cold_crash",
+        "tempC": 2,
+        "days": 2
+      },
+      {
+        "name": "Carbonate",
+        "stage": "conditioning",
+        "tempC": 4,
+        "days": 7
+      }
+    ],
+    "targets": {
+      "og": 1.054,
+      "fg": 1.012,
+      "abvPct": 5.5,
+      "ibu": 38,
+      "colorEbc": 14,
+      "carbonationVols": 2.4
+    },
+    "notes": "American Pale Ale, 20 L into the fermenter."
+  }
+}

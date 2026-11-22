@@ -9,7 +9,7 @@
   },
   "scripts": {
     "build": "tsc -p . --noEmit false --rewriteRelativeImportExtensions --outDir dist",
-    "generate": "pnpm --filter @brew-bruvs/server openapi \"$PWD/openapi.json\" && openapi-typescript openapi.json -o src/generated/schema.ts && biome format --write openapi.json",
+    "generate": "pnpm --filter @brew-bruvs/server openapi \"$PWD/openapi.json\" && openapi-typescript openapi.json -o src/generated/schema.ts && biome format --write openapi.json recipe-content.schema.json",
     "typecheck": "tsc --noEmit -p .",
     "test": "vitest run --passWithNoTests"
   },

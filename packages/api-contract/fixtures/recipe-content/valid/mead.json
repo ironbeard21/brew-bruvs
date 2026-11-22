@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 1,
+  "fermentables": [
+    {
+      "name": "Clover Honey",
+      "catalogId": "ferm-clover-honey",
+      "kind": "honey",
+      "amountKg": 3.4,
+      "use": "fermentation"
+    },
+    {
+      "name": "Orange Blossom Honey",
+      "catalogId": "ferm-orange-blossom-honey",
+      "kind": "honey",
+      "amountKg": 1,
+      "use": "fermentation"
+    }
+  ],
+  "hops": [],
+  "yeasts": [
+    { "name": "71B-1122 Lalvin", "catalogId": "yeast-lallemand-71b", "form": "dry", "packs": 1 }
+  ],
+  "miscs": [
+    {
+      "name": "Fermaid O",
+      "catalogId": "misc-fermaid-o",
+      "kind": "nutrient",
+      "amountKg": 0.006,
+      "use": "primary",
+      "dayOffset": 1
+    },
+    {
+      "name": "Fermaid O",
+      "catalogId": "misc-fermaid-o",
+      "kind": "nutrient",
+      "amountKg": 0.006,
+      "use": "primary",
+      "dayOffset": 2
+    },
+    {
+      "name": "Fermaid O",
+      "catalogId": "misc-fermaid-o",
+      "kind": "nutrient",
+      "amountKg": 0.006,
+      "use": "primary",
+      "dayOffset": 3
+    },
+    {
+      "name": "Fermaid O",
+      "catalogId": "misc-fermaid-o",
+      "kind": "nutrient",
+      "amountKg": 0.006,
+      "use": "primary",
+      "dayOffset": 7
+    },
+    {
+      "name": "Potassium Metabisulfite",
+      "catalogId": "misc-potassium-metabisulfite",
+      "kind": "sulfite",
+      "amountKg": 0.0012,
+      "use": "bulk_aging",
+      "dayOffset": 45
+    }
+  ],
+  "mash": [],
+  "fermentation": [
+    { "name": "Primary", "stage": "primary", "tempC": 18, "days": 30 },
+    { "name": "Bulk aging", "stage": "bulk_aging", "tempC": 16, "days": 120 },
+    { "name": "Bottle aging", "stage": "bottle_aging", "days": 180 }
+  ],
+  "targets": { "og": 1.1, "fg": 0.998, "abvPct": 13.4 },
+  "notes": "Dry traditional mead, 19 L. Degas daily for the first week."
+}

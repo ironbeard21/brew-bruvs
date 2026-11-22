@@ -1,8 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Writes the OpenAPI document generated from the route definitions to the path given as argv[2].
+// Writes the OpenAPI document generated from the route definitions to the path given as argv[2],
+// and the recipe content JSON Schema next to it as recipe-content.schema.json.
 import { writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { createDb } from "@brew-bruvs/db";
 import { createApp, OPENAPI_INFO } from "./app.ts";
+import { recipeContentJsonSchema } from "./contracts/recipe-content.ts";
 import { createLogger } from "./logger.ts";
 import { createAuthService } from "./services/auth.ts";
 
@@ -22,4 +25,6 @@ const app = createApp({
     signupMode: "invite",
   },
 });
-writeFileSync(out, `${JSON.stringify(app.getOpenAPI31Document(OPENAPI_INFO), null, 2)}\n`);
+const json = (value: unknown) => `${JSON.stringify(value, null, 2)}\n`;
+writeFileSync(out, json(app.getOpenAPI31Document(OPENAPI_INFO)));
+writeFileSync(join(dirname(out), "recipe-content.schema.json"), json(recipeContentJsonSchema()));

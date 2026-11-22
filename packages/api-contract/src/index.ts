@@ -6,6 +6,8 @@ import type { components, paths } from "./generated/schema.ts";
 
 export type { components, paths };
 export type ApiError = components["schemas"]["Error"];
+/** The recipe document stored with each recipe version (SI units). */
+export type RecipeContent = components["schemas"]["RecipeContent"];
 
 export function createApiClient(baseUrl: string, init?: { fetch?: typeof fetch }) {
   return createClient<paths>({ baseUrl, ...init });

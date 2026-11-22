@@ -30,6 +30,440 @@
         },
         "required": ["error"]
       },
+      "RecipeContent": {
+        "type": "object",
+        "properties": {
+          "schemaVersion": {
+            "type": "number",
+            "enum": [1]
+          },
+          "efficiencyPct": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 100
+          },
+          "boilTimeMin": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 10000
+          },
+          "fermentables": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FermentableLine"
+            },
+            "maxItems": 100
+          },
+          "hops": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HopLine"
+            },
+            "maxItems": 100
+          },
+          "yeasts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/YeastLine"
+            },
+            "maxItems": 20
+          },
+          "miscs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MiscLine"
+            },
+            "maxItems": 100
+          },
+          "mash": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MashStep"
+            },
+            "maxItems": 20
+          },
+          "fermentation": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FermentationStep"
+            },
+            "maxItems": 20
+          },
+          "targets": {
+            "$ref": "#/components/schemas/RecipeTargets"
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 20000
+          }
+        },
+        "required": [
+          "schemaVersion",
+          "fermentables",
+          "hops",
+          "yeasts",
+          "miscs",
+          "mash",
+          "fermentation"
+        ],
+        "additionalProperties": false,
+        "description": "The recipe document stored with each recipe version. SI units; lines may omit catalogId."
+      },
+      "FermentableLine": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "catalogId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "description": "Catalog row id, e.g. \"hop-citra\". Omit for free-text lines."
+          },
+          "kind": {
+            "type": "string",
+            "enum": ["grain", "extract", "sugar", "honey", "juice", "fruit", "adjunct", "other"]
+          },
+          "amountKg": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 10000
+          },
+          "amountL": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 100000,
+            "description": "For juices and must measured by volume"
+          },
+          "use": {
+            "type": "string",
+            "enum": ["mash", "steep", "boil", "fermentation", "package"]
+          },
+          "dayOffset": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 3650,
+            "description": "For staggered additions: days after pitching"
+          },
+          "potentialSg": {
+            "type": "number",
+            "minimum": 0.98,
+            "maximum": 1.3,
+            "description": "Grains, sugars, honey: SG of 1 lb in 1 US gal (BeerXML and catalog convention, e.g. 1.037). Juice: its own SG."
+          },
+          "colorEbc": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 5000
+          },
+          "yieldPct": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 2000
+          }
+        },
+        "required": ["name", "kind"],
+        "additionalProperties": false
+      },
+      "HopLine": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "catalogId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "description": "Catalog row id, e.g. \"hop-citra\". Omit for free-text lines."
+          },
+          "amountKg": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 10000
+          },
+          "alphaAcidPct": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "form": {
+            "type": "string",
+            "enum": ["pellet", "leaf", "plug", "extract"]
+          },
+          "use": {
+            "type": "string",
+            "enum": ["mash", "first_wort", "boil", "whirlpool", "dry_hop"]
+          },
+          "timeMin": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 10000,
+            "description": "Boil or whirlpool minutes; required for boil additions"
+          },
+          "tempC": {
+            "type": "number",
+            "minimum": -10,
+            "maximum": 110,
+            "description": "Whirlpool temperature"
+          },
+          "days": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 3650,
+            "description": "Dry-hop contact time"
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 2000
+          }
+        },
+        "required": ["name", "amountKg", "use"],
+        "additionalProperties": false
+      },
+      "YeastLine": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "catalogId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "description": "Catalog row id, e.g. \"hop-citra\". Omit for free-text lines."
+          },
+          "form": {
+            "type": "string",
+            "enum": ["dry", "liquid", "slurry", "culture"]
+          },
+          "packs": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 1000
+          },
+          "amountKg": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 10000
+          },
+          "amountL": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 100000
+          },
+          "attenuationPct": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 2000
+          }
+        },
+        "required": ["name"],
+        "additionalProperties": false
+      },
+      "MiscLine": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "catalogId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "description": "Catalog row id, e.g. \"hop-citra\". Omit for free-text lines."
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "spice",
+              "herb",
+              "flavor",
+              "fining",
+              "water_agent",
+              "nutrient",
+              "sulfite",
+              "acid",
+              "enzyme",
+              "tannin",
+              "stabilizer",
+              "oak",
+              "other"
+            ]
+          },
+          "amountKg": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 10000
+          },
+          "amountL": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 100000
+          },
+          "count": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 10000,
+            "description": "For items counted, e.g. Campden tablets"
+          },
+          "use": {
+            "type": "string",
+            "enum": ["mash", "boil", "primary", "secondary", "bulk_aging", "bottling"]
+          },
+          "timeMin": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 10000,
+            "description": "Boil or mash minutes"
+          },
+          "dayOffset": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 3650,
+            "description": "Days after pitching, e.g. staggered nutrient additions"
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 2000
+          }
+        },
+        "required": ["name", "kind", "use"],
+        "additionalProperties": false
+      },
+      "MashStep": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "type": {
+            "type": "string",
+            "enum": ["infusion", "temperature", "decoction"]
+          },
+          "tempC": {
+            "type": "number",
+            "minimum": -10,
+            "maximum": 110
+          },
+          "timeMin": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 10000
+          },
+          "infuseL": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 100000
+          }
+        },
+        "required": ["name", "type", "tempC", "timeMin"],
+        "additionalProperties": false
+      },
+      "FermentationStep": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "stage": {
+            "type": "string",
+            "enum": [
+              "primary",
+              "secondary",
+              "conditioning",
+              "lagering",
+              "cold_crash",
+              "bulk_aging",
+              "bottle_aging",
+              "other"
+            ]
+          },
+          "tempC": {
+            "type": "number",
+            "minimum": -10,
+            "maximum": 110
+          },
+          "days": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 3650
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 2000
+          }
+        },
+        "required": ["name", "stage"],
+        "additionalProperties": false
+      },
+      "RecipeTargets": {
+        "type": "object",
+        "properties": {
+          "og": {
+            "type": "number",
+            "minimum": 0.98,
+            "maximum": 1.3
+          },
+          "fg": {
+            "type": "number",
+            "minimum": 0.98,
+            "maximum": 1.3
+          },
+          "abvPct": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 30
+          },
+          "ibu": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 300
+          },
+          "colorEbc": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1000
+          },
+          "carbonationVols": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 6
+          },
+          "ph": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 14
+          },
+          "titratableAcidityGPerL": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 50
+          }
+        },
+        "additionalProperties": false
+      },
       "Health": {
         "type": "object",
         "properties": {
