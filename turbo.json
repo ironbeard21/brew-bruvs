@@ -23,7 +23,8 @@
       "outputs": ["coverage/**"]
     },
     "test:e2e": {
-      "cache": false
+      "cache": false,
+      "passThroughEnv": ["PLAYWRIGHT_BASE_URL"]
     },
     "build": {
       "dependsOn": ["^build"],
