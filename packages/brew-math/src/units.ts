@@ -32,6 +32,9 @@ export const sgToPlato = (sg: number): number =>
 /** °Plato → specific gravity. Common inverse approximation used with the ASBC polynomial. */
 export const platoToSg = (plato: number): number => 1 + plato / (258.6 - (plato / 258.2) * 227.1);
 
+/** Gravity points per pound per gallon → SG potential for one pound in one US gallon. */
+export const ppgToPotentialSg = (ppg: number): number => 1 + ppg / 1000;
+
 /** Brix and Plato are interchangeable for brewing, wine and mead purposes. */
 export const sgToBrix = sgToPlato;
 export const brixToSg = platoToSg;

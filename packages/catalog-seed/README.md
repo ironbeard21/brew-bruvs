@@ -55,6 +55,15 @@ Every file has these columns at the end:
 
 Show credit in the app (an About page listing `sources.csv`) and keep `ATTRIBUTION.md` in the repo.
 
+## Load into PostgreSQL
+
+Apply the schema with `pnpm db:migrate`, then run `pnpm seed` from the repository root. Both
+commands use `DATABASE_URL` from the root `.env` or your shell. Rerunning the importer updates
+only changed seed rows by ID. It preserves imported sources, licenses, and aliases.
+
+Set `TEST_DATABASE_URL` to a connection that can create databases and run
+`pnpm --filter @brew-bruvs/catalog-seed test` to verify the full import against Postgres.
+
 ## Rebuild
 
 ```bash

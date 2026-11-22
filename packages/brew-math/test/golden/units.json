@@ -1,4 +1,36 @@
 {
+  "ppgToPotentialSg": [
+    {
+      "args": [0],
+      "expected": 1,
+      "tolerance": 1e-12,
+      "source": "SG scale: water at zero gravity points"
+    },
+    {
+      "args": [10],
+      "expected": 1.01,
+      "tolerance": 1e-12,
+      "source": "SG scale: ten gravity points"
+    },
+    {
+      "args": [35],
+      "expected": 1.035,
+      "tolerance": 1e-12,
+      "source": "SG scale: 35 gravity points, typical honey potential"
+    },
+    {
+      "args": [37.5],
+      "expected": 1.0375,
+      "tolerance": 1e-12,
+      "source": "SG scale: 37.5 gravity points"
+    },
+    {
+      "args": [46],
+      "expected": 1.046,
+      "tolerance": 1e-12,
+      "source": "SG scale: 46 gravity points, typical sucrose potential"
+    }
+  ],
   "sgToPlato": [
     {
       "args": [1.04],

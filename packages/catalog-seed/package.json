@@ -9,8 +9,17 @@
   },
   "scripts": {
     "build": "tsc -p . --noEmit false --rewriteRelativeImportExtensions --outDir dist",
-    "seed": "node -e \"console.log('not implemented yet (P0-09)')\"",
+    "seed": "node --env-file-if-exists=../../.env src/import.ts",
     "typecheck": "tsc --noEmit -p .",
     "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@brew-bruvs/brew-math": "workspace:*",
+    "@brew-bruvs/db": "workspace:*",
+    "drizzle-orm": "^0.45.4",
+    "pg": "^8.22.0"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.20.0"
   }
 }
