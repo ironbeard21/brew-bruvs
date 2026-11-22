@@ -60,7 +60,24 @@ importers:
 
   packages/brew-math: {}
 
-  packages/catalog-seed: {}
+  packages/catalog-seed:
+    dependencies:
+      '@brew-bruvs/brew-math':
+        specifier: workspace:*
+        version: link:../brew-math
+      '@brew-bruvs/db':
+        specifier: workspace:*
+        version: link:../db
+      drizzle-orm:
+        specifier: ^0.45.4
+        version: 0.45.4(@types/pg@8.23.1)(pg@8.23.1)
+      pg:
+        specifier: ^8.22.0
+        version: 8.23.1
+    devDependencies:
+      '@types/pg':
+        specifier: ^8.20.0
+        version: 8.23.1
 
   packages/db:
     dependencies:
