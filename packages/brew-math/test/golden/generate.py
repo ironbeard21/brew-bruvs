@@ -113,6 +113,16 @@ mash = {
                        for a, b, g, w in ((40, 52, 5, 15), (52, 63, 5, 15), (63, 72, 4.5, 13.5), (50, 66, 10, 30), (45, 55, 2, 6))] +
                       [case([{"currentTempC": 63, "targetTempC": 72, "grainKg": 5, "waterInMashL": 15, "infusionTempC": 95}], infuse(63, 72, 5, 15, 95), 1e-9)],
 }
+ABSORB = 0.125 * GAL / LB  # Palmer: grain keeps 0.125 gal of water per lb
+def sparge(pre, mash_l, kg, a=ABSORB, dead=0): return max(pre - (mash_l - kg * a - dead), 0)
+mash["spargeVolume"] = (
+    [case([{"preBoilVolumeL": 6.5 * GAL, "mashWaterL": 3.75 * GAL, "grainKg": 10 * LB}], 4 * GAL, 1e-9,
+          "worked example with Palmer's 0.125 gal/lb absorption: 10 lb grain, 3.75 gal mash, 6.5 gal pre-boil → 6.5 − (3.75 − 1.25) = 4 gal")] +
+    [case([{"preBoilVolumeL": p, "mashWaterL": m, "grainKg": g, "grainAbsorptionLPerKg": a, "mashTunDeadspaceL": d}], sparge(p, m, g, a, d), 1e-9)
+     for p, m, g, a, d in ((28, 15, 5, 1.0, 1.0), (32, 18, 6, 0.8, 2.0), (60, 35, 12, 1.04, 3.0), (12, 7, 2.5, 1.1, 0.5))] +
+    [case([{"preBoilVolumeL": 26, "mashWaterL": 32, "grainKg": 5}], 0, 0,
+          "full-volume (BIAB) mash: the mash water already covers the pre-boil volume, so no sparge")]
+)
 write("mash-water", mash)
 
 # ---------------------------------------------------------------- dilution
@@ -237,7 +247,105 @@ mead = {
              [case([[{"volumeL": 5, "abv": 10, "ta": 6}, {"volumeL": 5, "abv": 12}, {"volumeL": 10, "abv": 9}]], {"volumeL": 20, "abv": 10.0}, 1e-9,
                    "TA dropped because one lot has none; ABV weighted (50 + 60 + 90) / 20")],
 }
+SORBIC = 112.13 / 150.22
+SORBATE_TABLE = {10: 150, 11: 125, 12: 100, 13: 75, 14: 50}
+def sorbate(abv, v):
+    mg = 150 - 25 * (abv - 10); return {"sorbicAcidMgL": mg, "grams": mg * v / 1000 / SORBIC}
+mead["potassiumSorbate"] = (
+    [case([abv, 19], {"sorbicAcidMgL": mg, "grams": mg * 19 / 1000 / SORBIC}, 1e-9,
+          f"home-winemaking sorbic acid table: {abv}% ABV needs {mg} mg/L sorbic acid; potassium sorbate is 74.6% sorbic acid")
+     for abv, mg in SORBATE_TABLE.items()] +
+    [case([abv, v], sorbate(abv, v), 1e-9) for abv, v in ((6.5, 19), (8, 23), (12.5, 100))]
+)
 write("mead-wine", mead)
+
+# ---------------------------------------------------------------- recipe stats
+def og_est(vol, eff, ferms):
+    pts = 0.0
+    for f in ferms:
+        if "liters" in f:
+            pts += (f["sg"] - 1) * 1000 * f["liters"] / vol
+        else:
+            e = eff / 100 if f["mashed"] else 1.0
+            pts += (f["potentialSg"] - 1) * 1000 * (f["kg"] / LB) * e / (vol / GAL)
+    return 1 + pts / 1000
+def fg_est(og, att): return 1 + (og - 1) * (1 - att / 100)
+def ebc_to_l(ebc): return (ebc / 1.97 + 0.76) / 1.3546
+def stats(vol, eff, ferms, att, hops, boil=None, method="tinseth"):
+    og = og_est(vol, eff, ferms); fg = fg_est(og, att)
+    abv = abv_alt(og, fg) if og > 1.07 else abv_std(og, fg)
+    gb = 1 + (og - 1) * vol / (boil or vol)
+    calc = tins if method == "tinseth" else rag
+    ibu = sum(calc(h["alphaAcidPct"], h["hopGrams"], h["minutes"], vol, gb) for h in hops)
+    grains = [(f["kg"], ebc_to_l(f["colorEbc"])) for f in ferms if "kg" in f and "colorEbc" in f]
+    srm = morey(grains, vol) if grains else 0.0
+    return {"og": og, "fg": fg, "abvPct": abv, "ibu": ibu, "colorSrm": srm, "colorEbc": srm * 1.97}
+
+pale = {"kg": 4.5, "potentialSg": 1.037, "mashed": True, "colorEbc": 3.9}
+crystal = {"kg": 0.35, "potentialSg": 1.034, "mashed": True, "colorEbc": 79}
+honey = {"kg": 4.4, "potentialSg": 1.035, "mashed": False, "colorEbc": 4}
+apa_hops = [{"alphaAcidPct": 10, "hopGrams": 14, "minutes": 60}, {"alphaAcidPct": 5.5, "hopGrams": 28, "minutes": 10}]
+def stats_args(vol, eff, ferms, att, hops, boil=None, method=None):
+    a = {"volumeL": vol, "efficiencyPct": eff, "fermentables": ferms, "attenuationPct": att, "hops": hops}
+    if boil: a["boilVolumeL"] = boil
+    if method: a["ibuMethod"] = method
+    return a
+
+def og_args(vol, eff, ferms): return [{"volumeL": vol, "efficiencyPct": eff, "fermentables": ferms}]
+recipe = {
+    "estimateOg": [
+        case(og_args(5 * GAL, 75, [{"kg": 8 * LB, "potentialSg": 1.037, "mashed": True}]), 1.0444, 1e-9,
+             "Palmer, How to Brew, extract efficiency: 8 lb × 37 PPG × 75% / 5 gal = 44.4 points"),
+        case(og_args(GAL, 70, [{"kg": LB, "potentialSg": 1.035, "mashed": False}]), 1.035, 1e-9,
+             "worked example: 1 lb honey at 35 PPG in 1 gal is 35 points; efficiency doesn't apply"),
+        case(og_args(5 * GAL, 75, [{"kg": 6 * LB, "potentialSg": 1.044, "mashed": False}]), 1.0528, 1e-9,
+             "worked example: 6 lb dry malt extract at 44 PPG in 5 gal = 52.8 points"),
+        case(og_args(19, 72, [{"liters": 19, "sg": 1.05}]), 1.05, 1e-9,
+             "definition: undiluted juice keeps its own gravity"),
+        case(og_args(20, 72, [{"liters": 10, "sg": 1.06}]), 1.03, 1e-9,
+             "dilution by gravity points: 10 L at 1.060 topped up to 20 L = 30 points"),
+        case(og_args(20, 72, [pale, crystal]), og_est(20, 72, [pale, crystal]), 1e-12),
+        case(og_args(23, 65, [{"liters": 15, "sg": 1.05}, {"kg": 1, "potentialSg": 1.046, "mashed": False}]),
+             og_est(23, 65, [{"liters": 15, "sg": 1.05}, {"kg": 1, "potentialSg": 1.046, "mashed": False}]), 1e-12),
+        case(og_args(19, 72, [honey]), og_est(19, 72, [honey]), 1e-12),
+    ],
+    "estimateFg": [
+        case([1.05, 75], 1.0125, 1e-12, "worked example: 75% apparent attenuation of 50 points leaves 12.5"),
+        case([1.1, 100], 1.0, 1e-12, "definition: 100% apparent attenuation ends at 1.000"),
+        case([1.095, 105], fg_est(1.095, 105), 1e-12),
+        case([1.065, 80], fg_est(1.065, 80), 1e-12),
+        case([1.04, 0], 1.04, 1e-12, "definition: no attenuation, no change"),
+    ],
+    "recipeStats": [
+        case([stats_args(20, 72, [pale, crystal], 78, apa_hops)], stats(20, 72, [pale, crystal], 78, apa_hops), 1e-9),
+        case([stats_args(20, 72, [pale, crystal], 78, apa_hops, boil=26)], stats(20, 72, [pale, crystal], 78, apa_hops, boil=26), 1e-9),
+        case([stats_args(20, 72, [pale, crystal], 78, apa_hops, method="rager")], stats(20, 72, [pale, crystal], 78, apa_hops, method="rager"), 1e-9),
+        case([stats_args(19, 72, [honey], 100, [])], stats(19, 72, [honey], 100, []), 1e-9),
+        case([stats_args(23, 72, [{"liters": 23, "sg": 1.095}], 105, [])], stats(23, 72, [{"liters": 23, "sg": 1.095}], 105, []), 1e-9),
+        case([stats_args(19, 72, [{"liters": 19, "sg": 1.05}], 100, [])], stats(19, 72, [{"liters": 19, "sg": 1.05}], 100, []), 1e-9),
+    ],
+    "styleFit": [
+        case([{"og": 1.054, "fg": 1.012, "abvPct": 5.5, "ibu": 38, "colorEbc": 14},
+              {"ogMin": 1.045, "ogMax": 1.06, "fgMin": 1.01, "fgMax": 1.015, "abvMinPct": 4.5, "abvMaxPct": 6.2,
+               "ibuMin": 30, "ibuMax": 50, "colorEbcMin": 9.85, "colorEbcMax": 19.7}],
+             {"og": "inside", "fg": "inside", "abvPct": "inside", "ibu": "inside", "colorEbc": "inside"}, 0,
+             "BJCP 2021 18B American Pale Ale ranges (SRM 5–10 as EBC): a typical APA is inside every range"),
+        case([{"og": 1.04, "fg": 1.016, "abvPct": 3.2, "ibu": 60, "colorEbc": 30},
+              {"ogMin": 1.045, "ogMax": 1.06, "fgMin": 1.01, "fgMax": 1.015, "abvMinPct": 4.5, "abvMaxPct": 6.2,
+               "ibuMin": 30, "ibuMax": 50, "colorEbcMin": 9.85, "colorEbcMax": 19.7}],
+             {"og": "below", "fg": "above", "abvPct": "below", "ibu": "above", "colorEbc": "above"}, 0, "definition: outside each bound"),
+        case([{"og": 1.045, "ibu": 50}, {"ogMin": 1.045, "ogMax": 1.06, "ibuMin": 30, "ibuMax": 50}],
+             {"og": "inside", "fg": "unknown", "abvPct": "unknown", "ibu": "inside", "colorEbc": "unknown"}, 0,
+             "definition: bounds are inclusive; missing stats are unknown"),
+        case([{"og": 1.1, "fg": 0.998, "abvPct": 13.4}, {"ogMin": None, "ogMax": None, "fgMax": 1.01, "abvMinPct": 7.5}],
+             {"og": "unknown", "fg": "inside", "abvPct": "inside", "ibu": "unknown", "colorEbc": "unknown"}, 0,
+             "definition: a style with no OG bounds (null) is unknown; one bound checks one side (BJCP M1A dry mead has no IBU or colour range)"),
+        case([{"fg": 1.02, "abvPct": 6}, {"fgMax": 1.01, "abvMinPct": 7.5}],
+             {"og": "unknown", "fg": "above", "abvPct": "below", "ibu": "unknown", "colorEbc": "unknown"}, 0,
+             "definition: one bound checks one side"),
+    ],
+}
+write("recipe", recipe)
 for f in sorted(x for x in os.listdir(OUT) if x.endswith(".json")):
     d = json.load(open(f"{OUT}/{f}"))
     print(f, {k: len(v) for k, v in d.items()})

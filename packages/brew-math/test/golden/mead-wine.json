@@ -619,5 +619,79 @@
       "tolerance": 1e-9,
       "source": "TA dropped because one lot has none; ABV weighted (50 + 60 + 90) / 20"
     }
+  ],
+  "potassiumSorbate": [
+    {
+      "args": [10, 19],
+      "expected": {
+        "sorbicAcidMgL": 150,
+        "grams": 3.818130741104076
+      },
+      "tolerance": 1e-9,
+      "source": "home-winemaking sorbic acid table: 10% ABV needs 150 mg/L sorbic acid; potassium sorbate is 74.6% sorbic acid"
+    },
+    {
+      "args": [11, 19],
+      "expected": {
+        "sorbicAcidMgL": 125,
+        "grams": 3.1817756175867298
+      },
+      "tolerance": 1e-9,
+      "source": "home-winemaking sorbic acid table: 11% ABV needs 125 mg/L sorbic acid; potassium sorbate is 74.6% sorbic acid"
+    },
+    {
+      "args": [12, 19],
+      "expected": {
+        "sorbicAcidMgL": 100,
+        "grams": 2.5454204940693836
+      },
+      "tolerance": 1e-9,
+      "source": "home-winemaking sorbic acid table: 12% ABV needs 100 mg/L sorbic acid; potassium sorbate is 74.6% sorbic acid"
+    },
+    {
+      "args": [13, 19],
+      "expected": {
+        "sorbicAcidMgL": 75,
+        "grams": 1.909065370552038
+      },
+      "tolerance": 1e-9,
+      "source": "home-winemaking sorbic acid table: 13% ABV needs 75 mg/L sorbic acid; potassium sorbate is 74.6% sorbic acid"
+    },
+    {
+      "args": [14, 19],
+      "expected": {
+        "sorbicAcidMgL": 50,
+        "grams": 1.2727102470346918
+      },
+      "tolerance": 1e-9,
+      "source": "home-winemaking sorbic acid table: 14% ABV needs 50 mg/L sorbic acid; potassium sorbate is 74.6% sorbic acid"
+    },
+    {
+      "args": [6.5, 19],
+      "expected": {
+        "sorbicAcidMgL": 237.5,
+        "grams": 6.045373673414787
+      },
+      "tolerance": 1e-9,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [8, 23],
+      "expected": {
+        "sorbicAcidMgL": 200,
+        "grams": 6.162596985641666
+      },
+      "tolerance": 1e-9,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [12.5, 100],
+      "expected": {
+        "sorbicAcidMgL": 87.5,
+        "grams": 11.722331222687952
+      },
+      "tolerance": 1e-9,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    }
   ]
 }

@@ -13,16 +13,18 @@ import {
 } from "../src/gravity.ts";
 import { correctHydrometer } from "../src/hydrometer.ts";
 import { ragerIbu, tinsethIbu, totalIbu } from "../src/ibu.ts";
-import { infusionVolume, strikeTemperature } from "../src/mash-water.ts";
+import { infusionVolume, spargeVolume, strikeTemperature } from "../src/mash-water.ts";
 import {
   acidAddition,
   blend,
   freeSo2Needed,
   nutrientPlan,
   potassiumMetabisulfite,
+  potassiumSorbate,
   sugarToRaiseGravity,
   yanTarget,
 } from "../src/mead-wine.ts";
+import { estimateFg, estimateOg, recipeStats } from "../src/recipe.ts";
 import { refractometerFinalGravity, refractometerSg } from "../src/refractometer.ts";
 import type { CalcResult } from "../src/result.ts";
 import { cellsNeeded, packsNeeded, starterCells } from "../src/yeast.ts";
@@ -36,6 +38,14 @@ const plan = {
   expectedFg: 1.0,
   need: "medium" as const,
   nitrogenFraction: 0.21,
+};
+const malt = { kg: 4.5, potentialSg: 1.037, mashed: true, colorEbc: 4 };
+const brew = {
+  volumeL: 20,
+  efficiencyPct: 72,
+  fermentables: [malt],
+  attenuationPct: 75,
+  hops: [hop],
 };
 
 const cases: [string, () => CalcResult<unknown>, string][] = [
@@ -134,6 +144,61 @@ const cases: [string, () => CalcResult<unknown>, string][] = [
     "at least",
   ],
   ["blend: one lot", () => blend([{ volumeL: 10 }]), "two lots"],
+  [
+    "spargeVolume: no pre-boil volume",
+    () => spargeVolume({ preBoilVolumeL: 0, mashWaterL: 15, grainKg: 5 }),
+    "Pre-boil",
+  ],
+  ["potassiumSorbate: ABV too high", () => potassiumSorbate(18, 19), "ABV"],
+  ["estimateOg: no volume", () => estimateOg({ ...brew, volumeL: 0 }), "Volume"],
+  ["estimateOg: zero efficiency", () => estimateOg({ ...brew, efficiencyPct: 0 }), "Efficiency"],
+  [
+    "estimateOg: potential in PPG instead of SG",
+    () => estimateOg({ ...brew, fermentables: [{ ...malt, potentialSg: 37 }] }),
+    "Potential",
+  ],
+  [
+    "estimateOg: impossible colour",
+    () => estimateOg({ ...brew, fermentables: [{ ...malt, colorEbc: 9000 }] }),
+    "Colour",
+  ],
+  [
+    "estimateOg: juice gravity in Brix",
+    () => estimateOg({ ...brew, fermentables: [{ liters: 10, sg: 12 }] }),
+    "Juice gravity",
+  ],
+  [
+    "estimateOg: more juice than batch",
+    () => estimateOg({ ...brew, fermentables: [{ liters: 25, sg: 1.05 }] }),
+    "more than the batch",
+  ],
+  ["estimateFg: attenuation over 110%", () => estimateFg(1.05, 150), "Attenuation"],
+  ["recipeStats: bad OG inputs", () => recipeStats({ ...brew, volumeL: 0 }), "Volume"],
+  [
+    "recipeStats: bad attenuation",
+    () => recipeStats({ ...brew, attenuationPct: -5 }),
+    "Attenuation",
+  ],
+  [
+    "recipeStats: OG beyond ABV formulas",
+    () => recipeStats({ ...brew, volumeL: 1, fermentables: [{ ...malt, kg: 10 }] }),
+    "Original gravity",
+  ],
+  [
+    "recipeStats: boil volume below batch",
+    () => recipeStats({ ...brew, boilVolumeL: 10 }),
+    "Boil volume",
+  ],
+  [
+    "recipeStats: bad hop addition",
+    () => recipeStats({ ...brew, hops: [{ ...hop, alphaAcidPct: 40 }] }),
+    "Alpha acid",
+  ],
+  [
+    "recipeStats: grain colour beyond Morey",
+    () => recipeStats({ ...brew, fermentables: [{ ...malt, colorEbc: 4000 }] }),
+    "Grain color",
+  ],
   ["blend: empty lot", () => blend([{ volumeL: 10 }, { volumeL: 0 }]), "Lot volume"],
 ];
 
