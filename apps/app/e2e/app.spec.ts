@@ -74,6 +74,58 @@ test.describe("Brew-Bruvs app shell", () => {
     await page.getByRole("tab", { name: "Use Metric units" }).click();
     await expect(page.getByTestId("hydro-sample-temp-input")).toHaveValue("23.9");
     await expect(page.getByTestId("hydro-corrected-result")).toHaveText("1.052");
+
+    // Switch back to US units before building a recipe in US gallons/pounds/ounces.
+    await page.getByRole("tab", { name: "Use US units" }).click();
+
+    // P1-12: Create a recipe using catalog search (including alias Zeus -> Columbus)
+    // and verify live OG, FG, ABV, IBU, and Color land inside BJCP 18B American Pale Ale.
+    await page.getByTestId("nav-recipes").click();
+    await expect(page).toHaveURL(/\/recipes$/);
+
+    await page.getByTestId("new-recipe-button").click();
+    await expect(page).toHaveURL(/\/recipes\/new$/);
+
+    await page.getByTestId("recipe-name-input").fill("Backyard Pale Ale");
+
+    // Pick BJCP 2015 18B American Pale Ale
+    await page.getByTestId("style-search-input").fill("American Pale Ale");
+    await page.getByTestId("style-option-style-bjcp-2015-18b").click();
+    await expect(page.getByTestId("stats-style-name")).toContainText("American Pale Ale");
+
+    // Add Pale Malt (2 Row) US (9.8 lb)
+    await page.getByTestId("fermentable-search-input").fill("Pale Malt (2 Row) US");
+    await page.getByTestId("fermentable-option-ferm-pale-malt-2-row-us").click();
+    await page.getByTestId("ferm-0-amount").fill("9.8");
+
+    // Add Caramel/Crystal Malt – 60L (0.75 lb)
+    await page.getByTestId("fermentable-search-input").fill("Caramel/Crystal Malt – 60L");
+    await page.getByTestId("fermentable-option-ferm-caramel-crystal-malt-60l").click();
+    await page.getByTestId("ferm-1-amount").fill("0.75");
+
+    // Search hop by alias "Zeus" -> finds Columbus (0.6 oz @ 60 min)
+    await page.getByTestId("hop-search-input").fill("Zeus");
+    await page.getByTestId("hop-option-hop-columbus").click();
+    await page.getByTestId("hop-0-amount").fill("0.6");
+
+    // Add Safale US-05 yeast
+    await page.getByTestId("yeast-search-input").fill("Safale American Ale");
+    await page.getByTestId("yeast-option-yeast-fermentis-us-05").click();
+
+    // Verify all 5 live stats land inside style ranges
+    await expect(page.getByTestId("fit-og")).toHaveText("Inside");
+    await expect(page.getByTestId("fit-fg")).toHaveText("Inside");
+    await expect(page.getByTestId("fit-abv")).toHaveText("Inside");
+    await expect(page.getByTestId("fit-ibu")).toHaveText("Inside");
+    await expect(page.getByTestId("fit-color")).toHaveText("Inside");
+
+    // Save recipe and verify detail view + Fork credit
+    await page.getByTestId("recipe-save-button").click();
+    await expect(page).toHaveURL(/\/recipes\/[0-9a-f-]+$/);
+    await expect(page.getByTestId("version-item-1")).toBeVisible();
+
+    await page.getByTestId("recipe-fork-button").click();
+    await expect(page.getByTestId("recipe-forked-from-box")).toContainText("Forked from");
   });
 
   test("calculators work completely offline without a server", async ({ page, context }) => {
