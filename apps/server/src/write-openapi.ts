@@ -8,8 +8,10 @@ import { createApp, OPENAPI_INFO } from "./app.ts";
 import { recipeContentJsonSchema } from "./contracts/recipe-content.ts";
 import { createLogger } from "./logger.ts";
 import { createAuthService } from "./services/auth.ts";
+import { createBatchService } from "./services/batches.ts";
 import { createCatalogService } from "./services/catalog.ts";
 import { createEquipmentProfileService } from "./services/equipment-profiles.ts";
+import { createNoteService } from "./services/notes.ts";
 import { createRecipeService } from "./services/recipes.ts";
 
 const out = process.argv[2];
@@ -25,6 +27,8 @@ const app = createApp({
   catalog: createCatalogService(db),
   profiles,
   recipes: createRecipeService(db, { baseUrl, profiles }),
+  batches: createBatchService(db, { baseUrl, profiles }),
+  notes: createNoteService(db, { baseUrl }),
   auth: {
     auth: createAuthService(db, { baseUrl, signupMode: "invite" }),
     oidc: undefined,

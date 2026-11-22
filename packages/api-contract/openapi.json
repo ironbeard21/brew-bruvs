@@ -2037,6 +2037,619 @@
           }
         },
         "additionalProperties": false
+      },
+      "BatchPage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Batch"
+            }
+          },
+          "nextOffset": {
+            "type": ["integer", "null"]
+          }
+        },
+        "required": ["items", "nextOffset"]
+      },
+      "Batch": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "uri": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "beverage": {
+            "type": "string",
+            "enum": ["beer", "mead", "wine", "cider"]
+          },
+          "status": {
+            "$ref": "#/components/schemas/BatchStatus"
+          },
+          "visibility": {
+            "type": "string",
+            "enum": ["private", "unlisted", "server", "public"],
+            "description": "private: owner, brewery and shares only. unlisted: anyone with the link, never listed. server: every signed-in user here. public: anyone."
+          },
+          "owner": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": ["user", "brewery"]
+              },
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              }
+            },
+            "required": ["type", "id"]
+          },
+          "recipe": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "version": {
+                "type": "integer",
+                "exclusiveMinimum": 0
+              },
+              "versionId": {
+                "type": "string",
+                "format": "uuid"
+              }
+            },
+            "required": ["id", "version", "versionId"]
+          },
+          "batchSizeL": {
+            "type": ["number", "null"]
+          },
+          "equipmentProfileId": {
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "brewedAt": {
+            "type": ["string", "null"],
+            "description": "Set on the move to brewing or primary"
+          },
+          "completedAt": {
+            "type": ["string", "null"],
+            "description": "Set on the move to finished"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "uri",
+          "name",
+          "beverage",
+          "status",
+          "visibility",
+          "owner",
+          "recipe",
+          "batchSizeL",
+          "equipmentProfileId",
+          "brewedAt",
+          "completedAt",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "BatchStatus": {
+        "type": "string",
+        "enum": [
+          "planned",
+          "brewing",
+          "fermenting",
+          "conditioning",
+          "packaged",
+          "primary",
+          "secondary",
+          "bulk_aging",
+          "stabilized",
+          "bottled",
+          "bottle_aging",
+          "finished"
+        ],
+        "description": "Beer: planned → brewing → fermenting → conditioning → packaged → finished. Mead, wine, cider: planned → primary → secondary → bulk_aging → stabilized → bottled → bottle_aging → finished."
+      },
+      "BatchDetail": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Batch"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "statusHistory": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "$ref": "#/components/schemas/BatchStatus"
+                    },
+                    "changedAt": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["status", "changedAt"]
+                }
+              },
+              "allowedStatuses": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/BatchStatus"
+                },
+                "description": "Where the batch can move next: any later status, or one step back"
+              }
+            },
+            "required": ["statusHistory", "allowedStatuses"]
+          }
+        ]
+      },
+      "CreateBatch": {
+        "type": "object",
+        "properties": {
+          "recipeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "version": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "description": "Defaults to the latest"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "description": "Defaults to the recipe version's name"
+          },
+          "batchSizeL": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 100000,
+            "description": "Defaults to the version's batch size"
+          },
+          "equipmentProfileId": {
+            "type": ["string", "null"],
+            "format": "uuid",
+            "description": "Defaults to the version's, when you can read it"
+          }
+        },
+        "required": ["recipeId"],
+        "additionalProperties": false
+      },
+      "StatusResult": {
+        "type": "object",
+        "properties": {
+          "batch": {
+            "$ref": "#/components/schemas/BatchDetail"
+          },
+          "addedReminders": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Reminder"
+            },
+            "description": "Reminders this move created, e.g. a mead's nutrient schedule on primary"
+          },
+          "scheduleError": {
+            "type": ["string", "null"],
+            "description": "Why a mead's nutrient schedule couldn't be made (e.g. the recipe has no stats)"
+          }
+        },
+        "required": ["batch", "addedReminders", "scheduleError"]
+      },
+      "Reminder": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "batchId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "batchName": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": ["nutrient", "rack", "sulfite", "taste", "ready", "custom"]
+          },
+          "dueAt": {
+            "type": "string"
+          },
+          "note": {
+            "type": ["string", "null"]
+          },
+          "doneAt": {
+            "type": ["string", "null"]
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "batchId", "batchName", "kind", "dueAt", "note", "doneAt", "createdAt"]
+      },
+      "StatusChange": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/BatchStatus"
+          }
+        },
+        "required": ["status"],
+        "additionalProperties": false
+      },
+      "Reading": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "batchId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "takenAt": {
+            "type": "string"
+          },
+          "gravitySg": {
+            "type": ["number", "null"]
+          },
+          "temperatureC": {
+            "type": ["number", "null"]
+          },
+          "ph": {
+            "type": ["number", "null"]
+          },
+          "brix": {
+            "type": ["number", "null"]
+          },
+          "titratableAcidityGPerL": {
+            "type": ["number", "null"]
+          },
+          "freeSo2MgPerL": {
+            "type": ["number", "null"]
+          },
+          "source": {
+            "type": "string",
+            "enum": ["manual", "device"]
+          },
+          "note": {
+            "type": ["string", "null"]
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "batchId",
+          "takenAt",
+          "gravitySg",
+          "temperatureC",
+          "ph",
+          "brix",
+          "titratableAcidityGPerL",
+          "freeSo2MgPerL",
+          "source",
+          "note",
+          "createdAt"
+        ]
+      },
+      "ReadingInput": {
+        "type": "object",
+        "properties": {
+          "takenAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "gravitySg": {
+            "type": "number",
+            "minimum": 0.98,
+            "maximum": 1.3
+          },
+          "temperatureC": {
+            "type": "number",
+            "minimum": -10,
+            "maximum": 110
+          },
+          "ph": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 14
+          },
+          "brix": {
+            "type": "number",
+            "minimum": -5,
+            "maximum": 60
+          },
+          "titratableAcidityGPerL": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 50
+          },
+          "freeSo2MgPerL": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 500
+          },
+          "source": {
+            "type": "string",
+            "enum": ["manual", "device"],
+            "default": "manual"
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 2000
+          }
+        },
+        "required": ["takenAt"],
+        "additionalProperties": false
+      },
+      "ReadingPatch": {
+        "type": "object",
+        "properties": {
+          "takenAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "gravitySg": {
+            "type": ["number", "null"],
+            "minimum": 0.98,
+            "maximum": 1.3
+          },
+          "temperatureC": {
+            "type": ["number", "null"],
+            "minimum": -10,
+            "maximum": 110
+          },
+          "ph": {
+            "type": ["number", "null"],
+            "minimum": 0,
+            "maximum": 14
+          },
+          "brix": {
+            "type": ["number", "null"],
+            "minimum": -5,
+            "maximum": 60
+          },
+          "titratableAcidityGPerL": {
+            "type": ["number", "null"],
+            "minimum": 0,
+            "maximum": 50
+          },
+          "freeSo2MgPerL": {
+            "type": ["number", "null"],
+            "minimum": 0,
+            "maximum": 500
+          },
+          "note": {
+            "type": ["string", "null"],
+            "maxLength": 2000
+          }
+        },
+        "additionalProperties": false,
+        "description": "null clears a value; one measurement must remain"
+      },
+      "ReminderInput": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": ["nutrient", "rack", "sulfite", "taste", "ready", "custom"]
+          },
+          "dueAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 2000
+          }
+        },
+        "required": ["kind", "dueAt"],
+        "additionalProperties": false
+      },
+      "NotePage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Note"
+            }
+          },
+          "nextOffset": {
+            "type": ["integer", "null"]
+          }
+        },
+        "required": ["items", "nextOffset"]
+      },
+      "Note": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "uri": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": ["general", "tasting"]
+          },
+          "body": {
+            "type": "string"
+          },
+          "recipeId": {
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "batchId": {
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "scores": {
+            "type": ["object", "null"],
+            "properties": {
+              "aroma": {
+                "type": ["number", "null"]
+              },
+              "appearance": {
+                "type": ["number", "null"]
+              },
+              "flavor": {
+                "type": ["number", "null"]
+              },
+              "mouthfeel": {
+                "type": ["number", "null"]
+              },
+              "overall": {
+                "type": ["number", "null"]
+              },
+              "total": {
+                "type": ["number", "null"],
+                "description": "Sum of the scores given; null when none are"
+              }
+            },
+            "required": ["aroma", "appearance", "flavor", "mouthfeel", "overall", "total"],
+            "description": "Tasting notes only"
+          },
+          "visibility": {
+            "type": "string",
+            "enum": ["private", "unlisted", "server", "public"],
+            "description": "private: owner, brewery and shares only. unlisted: anyone with the link, never listed. server: every signed-in user here. public: anyone."
+          },
+          "owner": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": ["user", "brewery"]
+              },
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              }
+            },
+            "required": ["type", "id"]
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "uri",
+          "kind",
+          "body",
+          "recipeId",
+          "batchId",
+          "scores",
+          "visibility",
+          "owner",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "NoteInput": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": ["general", "tasting"],
+            "default": "general"
+          },
+          "body": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20000
+          },
+          "recipeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "batchId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "scores": {
+            "$ref": "#/components/schemas/TastingScores"
+          }
+        },
+        "required": ["body"],
+        "additionalProperties": false
+      },
+      "TastingScores": {
+        "type": "object",
+        "properties": {
+          "aroma": {
+            "type": ["integer", "null"],
+            "minimum": 0,
+            "maximum": 12
+          },
+          "appearance": {
+            "type": ["integer", "null"],
+            "minimum": 0,
+            "maximum": 3
+          },
+          "flavor": {
+            "type": ["integer", "null"],
+            "minimum": 0,
+            "maximum": 20
+          },
+          "mouthfeel": {
+            "type": ["integer", "null"],
+            "minimum": 0,
+            "maximum": 5
+          },
+          "overall": {
+            "type": ["integer", "null"],
+            "minimum": 0,
+            "maximum": 10
+          }
+        },
+        "additionalProperties": false,
+        "description": "BJCP score sheet: aroma /12, appearance /3, flavor /20, mouthfeel /5, overall /10"
+      },
+      "NotePatch": {
+        "type": "object",
+        "properties": {
+          "body": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20000
+          },
+          "scores": {
+            "$ref": "#/components/schemas/TastingScores"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Scores merge into the existing ones; null clears one"
       }
     },
     "parameters": {}
@@ -4608,6 +5221,1353 @@
         ],
         "operationId": "deleteEquipmentProfile",
         "summary": "Delete an equipment profile; versions and batches that used it keep their numbers",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done"
+          },
+          "400": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/batches": {
+      "get": {
+        "tags": ["batches"],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "operationId": "listBatches",
+        "summary": "Batches you can read, most recently changed first",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/BatchStatus"
+            },
+            "required": false,
+            "description": "Beer: planned → brewing → fermenting → conditioning → packaged → finished. Mead, wine, cider: planned → primary → secondary → bulk_aging → stabilized → bottled → bottle_aging → finished.",
+            "name": "status",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": ["true", "false"],
+              "default": "false",
+              "description": "Only batches you own"
+            },
+            "required": false,
+            "description": "Only batches you own",
+            "name": "mine",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 25
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647,
+              "default": 0
+            },
+            "required": false,
+            "name": "offset",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Batches",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["batches"],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "operationId": "createBatch",
+        "summary": "Start a planned batch from a recipe version you can read",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateBatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/batches/{id}": {
+      "get": {
+        "tags": ["batches"],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "operationId": "getBatch",
+        "summary": "A batch with its status history and the moves it can make",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Batch",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["batches"],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "operationId": "deleteBatch",
+        "summary": "Delete a batch with its readings, reminders, history and notes",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done"
+          },
+          "400": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/batches/{id}/status": {
+      "post": {
+        "tags": ["batches"],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "operationId": "setBatchStatus",
+        "summary": "Move to any later status of the batch's beverage, or one step back. A mead moving to primary gets its nutrient reminders.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StatusChange"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Moved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatusResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/batches/{id}/readings": {
+      "get": {
+        "tags": ["batches"],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "operationId": "listReadings",
+        "summary": "Readings in time order",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Readings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Reading"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["batches"],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "operationId": "addReading",
+        "summary": "Log a reading",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReadingInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Added",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Reading"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/batches/{id}/readings/{readingId}": {
+      "patch": {
+        "tags": ["batches"],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "operationId": "updateReading",
+        "summary": "Correct a reading",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "readingId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReadingPatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Reading"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["batches"],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "operationId": "deleteReading",
+        "summary": "Delete a reading",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "readingId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done"
+          },
+          "400": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/batches/{id}/reminders": {
+      "get": {
+        "tags": ["batches"],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "operationId": "listBatchReminders",
+        "summary": "A batch's reminders, done or not, soonest first",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reminders",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Reminder"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["batches"],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "operationId": "addReminder",
+        "summary": "Add a reminder",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReminderInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Added",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Reminder"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/reminders": {
+      "get": {
+        "tags": ["batches"],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "operationId": "listDueReminders",
+        "summary": "Open reminders due by `until` (default now) on your own and shared batches; the app schedules them as local notifications",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "required": false,
+            "name": "until",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Due reminders",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Reminder"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/reminders/{id}/done": {
+      "post": {
+        "tags": ["batches"],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "operationId": "markReminderDone",
+        "summary": "Mark a reminder done (again is fine)",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Done",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Reminder"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/notes": {
+      "get": {
+        "tags": ["notes"],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "operationId": "listNotes",
+        "summary": "Notes you can read, newest first; filter by recipe or batch",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": false,
+            "name": "recipeId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": false,
+            "name": "batchId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 25
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647,
+              "default": 0
+            },
+            "required": false,
+            "name": "offset",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Notes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotePage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["notes"],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "operationId": "createNote",
+        "summary": "Write a note on a recipe, a batch, or on its own; tasting notes can have scores",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NoteInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Note"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/notes/{id}": {
+      "get": {
+        "tags": ["notes"],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "operationId": "getNote",
+        "summary": "One note",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Note",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Note"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": ["notes"],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "operationId": "updateNote",
+        "summary": "Change a note's text or scores",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NotePatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Note"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["notes"],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "operationId": "deleteNote",
+        "summary": "Delete a note",
         "parameters": [
           {
             "schema": {

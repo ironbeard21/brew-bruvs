@@ -8,8 +8,10 @@ import { type AppDeps, createApp } from "../src/app.ts";
 import type { Oidc } from "../src/auth/oidc.ts";
 import { createLogger } from "../src/logger.ts";
 import { createAuthService } from "../src/services/auth.ts";
+import { createBatchService } from "../src/services/batches.ts";
 import { createCatalogService } from "../src/services/catalog.ts";
 import { createEquipmentProfileService } from "../src/services/equipment-profiles.ts";
+import { createNoteService } from "../src/services/notes.ts";
 import { createRecipeService } from "../src/services/recipes.ts";
 
 export const BASE_URL = "http://brew.test";
@@ -27,6 +29,8 @@ function deps(
     catalog: createCatalogService(db),
     profiles,
     recipes: createRecipeService(db, { baseUrl: BASE_URL, profiles }),
+    batches: createBatchService(db, { baseUrl: BASE_URL, profiles }),
+    notes: createNoteService(db, { baseUrl: BASE_URL }),
     auth: {
       auth: createAuthService(db, { baseUrl: BASE_URL, signupMode }),
       oidc,

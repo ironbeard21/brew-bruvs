@@ -1461,6 +1461,184 @@ export interface paths {
         patch: operations["updateEquipmentProfile"];
         trace?: never;
     };
+    "/api/batches": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Batches you can read, most recently changed first */
+        get: operations["listBatches"];
+        put?: never;
+        /** Start a planned batch from a recipe version you can read */
+        post: operations["createBatch"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/batches/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A batch with its status history and the moves it can make */
+        get: operations["getBatch"];
+        put?: never;
+        post?: never;
+        /** Delete a batch with its readings, reminders, history and notes */
+        delete: operations["deleteBatch"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/batches/{id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Move to any later status of the batch's beverage, or one step back. A mead moving to primary gets its nutrient reminders. */
+        post: operations["setBatchStatus"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/batches/{id}/readings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Readings in time order */
+        get: operations["listReadings"];
+        put?: never;
+        /** Log a reading */
+        post: operations["addReading"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/batches/{id}/readings/{readingId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete a reading */
+        delete: operations["deleteReading"];
+        options?: never;
+        head?: never;
+        /** Correct a reading */
+        patch: operations["updateReading"];
+        trace?: never;
+    };
+    "/api/batches/{id}/reminders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A batch's reminders, done or not, soonest first */
+        get: operations["listBatchReminders"];
+        put?: never;
+        /** Add a reminder */
+        post: operations["addReminder"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reminders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Open reminders due by `until` (default now) on your own and shared batches; the app schedules them as local notifications */
+        get: operations["listDueReminders"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reminders/{id}/done": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark a reminder done (again is fine) */
+        post: operations["markReminderDone"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/notes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Notes you can read, newest first; filter by recipe or batch */
+        get: operations["listNotes"];
+        put?: never;
+        /** Write a note on a recipe, a batch, or on its own; tasting notes can have scores */
+        post: operations["createNote"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/notes/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One note */
+        get: operations["getNote"];
+        put?: never;
+        post?: never;
+        /** Delete a note */
+        delete: operations["deleteNote"];
+        options?: never;
+        head?: never;
+        /** Change a note's text or scores */
+        patch: operations["updateNote"];
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2060,6 +2238,214 @@ export interface components {
             grainAbsorptionLPerKg?: number | null;
             efficiencyPct?: number | null;
             fermenterLossL?: number | null;
+        };
+        BatchPage: {
+            items: components["schemas"]["Batch"][];
+            nextOffset: number | null;
+        };
+        Batch: {
+            /** Format: uuid */
+            id: string;
+            uri: string;
+            name: string;
+            /** @enum {string} */
+            beverage: "beer" | "mead" | "wine" | "cider";
+            status: components["schemas"]["BatchStatus"];
+            /**
+             * @description private: owner, brewery and shares only. unlisted: anyone with the link, never listed. server: every signed-in user here. public: anyone.
+             * @enum {string}
+             */
+            visibility: "private" | "unlisted" | "server" | "public";
+            owner: {
+                /** @enum {string} */
+                type: "user" | "brewery";
+                /** Format: uuid */
+                id: string;
+            };
+            recipe: {
+                /** Format: uuid */
+                id: string;
+                version: number;
+                /** Format: uuid */
+                versionId: string;
+            };
+            batchSizeL: number | null;
+            /** Format: uuid */
+            equipmentProfileId: string | null;
+            /** @description Set on the move to brewing or primary */
+            brewedAt: string | null;
+            /** @description Set on the move to finished */
+            completedAt: string | null;
+            createdAt: string;
+            updatedAt: string;
+        };
+        /**
+         * @description Beer: planned → brewing → fermenting → conditioning → packaged → finished. Mead, wine, cider: planned → primary → secondary → bulk_aging → stabilized → bottled → bottle_aging → finished.
+         * @enum {string}
+         */
+        BatchStatus: "planned" | "brewing" | "fermenting" | "conditioning" | "packaged" | "primary" | "secondary" | "bulk_aging" | "stabilized" | "bottled" | "bottle_aging" | "finished";
+        BatchDetail: components["schemas"]["Batch"] & {
+            statusHistory: {
+                status: components["schemas"]["BatchStatus"];
+                changedAt: string;
+            }[];
+            /** @description Where the batch can move next: any later status, or one step back */
+            allowedStatuses: components["schemas"]["BatchStatus"][];
+        };
+        CreateBatch: {
+            /** Format: uuid */
+            recipeId: string;
+            /** @description Defaults to the latest */
+            version?: number;
+            /** @description Defaults to the recipe version's name */
+            name?: string;
+            /** @description Defaults to the version's batch size */
+            batchSizeL?: number;
+            /**
+             * Format: uuid
+             * @description Defaults to the version's, when you can read it
+             */
+            equipmentProfileId?: string | null;
+        };
+        StatusResult: {
+            batch: components["schemas"]["BatchDetail"];
+            /** @description Reminders this move created, e.g. a mead's nutrient schedule on primary */
+            addedReminders: components["schemas"]["Reminder"][];
+            /** @description Why a mead's nutrient schedule couldn't be made (e.g. the recipe has no stats) */
+            scheduleError: string | null;
+        };
+        Reminder: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            batchId: string;
+            batchName: string;
+            /** @enum {string} */
+            kind: "nutrient" | "rack" | "sulfite" | "taste" | "ready" | "custom";
+            dueAt: string;
+            note: string | null;
+            doneAt: string | null;
+            createdAt: string;
+        };
+        StatusChange: {
+            status: components["schemas"]["BatchStatus"];
+        };
+        Reading: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            batchId: string;
+            takenAt: string;
+            gravitySg: number | null;
+            temperatureC: number | null;
+            ph: number | null;
+            brix: number | null;
+            titratableAcidityGPerL: number | null;
+            freeSo2MgPerL: number | null;
+            /** @enum {string} */
+            source: "manual" | "device";
+            note: string | null;
+            createdAt: string;
+        };
+        ReadingInput: {
+            /** Format: date-time */
+            takenAt: string;
+            gravitySg?: number;
+            temperatureC?: number;
+            ph?: number;
+            brix?: number;
+            titratableAcidityGPerL?: number;
+            freeSo2MgPerL?: number;
+            /**
+             * @default manual
+             * @enum {string}
+             */
+            source: "manual" | "device";
+            note?: string;
+        };
+        /** @description null clears a value; one measurement must remain */
+        ReadingPatch: {
+            /** Format: date-time */
+            takenAt?: string;
+            gravitySg?: number | null;
+            temperatureC?: number | null;
+            ph?: number | null;
+            brix?: number | null;
+            titratableAcidityGPerL?: number | null;
+            freeSo2MgPerL?: number | null;
+            note?: string | null;
+        };
+        ReminderInput: {
+            /** @enum {string} */
+            kind: "nutrient" | "rack" | "sulfite" | "taste" | "ready" | "custom";
+            /** Format: date-time */
+            dueAt: string;
+            note?: string;
+        };
+        NotePage: {
+            items: components["schemas"]["Note"][];
+            nextOffset: number | null;
+        };
+        Note: {
+            /** Format: uuid */
+            id: string;
+            uri: string;
+            /** @enum {string} */
+            kind: "general" | "tasting";
+            body: string;
+            /** Format: uuid */
+            recipeId: string | null;
+            /** Format: uuid */
+            batchId: string | null;
+            /** @description Tasting notes only */
+            scores: {
+                aroma: number | null;
+                appearance: number | null;
+                flavor: number | null;
+                mouthfeel: number | null;
+                overall: number | null;
+                /** @description Sum of the scores given; null when none are */
+                total: number | null;
+            } | null;
+            /**
+             * @description private: owner, brewery and shares only. unlisted: anyone with the link, never listed. server: every signed-in user here. public: anyone.
+             * @enum {string}
+             */
+            visibility: "private" | "unlisted" | "server" | "public";
+            owner: {
+                /** @enum {string} */
+                type: "user" | "brewery";
+                /** Format: uuid */
+                id: string;
+            };
+            createdAt: string;
+            updatedAt: string;
+        };
+        NoteInput: {
+            /**
+             * @default general
+             * @enum {string}
+             */
+            kind: "general" | "tasting";
+            body: string;
+            /** Format: uuid */
+            recipeId?: string;
+            /** Format: uuid */
+            batchId?: string;
+            scores?: components["schemas"]["TastingScores"];
+        };
+        /** @description BJCP score sheet: aroma /12, appearance /3, flavor /20, mouthfeel /5, overall /10 */
+        TastingScores: {
+            aroma?: number | null;
+            appearance?: number | null;
+            flavor?: number | null;
+            mouthfeel?: number | null;
+            overall?: number | null;
+        };
+        /** @description Scores merge into the existing ones; null clears one */
+        NotePatch: {
+            body?: string;
+            scores?: components["schemas"]["TastingScores"];
         };
     };
     responses: never;
@@ -3079,6 +3465,934 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EquipmentProfile"];
+                };
+            };
+            /** @description Error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listBatches: {
+        parameters: {
+            query?: {
+                /** @description Beer: planned → brewing → fermenting → conditioning → packaged → finished. Mead, wine, cider: planned → primary → secondary → bulk_aging → stabilized → bottled → bottle_aging → finished. */
+                status?: components["schemas"]["BatchStatus"];
+                /** @description Only batches you own */
+                mine?: "true" | "false";
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Batches */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BatchPage"];
+                };
+            };
+            /** @description Error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    createBatch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateBatch"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BatchDetail"];
+                };
+            };
+            /** @description Error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getBatch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Batch */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BatchDetail"];
+                };
+            };
+            /** @description Error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    deleteBatch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Done */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    setBatchStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StatusChange"];
+            };
+        };
+        responses: {
+            /** @description Moved */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatusResult"];
+                };
+            };
+            /** @description Error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listReadings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Readings */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reading"][];
+                };
+            };
+            /** @description Error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    addReading: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReadingInput"];
+            };
+        };
+        responses: {
+            /** @description Added */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reading"];
+                };
+            };
+            /** @description Error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    deleteReading: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                readingId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Done */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    updateReading: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                readingId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReadingPatch"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reading"];
+                };
+            };
+            /** @description Error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listBatchReminders: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Reminders */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reminder"][];
+                };
+            };
+            /** @description Error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    addReminder: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReminderInput"];
+            };
+        };
+        responses: {
+            /** @description Added */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reminder"];
+                };
+            };
+            /** @description Error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listDueReminders: {
+        parameters: {
+            query?: {
+                until?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Due reminders */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reminder"][];
+                };
+            };
+            /** @description Error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    markReminderDone: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Done */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reminder"];
+                };
+            };
+            /** @description Error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listNotes: {
+        parameters: {
+            query?: {
+                recipeId?: string;
+                batchId?: string;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Notes */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotePage"];
+                };
+            };
+            /** @description Error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    createNote: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NoteInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Note"];
+                };
+            };
+            /** @description Error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getNote: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Note */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Note"];
+                };
+            };
+            /** @description Error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    deleteNote: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Done */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    updateNote: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NotePatch"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Note"];
                 };
             };
             /** @description Error */
