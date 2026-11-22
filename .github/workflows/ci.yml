@@ -35,3 +35,33 @@ jobs:
         with:
           name: brew-math-coverage
           path: packages/brew-math/coverage
+
+  postgres:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: brew
+          POSTGRES_DB: brew
+          POSTGRES_PASSWORD: postgres-test-only
+        ports:
+          - 5432/tcp
+        options: >-
+          --health-cmd "pg_isready -h 127.0.0.1 -U brew -d brew"
+          --health-interval 2s
+          --health-timeout 2s
+          --health-retries 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Run PostgreSQL integration tests
+        env:
+          TEST_DATABASE_URL: postgres://brew:postgres-test-only@127.0.0.1:${{ job.services.postgres.ports[5432] }}/brew
+        run: pnpm test --filter=@brew-bruvs/db --filter=@brew-bruvs/catalog-seed --filter=@brew-bruvs/server

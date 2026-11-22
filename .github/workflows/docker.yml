@@ -23,6 +23,10 @@ jobs:
           node-version-file: .nvmrc
       - run: docker compose -f docker/compose.yml build app
       - run: docker compose -f docker/compose.yml up -d --no-build --wait --wait-timeout 120
+      - name: Check the startup catalog
+        run: |
+          count=$(docker compose -f docker/compose.yml exec -T postgres psql -v ON_ERROR_STOP=1 -U brew -d brew -Atc "SELECT count(*) FROM hops WHERE id = 'hop-columbus' AND 'Zeus' = ANY(aliases)")
+          test "$count" -eq 1
       - run: node scripts/docker-smoke.ts
       - if: failure()
         run: docker compose -f docker/compose.yml logs
