@@ -8,8 +8,10 @@
     "node": ">=22.18"
   },
   "scripts": {
+    "build": "turbo run build",
     "dev": "turbo run dev",
     "lint": "biome check . && node scripts/check-spdx.ts",
+    "check:licenses": "node scripts/check-licenses.ts",
     "format": "biome check --write .",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
@@ -21,9 +23,9 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.2.0",
-    "@vitest/coverage-v8": "^3.2.0",
+    "@vitest/coverage-v8": "^4.1.12",
     "turbo": "^2.5.0",
     "typescript": "^5.9.0",
-    "vitest": "^3.2.0"
+    "vitest": "^4.1.12"
   }
 }

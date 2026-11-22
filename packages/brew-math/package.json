@@ -8,6 +8,7 @@
     ".": "./src/index.ts"
   },
   "scripts": {
+    "build": "tsc -p tsconfig.build.json --noEmit false --rewriteRelativeImportExtensions --outDir dist",
     "typecheck": "tsc --noEmit -p .",
     "test": "vitest run --coverage"
   }

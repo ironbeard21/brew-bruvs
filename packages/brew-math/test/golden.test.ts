@@ -1,15 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-import * as carbonation from "../src/carbonation.ts";
-import * as color from "../src/color.ts";
-import * as dilution from "../src/dilution.ts";
-import * as gravity from "../src/gravity.ts";
-import * as hydrometer from "../src/hydrometer.ts";
-import * as ibu from "../src/ibu.ts";
-import * as mashWater from "../src/mash-water.ts";
-import * as meadWine from "../src/mead-wine.ts";
-import * as refractometer from "../src/refractometer.ts";
-import * as units from "../src/units.ts";
-import * as yeast from "../src/yeast.ts";
+import * as brewMath from "../src/index.ts";
 import carbonationCases from "./golden/carbonation.json" with { type: "json" };
 import colorCases from "./golden/color.json" with { type: "json" };
 import dilutionCases from "./golden/dilution.json" with { type: "json" };
@@ -25,14 +15,14 @@ import { type GoldenCase, runGolden } from "./golden.ts";
 
 type Golden = Record<string, GoldenCase[]>;
 
-runGolden(units, unitsCases as Golden);
-runGolden(gravity, gravityCases as Golden);
-runGolden(hydrometer, hydrometerCases as Golden);
-runGolden(refractometer, refractometerCases as Golden);
-runGolden(mashWater, mashWaterCases as Golden);
-runGolden(dilution, dilutionCases as Golden);
-runGolden(carbonation, carbonationCases as Golden);
-runGolden(yeast, yeastCases as Golden);
-runGolden(ibu, ibuCases as Golden);
-runGolden(color, colorCases as Golden);
-runGolden(meadWine, meadWineCases as Golden);
+runGolden(brewMath.units, unitsCases as Golden);
+runGolden(brewMath, gravityCases as Golden);
+runGolden(brewMath, hydrometerCases as Golden);
+runGolden(brewMath, refractometerCases as Golden);
+runGolden(brewMath, mashWaterCases as Golden);
+runGolden(brewMath, dilutionCases as Golden);
+runGolden(brewMath, carbonationCases as Golden);
+runGolden(brewMath, yeastCases as Golden);
+runGolden(brewMath, ibuCases as Golden);
+runGolden(brewMath, colorCases as Golden);
+runGolden(brewMath, meadWineCases as Golden);

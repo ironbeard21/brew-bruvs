@@ -8,6 +8,7 @@
     ".": "./src/index.ts"
   },
   "scripts": {
+    "build": "tsc -p . --noEmit false --rewriteRelativeImportExtensions --outDir dist",
     "seed": "node -e \"console.log('not implemented yet (P0-09)')\"",
     "typecheck": "tsc --noEmit -p .",
     "test": "vitest run --passWithNoTests"

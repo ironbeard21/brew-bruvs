@@ -1,3 +1,7 @@
 packages:
   - apps/*
   - packages/*
+
+overrides:
+  # Redocly uses the js-yaml library. argparse is only used by the standalone js-yaml CLI.
+  js-yaml@4>argparse: "-"

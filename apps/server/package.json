@@ -5,6 +5,7 @@
   "license": "AGPL-3.0-or-later",
   "type": "module",
   "scripts": {
+    "build": "tsc -p tsconfig.build.json --noEmit false --rewriteRelativeImportExtensions --outDir dist",
     "dev": "node --env-file-if-exists=../../.env --watch src/index.ts",
     "start": "node src/index.ts",
     "openapi": "node src/write-openapi.ts",
