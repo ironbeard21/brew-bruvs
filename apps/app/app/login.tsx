@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { Redirect, useRouter } from "expo-router";
 import { StyleSheet, Text, View } from "react-native";
-import { AUTH_CONTRACT_AVAILABLE } from "../src/api/auth";
 import { useServerHealth } from "../src/api/health";
 import { AppShell } from "../src/components/AppShell";
+import { AuthPanel } from "../src/components/AuthPanel";
 import { Banner, Button, Card } from "../src/components/ui";
 import { useServer } from "../src/state/server";
 import { colors, spacing } from "../src/theme";
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { hydrated, serverUrl, disconnectServer } = useServer();
+  const { hydrated, serverUrl, authToken, setAuthToken, disconnectServer } = useServer();
   const health = useServerHealth(serverUrl);
 
   if (hydrated && !serverUrl) {
@@ -69,23 +69,14 @@ export default function LoginScreen() {
           </View>
         </Card>
 
-        <Card>
-          <Text style={styles.sectionTitle}>Sign In</Text>
-          {!AUTH_CONTRACT_AVAILABLE ? (
-            <>
-              <Banner
-                tone="info"
-                message="Authentication endpoints land with P0-11. Once merged into @brew-bruvs/api-contract, first-run admin setup and email/password sign-in will appear here."
-                testID="auth-pending-banner"
-              />
-              <Button
-                label="Open offline calculators"
-                onPress={() => router.push("/calculators")}
-                testID="open-calculators-button"
-              />
-            </>
-          ) : null}
-        </Card>
+        {serverUrl ? (
+          <AuthPanel
+            serverUrl={serverUrl}
+            authToken={authToken}
+            onTokenChange={setAuthToken}
+            onOpenCalculators={() => router.push("/calculators")}
+          />
+        ) : null}
       </View>
     </AppShell>
   );

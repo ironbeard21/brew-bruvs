@@ -3,8 +3,31 @@ import { type ApiError, createApiClient } from "@brew-bruvs/api-contract";
 
 export type BrewBruvsApiClient = ReturnType<typeof createApiClient>;
 
-export function getApiClient(baseUrl: string, customFetch?: typeof fetch): BrewBruvsApiClient {
-  return createApiClient(baseUrl, customFetch ? { fetch: customFetch } : undefined);
+export interface ApiClientOptions {
+  token?: string | null;
+  customFetch?: typeof fetch;
+}
+
+export function getApiClient(
+  baseUrl: string,
+  options?: ApiClientOptions | typeof fetch,
+): BrewBruvsApiClient {
+  const opts: ApiClientOptions =
+    typeof options === "function" ? { customFetch: options } : (options ?? {});
+  const client = createApiClient(
+    baseUrl,
+    opts.customFetch ? { fetch: opts.customFetch } : undefined,
+  );
+  if (opts.token) {
+    const bearer = opts.token;
+    client.use({
+      onRequest({ request }) {
+        request.headers.set("Authorization", `Bearer ${bearer}`);
+        return request;
+      },
+    });
+  }
+  return client;
 }
 
 export function formatApiError(error: unknown, fallback: string): string {

@@ -5,6 +5,12 @@ import { appStorage, type KeyValueStorage } from "./storage";
 const ACTIVE_SERVER_KEY = "brewbruvs.server.active";
 const SAVED_SERVERS_KEY = "brewbruvs.server.saved";
 const OFFLINE_MODE_KEY = "brewbruvs.server.offline";
+const TOKEN_KEY_PREFIX = "brewbruvs.token.";
+
+function tokenKeyFor(url: string): string {
+  // SecureStore keys allow alphanumeric, '.', '-', '_' only.
+  return `${TOKEN_KEY_PREFIX}${encodeURIComponent(url).replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+}
 
 export type NormalizedUrlResult = { ok: true; url: string } | { ok: false; error: string };
 
@@ -60,15 +66,19 @@ interface ServerContextValue {
   hydrated: boolean;
   /** Currently selected Brew-Bruvs server URL, or null when unconnected / offline-only. */
   serverUrl: string | null;
+  /** Native revocable app token for the active server (null on web, which uses HttpOnly cookies). */
+  authToken: string | null;
   /** Previously connected servers for quick switching. */
   savedServers: string[];
   /** True when the user chose to use offline calculators without connecting a server. */
   offlineMode: boolean;
-  /** Saves and activates a verified server URL. */
+  /** Saves and activates a verified server URL, loading any stored native token for it. */
   selectServer: (url: string) => Promise<void>;
+  /** Saves or clears the native app token for the active server. */
+  setAuthToken: (token: string | null) => Promise<void>;
   /** Clears the active server while keeping saved servers available to switch back to. */
   disconnectServer: () => Promise<void>;
-  /** Removes a server from the saved list (and disconnects if active). */
+  /** Removes a server from the saved list and deletes its stored token (disconnecting if active). */
   removeSavedServer: (url: string) => Promise<void>;
   /** Enters offline calculator mode without requiring a server. */
   enterOfflineMode: () => Promise<void>;
@@ -102,6 +112,7 @@ export function ServerProvider({
 }: ServerProviderProps) {
   const [hydrated, setHydrated] = useState(initialServerUrl !== undefined);
   const [serverUrl, setServerUrl] = useState<string | null>(initialServerUrl ?? null);
+  const [authToken, setAuthTokenState] = useState<string | null>(null);
   const [savedServers, setSavedServers] = useState<string[]>(
     initialServerUrl ? [initialServerUrl] : [],
   );
@@ -114,11 +125,13 @@ export function ServerProvider({
       storage.getItem(ACTIVE_SERVER_KEY),
       storage.getItem(SAVED_SERVERS_KEY),
       storage.getItem(OFFLINE_MODE_KEY),
-    ]).then(([savedActive, savedList, savedOffline]) => {
+    ]).then(async ([savedActive, savedList, savedOffline]) => {
+      const activeUrl = savedActive || null;
+      const savedToken = activeUrl ? await storage.getItem(tokenKeyFor(activeUrl)) : null;
       if (!active) return;
-      const list = parseSavedServers(savedList);
-      setSavedServers(list);
-      setServerUrl(savedActive || null);
+      setSavedServers(parseSavedServers(savedList));
+      setServerUrl(activeUrl);
+      setAuthTokenState(savedToken);
       setOfflineMode(savedOffline === "true");
       setHydrated(true);
     });
@@ -135,7 +148,9 @@ export function ServerProvider({
       }
       const nextUrl = normalized.url;
       const nextList = [nextUrl, ...savedServers.filter((item) => item !== nextUrl)];
+      const existingToken = await storage.getItem(tokenKeyFor(nextUrl));
       setServerUrl(nextUrl);
+      setAuthTokenState(existingToken);
       setOfflineMode(false);
       setSavedServers(nextList);
       await Promise.all([
@@ -147,8 +162,22 @@ export function ServerProvider({
     [savedServers, storage],
   );
 
+  const setAuthToken = useCallback(
+    async (token: string | null) => {
+      setAuthTokenState(token);
+      if (!serverUrl) return;
+      if (token) {
+        await storage.setItem(tokenKeyFor(serverUrl), token);
+      } else {
+        await storage.removeItem(tokenKeyFor(serverUrl));
+      }
+    },
+    [serverUrl, storage],
+  );
+
   const disconnectServer = useCallback(async () => {
     setServerUrl(null);
+    setAuthTokenState(null);
     setOfflineMode(false);
     await Promise.all([
       storage.removeItem(ACTIVE_SERVER_KEY),
@@ -160,9 +189,13 @@ export function ServerProvider({
     async (url: string) => {
       const nextList = savedServers.filter((item) => item !== url);
       setSavedServers(nextList);
-      const ops: Promise<void>[] = [storage.setItem(SAVED_SERVERS_KEY, JSON.stringify(nextList))];
+      const ops: Promise<void>[] = [
+        storage.setItem(SAVED_SERVERS_KEY, JSON.stringify(nextList)),
+        storage.removeItem(tokenKeyFor(url)),
+      ];
       if (serverUrl === url) {
         setServerUrl(null);
+        setAuthTokenState(null);
         ops.push(storage.removeItem(ACTIVE_SERVER_KEY));
       }
       await Promise.all(ops);
@@ -180,9 +213,11 @@ export function ServerProvider({
       value={{
         hydrated,
         serverUrl,
+        authToken,
         savedServers,
         offlineMode,
         selectServer,
+        setAuthToken,
         disconnectServer,
         removeSavedServer,
         enterOfflineMode,

@@ -2,7 +2,7 @@
 import { expect, test } from "@playwright/test";
 
 test.describe("Brew-Bruvs app shell", () => {
-  test("connects to server, switches servers, and runs the ABV calculator", async ({
+  test("connects to server, logs in, switches servers, and runs the ABV calculator", async ({
     page,
     baseURL,
   }) => {
@@ -20,6 +20,33 @@ test.describe("Brew-Bruvs app shell", () => {
     await expect(page).toHaveURL(/\/login$/);
     await expect(page.getByTestId("connected-server-url")).toHaveText(baseURL ?? "");
     await expect(page.getByTestId("server-health-status")).toContainText("healthy");
+
+    // First run on a fresh server shows admin setup; subsequent runs show standard login.
+    const setupSubmit = page.getByTestId("auth-setup-submit");
+    const loginSubmit = page.getByTestId("auth-login-submit");
+    await expect(setupSubmit.or(loginSubmit)).toBeVisible();
+
+    if (await setupSubmit.isVisible()) {
+      await page.getByTestId("auth-display-name-input").fill("Head Brewer");
+      await page.getByTestId("auth-email-input").fill("admin@brew.test");
+      await page.getByTestId("auth-password-input").fill("hop-secret-123");
+      await setupSubmit.click();
+      await expect(page.getByTestId("signed-in-name")).toHaveText("Head Brewer");
+
+      // Sign out and verify real email/password login flow (including wrong password rejection).
+      await page.getByTestId("logout-button").click();
+      await expect(loginSubmit).toBeVisible();
+    }
+
+    await page.getByTestId("auth-email-input").fill("admin@brew.test");
+    await page.getByTestId("auth-password-input").fill("wrong-password");
+    await loginSubmit.click();
+    await expect(page.getByTestId("auth-error")).toContainText("Wrong email or password");
+
+    await page.getByTestId("auth-password-input").fill("hop-secret-123");
+    await loginSubmit.click();
+    await expect(page.getByTestId("signed-in-name")).toHaveText("Head Brewer");
+    await expect(page.getByTestId("signed-in-email")).toHaveText("admin@brew.test");
 
     // Switch server navigates back to /connect with the server saved.
     await page.getByTestId("switch-server-button").click();
