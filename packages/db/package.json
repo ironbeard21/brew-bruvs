@@ -8,17 +8,19 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "build": "tsc -p . --noEmit false --rewriteRelativeImportExtensions --outDir dist",
-    "db:generate": "node -e \"console.log('not implemented yet (P0-08)')\"",
+    "build": "tsc -p tsconfig.build.json --noEmit false --rewriteRelativeImportExtensions --outDir dist",
+    "db:generate": "drizzle-kit generate",
     "db:migrate": "node --env-file-if-exists=../../.env src/migrate.ts",
     "typecheck": "tsc --noEmit -p .",
-    "test": "vitest run --passWithNoTests"
+    "test": "vitest run --passWithNoTests",
+    "db:rollback": "node --env-file-if-exists=../../.env src/migrate.ts --rollback"
   },
   "dependencies": {
     "drizzle-orm": "^0.45.4",
     "pg": "^8.22.0"
   },
   "devDependencies": {
-    "@types/pg": "^8.20.0"
+    "@types/pg": "^8.20.0",
+    "drizzle-kit": "^0.31.11"
   }
 }
