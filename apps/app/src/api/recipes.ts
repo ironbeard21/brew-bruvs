@@ -196,6 +196,26 @@ export function useRecipeVersions(
   });
 }
 
+export function useRecipeVersion(
+  serverUrl: string | null,
+  token: string | null,
+  id: string | null,
+  version: number | null,
+  customFetch?: typeof fetch,
+) {
+  return useQuery({
+    queryKey: ["recipe-version", serverUrl, id, version],
+    enabled: Boolean(serverUrl && id && version != null),
+    retry: false,
+    queryFn: () => {
+      if (!serverUrl || !id || version == null) {
+        throw new Error("Missing server, recipe id, or version");
+      }
+      return fetchRecipeVersion(serverUrl, token, id, version, customFetch);
+    },
+  });
+}
+
 export function useRecipeShares(
   serverUrl: string | null,
   token: string | null,

@@ -57,9 +57,126 @@ interface StoredRecipe {
   }[];
 }
 
+interface StoredBatch {
+  id: string;
+  uri: string;
+  name: string;
+  beverage: "beer" | "mead" | "wine" | "cider";
+  status: string;
+  visibility: "private" | "unlisted" | "server" | "public";
+  owner: { type: "user"; id: string };
+  recipe: { id: string; version: number; versionId: string };
+  batchSizeL: number | null;
+  equipmentProfileId: string | null;
+  brewedAt: string | null;
+  completedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  statusHistory: { status: string; changedAt: string }[];
+  readings: StoredReading[];
+  reminders: StoredReminder[];
+}
+
+interface StoredReading {
+  id: string;
+  batchId: string;
+  takenAt: string;
+  gravitySg: number | null;
+  temperatureC: number | null;
+  ph: number | null;
+  brix: number | null;
+  titratableAcidityGPerL: number | null;
+  freeSo2MgPerL: number | null;
+  source: "manual" | "device";
+  note: string | null;
+  createdAt: string;
+}
+
+interface StoredReminder {
+  id: string;
+  batchId: string;
+  batchName: string;
+  kind: "nutrient" | "rack" | "sulfite" | "taste" | "ready" | "custom";
+  dueAt: string;
+  note: string | null;
+  doneAt: string | null;
+  createdAt: string;
+}
+
+interface StoredNote {
+  id: string;
+  uri: string;
+  kind: "general" | "tasting";
+  body: string;
+  recipeId: string | null;
+  batchId: string | null;
+  scores: {
+    aroma: number | null;
+    appearance: number | null;
+    flavor: number | null;
+    mouthfeel: number | null;
+    overall: number | null;
+    total: number | null;
+  } | null;
+  visibility: "private" | "unlisted" | "server" | "public";
+  owner: { type: "user"; id: string };
+  createdAt: string;
+  updatedAt: string;
+}
+
+const BEER_FLOW = ["planned", "brewing", "fermenting", "conditioning", "packaged", "finished"];
+const FERM_FLOW = [
+  "planned",
+  "primary",
+  "secondary",
+  "bulk_aging",
+  "stabilized",
+  "bottled",
+  "bottle_aging",
+  "finished",
+];
+
+function allowedStatusesFor(beverage: StoredBatch["beverage"], status: string): string[] {
+  const flow = beverage === "beer" ? BEER_FLOW : FERM_FLOW;
+  const idx = flow.indexOf(status);
+  if (idx < 0) return [];
+  const next = flow.slice(idx + 1);
+  const back = idx > 0 ? [flow[idx - 1] as string] : [];
+  return [...back, ...next];
+}
+
+function batchSummary(b: StoredBatch) {
+  return {
+    id: b.id,
+    uri: b.uri,
+    name: b.name,
+    beverage: b.beverage,
+    status: b.status,
+    visibility: b.visibility,
+    owner: b.owner,
+    recipe: b.recipe,
+    batchSizeL: b.batchSizeL,
+    equipmentProfileId: b.equipmentProfileId,
+    brewedAt: b.brewedAt,
+    completedAt: b.completedAt,
+    createdAt: b.createdAt,
+    updatedAt: b.updatedAt,
+  };
+}
+
+function batchDetail(b: StoredBatch) {
+  return {
+    ...batchSummary(b),
+    statusHistory: b.statusHistory,
+    allowedStatuses: allowedStatusesFor(b.beverage, b.status),
+  };
+}
+
 const users = new Map<string, StoredUser>();
 const sessions = new Map<string, string>();
 const recipes = new Map<string, StoredRecipe>();
+const batches = new Map<string, StoredBatch>();
+const notes = new Map<string, StoredNote>();
 const equipmentProfiles: Record<string, unknown>[] = [];
 
 const SEEDED_CATALOG: Record<string, Record<string, unknown>[]> = {
@@ -596,6 +713,249 @@ const server = createServer(async (req, res) => {
     if (sub === "shares" && method === "GET") {
       return sendJson(res, 200, recipe.shares);
     }
+  }
+
+  // Batches CRUD, status, readings, reminders
+  if (pathname === "/api/batches" && method === "GET") {
+    const statusFilter = url.searchParams.get("status");
+    const list = [...batches.values()]
+      .filter((b) => (!statusFilter ? true : b.status === statusFilter))
+      .map(batchSummary);
+    return sendJson(res, 200, { items: list, nextOffset: null });
+  }
+  if (pathname === "/api/batches" && method === "POST") {
+    const user = getUserForRequest(req);
+    if (!user)
+      return sendJson(res, 401, { error: { code: "unauthorized", message: "Sign in first" } });
+    const data = JSON.parse(await readBody(req)) as {
+      recipeId: string;
+      version?: number;
+      name?: string;
+      batchSizeL?: number;
+      equipmentProfileId?: string | null;
+    };
+    const recipe = recipes.get(data.recipeId);
+    if (!recipe)
+      return sendJson(res, 404, { error: { code: "not_found", message: "Recipe not found" } });
+    const ver =
+      (data.version
+        ? recipe.versions.find((v) => v.version === data.version)
+        : recipe.versions[recipe.versions.length - 1]) ?? recipe.versions[0];
+    if (!ver)
+      return sendJson(res, 404, { error: { code: "not_found", message: "Version not found" } });
+    const id = randomUUID();
+    const now = new Date().toISOString();
+    const b: StoredBatch = {
+      id,
+      uri: `http://127.0.0.1:${PORT}/batches/${id}`,
+      name: data.name?.trim() || ver.name,
+      beverage: ver.beverage,
+      status: "planned",
+      visibility: "private",
+      owner: { type: "user", id: user.id },
+      recipe: { id: recipe.id, version: ver.version, versionId: ver.id },
+      batchSizeL: data.batchSizeL ?? ver.batchSizeL,
+      equipmentProfileId: data.equipmentProfileId ?? ver.equipmentProfileId,
+      brewedAt: null,
+      completedAt: null,
+      createdAt: now,
+      updatedAt: now,
+      statusHistory: [{ status: "planned", changedAt: now }],
+      readings: [],
+      reminders: [],
+    };
+    batches.set(id, b);
+    return sendJson(res, 201, batchDetail(b));
+  }
+
+  const batchSub = pathname.match(
+    /^\/api\/batches\/([^/]+)(?:\/(status|readings|reminders)(?:\/([^/]+))?)?$/,
+  );
+  if (batchSub) {
+    const batchId = batchSub[1] ?? "";
+    const sub = batchSub[2];
+    const subId = batchSub[3];
+    const b = batches.get(batchId);
+    if (!b) return sendJson(res, 404, { error: { code: "not_found", message: "Batch not found" } });
+
+    if (!sub && method === "GET") return sendJson(res, 200, batchDetail(b));
+    if (!sub && method === "DELETE") {
+      batches.delete(batchId);
+      res.writeHead(204);
+      res.end();
+      return;
+    }
+    if (sub === "status" && method === "POST") {
+      const data = JSON.parse(await readBody(req)) as { status: string };
+      const allowed = allowedStatusesFor(b.beverage, b.status);
+      if (!allowed.includes(data.status)) {
+        return sendJson(res, 409, {
+          error: { code: "conflict", message: "Status move not allowed" },
+        });
+      }
+      const now = new Date().toISOString();
+      b.status = data.status;
+      b.updatedAt = now;
+      if ((data.status === "brewing" || data.status === "primary") && !b.brewedAt) {
+        b.brewedAt = now;
+      }
+      if (data.status === "finished" && !b.completedAt) {
+        b.completedAt = now;
+      }
+      b.statusHistory.push({ status: data.status, changedAt: now });
+      return sendJson(res, 200, {
+        batch: batchDetail(b),
+        addedReminders: [],
+        scheduleError: null,
+      });
+    }
+    if (sub === "readings" && !subId && method === "GET") {
+      const sorted = [...b.readings].sort((a, c) => Date.parse(a.takenAt) - Date.parse(c.takenAt));
+      return sendJson(res, 200, sorted);
+    }
+    if (sub === "readings" && !subId && method === "POST") {
+      const data = JSON.parse(await readBody(req)) as Partial<StoredReading>;
+      const now = new Date().toISOString();
+      const r: StoredReading = {
+        id: randomUUID(),
+        batchId: b.id,
+        takenAt: data.takenAt ?? now,
+        gravitySg: data.gravitySg ?? null,
+        temperatureC: data.temperatureC ?? null,
+        ph: data.ph ?? null,
+        brix: data.brix ?? null,
+        titratableAcidityGPerL: data.titratableAcidityGPerL ?? null,
+        freeSo2MgPerL: data.freeSo2MgPerL ?? null,
+        source: data.source ?? "manual",
+        note: data.note ?? null,
+        createdAt: now,
+      };
+      b.readings.push(r);
+      return sendJson(res, 201, r);
+    }
+    if (sub === "readings" && subId && method === "PATCH") {
+      const r = b.readings.find((x) => x.id === subId);
+      if (!r)
+        return sendJson(res, 404, { error: { code: "not_found", message: "Reading not found" } });
+      const data = JSON.parse(await readBody(req)) as Partial<StoredReading>;
+      Object.assign(r, data);
+      return sendJson(res, 200, r);
+    }
+    if (sub === "readings" && subId && method === "DELETE") {
+      b.readings = b.readings.filter((x) => x.id !== subId);
+      res.writeHead(204);
+      res.end();
+      return;
+    }
+    if (sub === "reminders" && !subId && method === "GET") {
+      return sendJson(res, 200, b.reminders);
+    }
+    if (sub === "reminders" && !subId && method === "POST") {
+      const data = JSON.parse(await readBody(req)) as {
+        kind: StoredReminder["kind"];
+        dueAt: string;
+        note?: string;
+      };
+      const now = new Date().toISOString();
+      const rem: StoredReminder = {
+        id: randomUUID(),
+        batchId: b.id,
+        batchName: b.name,
+        kind: data.kind,
+        dueAt: data.dueAt,
+        note: data.note ?? null,
+        doneAt: null,
+        createdAt: now,
+      };
+      b.reminders.push(rem);
+      return sendJson(res, 201, rem);
+    }
+  }
+
+  const reminderDoneMatch = pathname.match(/^\/api\/reminders\/([^/]+)\/done$/);
+  if (reminderDoneMatch && method === "POST") {
+    const remId = reminderDoneMatch[1] ?? "";
+    for (const b of batches.values()) {
+      const found = b.reminders.find((r) => r.id === remId);
+      if (found) {
+        found.doneAt = found.doneAt ?? new Date().toISOString();
+        return sendJson(res, 200, found);
+      }
+    }
+    return sendJson(res, 404, { error: { code: "not_found", message: "Reminder not found" } });
+  }
+
+  // Notes CRUD
+  if (pathname === "/api/notes" && method === "GET") {
+    const batchIdFilter = url.searchParams.get("batchId");
+    const recipeIdFilter = url.searchParams.get("recipeId");
+    const list = [...notes.values()]
+      .filter((n) => (!batchIdFilter ? true : n.batchId === batchIdFilter))
+      .filter((n) => (!recipeIdFilter ? true : n.recipeId === recipeIdFilter))
+      .reverse();
+    return sendJson(res, 200, { items: list, nextOffset: null });
+  }
+  if (pathname === "/api/notes" && method === "POST") {
+    const user = getUserForRequest(req);
+    if (!user)
+      return sendJson(res, 401, { error: { code: "unauthorized", message: "Sign in first" } });
+    const data = JSON.parse(await readBody(req)) as {
+      kind?: "general" | "tasting";
+      body: string;
+      recipeId?: string;
+      batchId?: string;
+      scores?: {
+        aroma?: number | null;
+        appearance?: number | null;
+        flavor?: number | null;
+        mouthfeel?: number | null;
+        overall?: number | null;
+      };
+    };
+    const id = randomUUID();
+    const now = new Date().toISOString();
+    const kind = data.kind ?? "general";
+    let scores: StoredNote["scores"] = null;
+    if (kind === "tasting" && data.scores) {
+      const vals = [
+        data.scores.aroma ?? null,
+        data.scores.appearance ?? null,
+        data.scores.flavor ?? null,
+        data.scores.mouthfeel ?? null,
+        data.scores.overall ?? null,
+      ];
+      const numeric = vals.filter((v): v is number => typeof v === "number");
+      scores = {
+        aroma: data.scores.aroma ?? null,
+        appearance: data.scores.appearance ?? null,
+        flavor: data.scores.flavor ?? null,
+        mouthfeel: data.scores.mouthfeel ?? null,
+        overall: data.scores.overall ?? null,
+        total: numeric.length > 0 ? numeric.reduce((a, c) => a + c, 0) : null,
+      };
+    }
+    const noteObj: StoredNote = {
+      id,
+      uri: `http://127.0.0.1:${PORT}/notes/${id}`,
+      kind,
+      body: data.body.trim(),
+      recipeId: data.recipeId ?? null,
+      batchId: data.batchId ?? null,
+      scores,
+      visibility: "private",
+      owner: { type: "user", id: user.id },
+      createdAt: now,
+      updatedAt: now,
+    };
+    notes.set(id, noteObj);
+    return sendJson(res, 201, noteObj);
+  }
+  const noteIdMatch = pathname.match(/^\/api\/notes\/([^/]+)$/);
+  if (noteIdMatch && method === "DELETE") {
+    notes.delete(noteIdMatch[1] ?? "");
+    res.writeHead(204);
+    res.end();
+    return;
   }
 
   if (pathname === "/api" || pathname.startsWith("/api/")) {

@@ -32,14 +32,25 @@ const SUGAR_OPTIONS = [
   { value: "table-sugar", label: "Table Sugar (Sucrose)" },
 ] as const;
 
-export function CarbonationCalculator() {
+export interface CarbonationCalculatorProps {
+  initialVolumeL?: number | null | undefined;
+}
+
+export function CarbonationCalculator({ initialVolumeL }: CarbonationCalculatorProps = {}) {
   const { unitSystem } = useUnits();
   const { width } = useWindowDimensions();
   const isDesktop = width >= DESKTOP_BREAKPOINT;
 
   const [mode, setMode] = useState<CarbMode>("priming");
   const [sugar, setSugar] = useState<PrimingSugar>("corn-sugar");
-  const [volumeText, setVolumeText] = useState(unitSystem === "us" ? "5.0" : "18.9");
+  const [volumeText, setVolumeText] = useState(() => {
+    if (initialVolumeL != null && initialVolumeL > 0) {
+      return unitSystem === "us"
+        ? units.litersToGallons(initialVolumeL).toFixed(2)
+        : initialVolumeL.toFixed(1);
+    }
+    return unitSystem === "us" ? "5.0" : "18.9";
+  });
   const [beerTempText, setBeerTempText] = useState(unitSystem === "us" ? "68" : "20.0");
   const [kegTempText, setKegTempText] = useState(unitSystem === "us" ? "38" : "3.3");
   const [targetVolText, setTargetVolText] = useState("2.4");
