@@ -751,7 +751,7 @@ export interface components {
             use?: "mash" | "steep" | "boil" | "fermentation" | "package";
             /** @description For staggered additions: days after pitching */
             dayOffset?: number;
-            /** @description Per kg in 1 L (grains, sugars, honey) or the juice's own SG */
+            /** @description Grains, sugars, honey: SG of 1 lb in 1 US gal (BeerXML and catalog convention, e.g. 1.037). Juice: its own SG. */
             potentialSg?: number;
             colorEbc?: number;
             yieldPct?: number;

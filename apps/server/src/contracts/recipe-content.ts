@@ -39,9 +39,10 @@ export const FermentableLine = z
     dayOffset: days
       .optional()
       .meta({ description: "For staggered additions: days after pitching" }),
-    potentialSg: sg
-      .optional()
-      .meta({ description: "Per kg in 1 L (grains, sugars, honey) or the juice's own SG" }),
+    potentialSg: sg.optional().meta({
+      description:
+        "Grains, sugars, honey: SG of 1 lb in 1 US gal (BeerXML and catalog convention, e.g. 1.037). Juice: its own SG.",
+    }),
     colorEbc: z.number().min(0).max(5_000).optional(),
     yieldPct: pct.optional(),
     note,
