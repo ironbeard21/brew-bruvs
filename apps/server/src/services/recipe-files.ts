@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { catalogTables, type Db, schema } from "@brew-bruvs/db";
 import { eq } from "drizzle-orm";
-import type { RecipeFileFormat } from "../contracts/recipe-file.ts";
+import type { RecipeFile, RecipeFileFormat } from "../contracts/recipe-file.ts";
 import { importBeerJson } from "../importers/beerjson.ts";
 import { importBeerXml } from "../importers/beerxml.ts";
+import { importRecipePage } from "../importers/recipe-page.ts";
+import { createRemoteRecipeReader } from "../importers/remote-recipe.ts";
 import type { User } from "../permissions.ts";
 import { signedIn } from "./access.ts";
 
@@ -44,32 +46,43 @@ async function matchLines<T extends { name: string; catalogId?: string | undefin
   });
 }
 
-export function createRecipeFileService(db: Db) {
+export function createRecipeFileService(db: Db, readUrl = createRemoteRecipeReader()) {
+  async function draft(recipe: RecipeFile, native: boolean) {
+    const { content } = recipe;
+    const [fermentables, hops, yeasts, miscs, style] = await Promise.all([
+      matchLines(db, "fermentables", content.fermentables, native),
+      matchLines(db, "hops", content.hops, native),
+      matchLines(db, "yeasts", content.yeasts, native),
+      matchLines(db, "miscs", content.miscs, native),
+      recipe.styleId
+        ? db
+            .select({ id: schema.styles.id })
+            .from(schema.styles)
+            .where(eq(schema.styles.id, recipe.styleId))
+        : [],
+    ]);
+    return {
+      ...recipe,
+      visibility: "private" as const,
+      ...(recipe.styleId && { styleId: style[0]?.id ?? null }),
+      credit: recipe.credit ?? { sourceUrl: null, publicSharingBlocked: false },
+      content: { ...content, fermentables, hops, yeasts, miscs },
+    };
+  }
+
   return {
     async preview(viewer: User | null, format: RecipeFileFormat, contents: string) {
       signedIn(viewer);
       const { recipe, native } =
         format === "beerxml" ? importBeerXml(contents) : importBeerJson(contents);
-      const { content } = recipe;
-      const [fermentables, hops, yeasts, miscs, style] = await Promise.all([
-        matchLines(db, "fermentables", content.fermentables, native),
-        matchLines(db, "hops", content.hops, native),
-        matchLines(db, "yeasts", content.yeasts, native),
-        matchLines(db, "miscs", content.miscs, native),
-        recipe.styleId
-          ? db
-              .select({ id: schema.styles.id })
-              .from(schema.styles)
-              .where(eq(schema.styles.id, recipe.styleId))
-          : [],
-      ]);
-      return {
-        ...recipe,
-        visibility: "private" as const,
-        ...(recipe.styleId && { styleId: style[0]?.id ?? null }),
-        credit: recipe.credit ?? { sourceUrl: null, publicSharingBlocked: false },
-        content: { ...content, fermentables, hops, yeasts, miscs },
-      };
+      return draft(recipe, native);
+    },
+    async previewUrl(viewer: User | null, url: string, batchSizeL?: number) {
+      signedIn(viewer);
+      const { recipe, excerpt } = await readUrl(url, (page, attachment) =>
+        importRecipePage(page, attachment, batchSizeL),
+      );
+      return { draft: await draft(recipe, false), excerpt };
     },
   };
 }

@@ -1478,6 +1478,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/recipes/import-url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Read one public recipe page into a private draft */
+        post: operations["importRecipeUrl"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/recipes/{id}/versions/{version}/export": {
         parameters: {
             query?: never;
@@ -3581,6 +3598,74 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ImportedRecipeDraft"];
+                };
+            };
+            /** @description Error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    importRecipeUrl: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uri */
+                    url: string;
+                    /** @description Batch volume in litres for a page without a usable recipe yield */
+                    batchSizeL?: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Draft recipe */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        draft: components["schemas"]["ImportedRecipeDraft"];
+                        excerpt: string;
+                    };
                 };
             };
             /** @description Error */

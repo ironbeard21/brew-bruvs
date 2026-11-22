@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta property="og:site_name" content="Fixture Brewing">
+  <link rel="license" href="https://example.test/license">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {"@type": "Article", "name": "Brew day"},
+      {
+        "@type": ["Thing", "https://schema.org/Recipe"],
+        "name": "Harbor &amp; Hill Pale",
+        "author": {"@type": "Person", "name": "Robin Brewer"},
+        "description": "A brief recipe excerpt for a pale beer brewed with malt and Zeus hops. This sentence makes the source text long enough to check that the importer keeps a short excerpt. The description on the page can continue for as long as the author wishes. This last sentence is outside the excerpt and must stay out of the draft.",
+        "image": "/photo.jpg",
+        "recipeYield": ["12 servings", "5 US pints", "5 gallons"],
+        "recipeIngredient": [
+          "1 1/2 lb Pale Malt", "1 oz Zeus hops (60 minutes)", "1 packet US-05 yeast",
+          "2 pinches House clarifier"
+        ],
+        "recipeInstructions": [
+          {"@type":"HowToSection", "itemListElement":[{"@type": "HowToStep", "text": "Mash the malt."}]},
+          {"@type": "HowToStep", "text": "Add the hops &amp; boil."}
+        ],
+        "recipeTargets": {"og":1.052, "ibu":40}
+      }
+    ]
+  }
+  </script>
+</head>
+<body><p>Unrelated editorial prose.</p><img src="/photo.jpg" alt="Brew day"></body>
+</html>

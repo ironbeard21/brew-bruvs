@@ -22,6 +22,7 @@ function deps(
   db: ReturnType<typeof createDb>["db"],
   signupMode: "open" | "invite",
   oidc?: Oidc,
+  readRecipeUrl?: Parameters<typeof createRecipeFileService>[1],
 ): AppDeps {
   const profiles = createEquipmentProfileService(db, { baseUrl: BASE_URL });
   return {
@@ -30,7 +31,7 @@ function deps(
     catalog: createCatalogService(db),
     profiles,
     recipes: createRecipeService(db, { baseUrl: BASE_URL, profiles }),
-    recipeFiles: createRecipeFileService(db),
+    recipeFiles: createRecipeFileService(db, readRecipeUrl),
     batches: createBatchService(db, { baseUrl: BASE_URL, profiles }),
     notes: createNoteService(db, { baseUrl: BASE_URL }),
     auth: {
@@ -53,7 +54,11 @@ export type TestApp = ReturnType<typeof createApp>;
 
 /** Runs `run` with an app on its own freshly migrated database, dropped afterwards. */
 export async function withApp(
-  opts: { signupMode?: "open" | "invite"; oidc?: Oidc },
+  opts: {
+    signupMode?: "open" | "invite";
+    oidc?: Oidc;
+    readRecipeUrl?: Parameters<typeof createRecipeFileService>[1];
+  },
   run: (app: TestApp, sql: Client) => Promise<void>,
 ): Promise<void> {
   if (!TEST_DATABASE_URL) throw new Error("TEST_DATABASE_URL is not set");
@@ -63,7 +68,10 @@ export async function withApp(
     try {
       await sql.connect();
       await migrateUp(sql);
-      await run(createApp(deps(db, opts.signupMode ?? "invite", opts.oidc)), sql);
+      await run(
+        createApp(deps(db, opts.signupMode ?? "invite", opts.oidc, opts.readRecipeUrl)),
+        sql,
+      );
     } finally {
       await close();
       await sql.end();
