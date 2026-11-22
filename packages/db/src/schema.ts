@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Database schema v1. Units are SI (kg, L, °C) and specific gravity; colour is EBC.
+// Database schema v2. Units are SI (kg, L, °C) and specific gravity; colour is EBC.
 // User data uses UUIDv7 ids (Postgres 18 `uuidv7()`); catalog rows keep their seed ids.
 import { sql } from "drizzle-orm";
 import {
@@ -22,7 +22,8 @@ import {
 } from "drizzle-orm/pg-core";
 
 export const beverage = pgEnum("beverage", ["beer", "mead", "wine", "cider"]);
-export const visibility = pgEnum("visibility", ["private", "server", "public"]);
+// unlisted: anyone with the link can view; never in search or feeds.
+export const visibility = pgEnum("visibility", ["private", "unlisted", "server", "public"]);
 export const breweryRole = pgEnum("brewery_role", ["owner", "admin", "brewer", "viewer"]);
 export const shareLevel = pgEnum("share_level", ["read", "edit"]);
 export const shareableType = pgEnum("shareable_type", [
@@ -35,6 +36,50 @@ export const shareableType = pgEnum("shareable_type", [
 export const quantityUnit = pgEnum("quantity_unit", ["kg", "l", "each"]);
 // session: web cookie · app: phone sign-in · personal: scoped API token
 export const tokenKind = pgEnum("token_kind", ["session", "app", "personal"]);
+export const unitSystem = pgEnum("unit_system", ["us", "metric"]);
+// One list for every beverage; a check on `batches` limits each beverage to its own flow.
+export const batchStatus = pgEnum("batch_status", [
+  "planned",
+  "brewing",
+  "fermenting",
+  "conditioning",
+  "packaged",
+  "primary",
+  "secondary",
+  "bulk_aging",
+  "stabilized",
+  "bottled",
+  "bottle_aging",
+  "finished",
+]);
+export const BEER_STATUSES = [
+  "planned",
+  "brewing",
+  "fermenting",
+  "conditioning",
+  "packaged",
+  "finished",
+] as const;
+// Mead, wine and cider.
+export const AGED_STATUSES = [
+  "planned",
+  "primary",
+  "secondary",
+  "bulk_aging",
+  "stabilized",
+  "bottled",
+  "bottle_aging",
+  "finished",
+] as const;
+export const readingSource = pgEnum("reading_source", ["manual", "device"]);
+export const reminderKind = pgEnum("reminder_kind", [
+  "nutrient",
+  "rack",
+  "sulfite",
+  "taste",
+  "ready",
+  "custom",
+]);
 
 const id = () => uuid("id").primaryKey().default(sql`uuidv7()`);
 const createdAt = () => timestamp("created_at", { withTimezone: true }).notNull().defaultNow();
@@ -57,6 +102,8 @@ export const users = pgTable(
     city: text("city"),
     state: text("state"),
     isAdmin: boolean("is_admin").notNull().default(false),
+    // Display units only; everything is stored in SI.
+    units: unitSystem("units").notNull().default("us"),
     // Null for accounts that only sign in through OIDC.
     passwordHash: text("password_hash"),
     oidcIssuer: text("oidc_issuer"),
@@ -298,21 +345,53 @@ export const equipment = pgTable(
 
 // ── Recipes and batches ───────────────────────────────────────────────
 
+// A brewer's own equipment: scales recipes and sets volumes and efficiency.
+// Seed rows in `equipment` are the catalog these can start from.
+export const equipmentProfiles = pgTable(
+  "equipment_profiles",
+  {
+    ...shareableColumns(),
+    catalogId: text("catalog_id").references(() => equipment.id, { onDelete: "set null" }),
+    name: text("name").notNull(),
+    ...equipmentColumns(),
+    efficiencyPct: doublePrecision("efficiency_pct"),
+    fermenterLossL: doublePrecision("fermenter_loss_l"),
+  },
+  (t) => [
+    ...ownerChecks("equipment_profiles", t),
+    check(
+      "equipment_profiles_efficiency_range",
+      sql`${t.efficiencyPct} > 0 AND ${t.efficiencyPct} <= 100`,
+    ),
+  ],
+);
+
 export const recipes = pgTable(
   "recipes",
   {
     ...shareableColumns(),
     name: text("name").notNull(),
     beverage: beverage("beverage").notNull(),
-    // Credit for imported recipes. Hard rule: once set it can never be removed.
+    // Credit for imported and forked recipes. Hard rule: once set it can never be changed or
+    // removed (trigger recipes_keep_credit, migration 0003).
     creditSourceUrl: text("credit_source_url"),
     creditSite: text("credit_site"),
     creditAuthor: text("credit_author"),
+    creditImportedAt: timestamp("credit_imported_at", { withTimezone: true }),
+    creditLicense: text("credit_license"),
+    forkedFromUri: text("forked_from_uri"),
+    // Local link to the original; goes null if it is deleted, the URI above stays.
+    forkedFromRecipeId: uuid("forked_from_recipe_id").references((): AnyPgColumn => recipes.id, {
+      onDelete: "set null",
+    }),
+    // Set when the source's terms forbid reuse: the recipe can't be made public.
+    publicSharingBlocked: boolean("public_sharing_blocked").notNull().default(false),
   },
-  (t) => ownerChecks("recipes", t),
+  (t) => [...ownerChecks("recipes", t), index().on(t.forkedFromRecipeId)],
 );
 
-// Immutable: a change to a recipe writes a new version.
+// Immutable: a change to a recipe writes a new version (trigger recipe_versions_immutable,
+// migration 0003). The only update allowed is a reference going null when its target is deleted.
 export const recipeVersions = pgTable(
   "recipe_versions",
   {
@@ -325,6 +404,9 @@ export const recipeVersions = pgTable(
     beverage: beverage("beverage").notNull(),
     styleId: text("style_id").references(() => styles.id, { onDelete: "set null" }),
     batchSizeL: doublePrecision("batch_size_l").notNull(),
+    equipmentProfileId: uuid("equipment_profile_id").references(() => equipmentProfiles.id, {
+      onDelete: "set null",
+    }),
     // Ingredients, mash and fermentation steps, shaped close to BeerJSON.
     content: jsonb("content").notNull(),
     createdByUserId: uuid("created_by_user_id").references(() => users.id, {
@@ -347,11 +429,42 @@ export const batches = pgTable(
       .references(() => recipeVersions.id, { onDelete: "restrict" }),
     name: text("name").notNull(),
     beverage: beverage("beverage").notNull(),
+    status: batchStatus("status").notNull().default("planned"),
+    equipmentProfileId: uuid("equipment_profile_id").references(() => equipmentProfiles.id, {
+      onDelete: "set null",
+    }),
     batchSizeL: doublePrecision("batch_size_l"),
     brewedAt: timestamp("brewed_at", { withTimezone: true }),
     completedAt: timestamp("completed_at", { withTimezone: true }),
   },
-  (t) => [...ownerChecks("batches", t), index().on(t.recipeVersionId)],
+  (t) => [
+    ...ownerChecks("batches", t),
+    index().on(t.recipeVersionId),
+    check(
+      "batches_status_fits_beverage",
+      sql.raw(
+        `("beverage" = 'beer' AND "status" IN (${BEER_STATUSES.map((s) => `'${s}'`).join(", ")}))` +
+          ` OR ("beverage" <> 'beer' AND "status" IN (${AGED_STATUSES.map((s) => `'${s}'`).join(", ")}))`,
+      ),
+    ),
+  ],
+);
+
+// Every status a batch has been in, for its timeline.
+export const batchStatusChanges = pgTable(
+  "batch_status_changes",
+  {
+    id: id(),
+    batchId: uuid("batch_id")
+      .notNull()
+      .references(() => batches.id, { onDelete: "cascade" }),
+    status: batchStatus("status").notNull(),
+    changedAt: timestamp("changed_at", { withTimezone: true }).notNull().defaultNow(),
+    changedByUserId: uuid("changed_by_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+  },
+  (t) => [index().on(t.batchId, t.changedAt)],
 );
 
 export const readings = pgTable(
@@ -365,6 +478,10 @@ export const readings = pgTable(
     gravitySg: doublePrecision("gravity_sg"),
     temperatureC: doublePrecision("temperature_c"),
     ph: doublePrecision("ph"),
+    brix: doublePrecision("brix"),
+    titratableAcidityGPerL: doublePrecision("titratable_acidity_g_per_l"),
+    freeSo2MgPerL: doublePrecision("free_so2_mg_per_l"),
+    source: readingSource("source").notNull().default("manual"),
     note: text("note"),
     createdByUserId: uuid("created_by_user_id").references(() => users.id, {
       onDelete: "set null",
@@ -372,6 +489,26 @@ export const readings = pgTable(
     createdAt: createdAt(),
   },
   (t) => [index().on(t.batchId, t.takenAt)],
+);
+
+// Scheduled batch tasks. The server stores them; the app turns them into local notifications.
+export const reminders = pgTable(
+  "reminders",
+  {
+    id: id(),
+    batchId: uuid("batch_id")
+      .notNull()
+      .references(() => batches.id, { onDelete: "cascade" }),
+    kind: reminderKind("kind").notNull(),
+    dueAt: timestamp("due_at", { withTimezone: true }).notNull(),
+    note: text("note"),
+    doneAt: timestamp("done_at", { withTimezone: true }),
+    createdByUserId: uuid("created_by_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    createdAt: createdAt(),
+  },
+  (t) => [index().on(t.batchId, t.dueAt)],
 );
 
 // ── Inventory, equipment, notes ───────────────────────────────────────
