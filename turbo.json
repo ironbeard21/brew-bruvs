@@ -7,6 +7,18 @@
     "test": {
       "outputs": []
     },
+    "@brew-bruvs/catalog-seed#test": {
+      "cache": false,
+      "passThroughEnv": ["TEST_DATABASE_URL"]
+    },
+    "@brew-bruvs/db#test": {
+      "cache": false,
+      "passThroughEnv": ["TEST_DATABASE_URL"]
+    },
+    "@brew-bruvs/server#test": {
+      "cache": false,
+      "passThroughEnv": ["TEST_DATABASE_URL"]
+    },
     "@brew-bruvs/brew-math#test": {
       "outputs": ["coverage/**"]
     },
