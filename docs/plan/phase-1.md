@@ -182,17 +182,19 @@ Lead Antigravity · Review Claude · Depends: P1-04, P1-07
 
 Owner: you · Depends: everything above for the gate
 
-- [ ] Decide the open questions below before the tasks that depend on them start
-- [ ] Open issues P1-01 to P1-15 from this file
+- [x] Decide the open questions (see Decisions below)
+- [x] Open issues P1-01 to P1-15 from this file
 - [ ] Run the exit gate on a clean machine and on a phone; tag a pre-release image
 
-## Open questions
+## Decisions
 
-1. **Row-level security.** The product plan says to enforce permissions in the database as well as the API. Suggestion: write an ADR now and build it in Phase 2, when breweries bring many people into one server; Phase 1 relies on `can()` and the API permission tests.
-2. **Where importers live.** Suggestion: `apps/server/src/importers/`, owned by Codex, rather than a new package, since only the server runs them.
-3. **Reminders.** Suggestion: local notifications on the phone only in Phase 1, no push service; the server stores reminders and the app schedules them when it syncs.
-4. **Phone distribution.** Suggestion: Expo development and internal test builds in Phase 1; App Store and Google Play at the first public release, after Phase 2.
+Decided by the maintainer on 2026-11-22.
+
+1. **Row-level security** is built in Phase 2 (ADR-0011). Phase 1 relies on `can()` and the API permission tests.
+2. **Importers** live in `apps/server/src/importers/`, owned by Codex, not in a new package.
+3. **Reminders** are local notifications on the phone only, with no push service. The server stores reminders; the app schedules them when it syncs.
+4. **Phone apps** are Expo development and internal test builds in Phase 1. App Store and Google Play come at the first public release, after Phase 2.
 
 ## After Phase 1
 
-Phase 2 (completes the first public release): breweries with roles, inventory with batch reservations and low-stock alerts, equipment, device integrations (iSpindel, Tilt, RAPT and others) and Brewfather import. Break it into tasks the same way once Phase 1's gate is met.
+Phase 2 (completes the first public release): row-level security (ADR-0011), breweries with roles, inventory with batch reservations and low-stock alerts, equipment, device integrations (iSpindel, Tilt, RAPT and others) and Brewfather import. Break it into tasks the same way once Phase 1's gate is met.
