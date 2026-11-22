@@ -30,6 +30,7 @@ export function AppShell({ children, title, subtitle }: AppShellProps) {
 
   const onCalculators = pathname === "/calculators";
   const onRecipes = pathname === "/recipes" || pathname.startsWith("/recipes/");
+  const onBatches = pathname === "/batches" || pathname.startsWith("/batches/");
   const onServer = pathname === "/connect" || pathname === "/login";
 
   return (
@@ -91,6 +92,19 @@ export function AppShell({ children, title, subtitle }: AppShellProps) {
               >
                 <Text style={[styles.navLinkText, onRecipes && styles.navLinkTextActive]}>
                   Recipes
+                </Text>
+              </Pressable>
+
+              <Pressable
+                onPress={() => router.push("/batches")}
+                accessibilityRole="tab"
+                accessibilityLabel="Batches"
+                accessibilityState={{ selected: onBatches }}
+                testID="nav-batches"
+                style={[styles.navLink, onBatches && styles.navLinkActive]}
+              >
+                <Text style={[styles.navLinkText, onBatches && styles.navLinkTextActive]}>
+                  Batches
                 </Text>
               </Pressable>
 
@@ -202,6 +216,7 @@ const styles = StyleSheet.create({
   navRow: {
     flexDirection: "row",
     alignItems: "center",
+    flexWrap: "wrap",
     gap: spacing.xs,
   },
   navLink: {

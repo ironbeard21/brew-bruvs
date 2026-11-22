@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useState } from "react";
+import { StyleSheet, View } from "react-native";
 import { useCurrentUser } from "../../src/api/auth";
+import { useCreateBatch } from "../../src/api/batches";
 import {
   type RecipeVersionInput,
   useDeleteRecipe,
@@ -12,6 +15,7 @@ import { AppShell } from "../../src/components/AppShell";
 import { RecipeBuilder } from "../../src/components/recipes/RecipeBuilder";
 import { Banner, Button, Card } from "../../src/components/ui";
 import { useServer } from "../../src/state/server";
+import { spacing } from "../../src/theme";
 
 export default function RecipeDetailScreen() {
   const router = useRouter();
@@ -24,6 +28,8 @@ export default function RecipeDetailScreen() {
   const saveVersion = useSaveRecipeVersion(serverUrl, authToken, recipeId);
   const forkMutation = useForkRecipe(serverUrl, authToken);
   const deleteMutation = useDeleteRecipe(serverUrl, authToken);
+  const createBatch = useCreateBatch(serverUrl, authToken);
+  const [batchError, setBatchError] = useState<string | null>(null);
 
   if (!serverUrl) {
     return (
@@ -87,11 +93,35 @@ export default function RecipeDetailScreen() {
     router.replace("/recipes");
   };
 
+  const handleStartBatch = async () => {
+    setBatchError(null);
+    try {
+      const batch = await createBatch.mutateAsync({
+        recipeId: recipe.id,
+        version: recipe.latestVersion,
+      });
+      router.push(`/batches/${batch.id}`);
+    } catch (err) {
+      setBatchError(err instanceof Error ? err.message : "Could not start batch.");
+    }
+  };
+
   return (
     <AppShell
       title={recipe.name}
       subtitle={`${recipe.beverage.toUpperCase()} · v${recipe.latestVersion} · ${recipe.visibility}`}
     >
+      {currentUser.data ? (
+        <View style={styles.batchBar}>
+          <Button
+            label={createBatch.isPending ? "Starting batch..." : "Start batch from this recipe"}
+            disabled={createBatch.isPending}
+            onPress={() => void handleStartBatch()}
+            testID="start-batch-button"
+          />
+          {batchError ? <Banner tone="error" message={batchError} /> : null}
+        </View>
+      ) : null}
       <RecipeBuilder
         key={`${recipe.id}-${recipe.latestVersion}`}
         serverUrl={serverUrl}
@@ -107,3 +137,12 @@ export default function RecipeDetailScreen() {
     </AppShell>
   );
 }
+
+const styles = StyleSheet.create({
+  batchBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: spacing.sm,
+  },
+});

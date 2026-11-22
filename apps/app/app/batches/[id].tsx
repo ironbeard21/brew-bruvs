@@ -1,0 +1,403 @@
+// SPDX-License-Identifier: AGPL-3.0-or-later
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useState } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useCurrentUser } from "../../src/api/auth";
+import {
+  type BatchStatus,
+  useAddReading,
+  useAddReminder,
+  useBatchDetail,
+  useBatchNotes,
+  useBatchReadings,
+  useBatchReminders,
+  useChangeBatchStatus,
+  useCompleteReminder,
+  useCreateNote,
+  useDeleteBatch,
+  useDeleteNote,
+  useDeleteReading,
+  useUpdateReading,
+} from "../../src/api/batches";
+import { useRecipeVersion } from "../../src/api/recipes";
+import { AppShell } from "../../src/components/AppShell";
+import { BatchNotesSection } from "../../src/components/batches/BatchNotesSection";
+import { BrewDayMode } from "../../src/components/batches/BrewDayMode";
+import {
+  formatBatchStatus,
+  formatDateTime,
+  formatVolume,
+  getStatusFlow,
+} from "../../src/components/batches/batchFlows";
+import { PackagingStepCard } from "../../src/components/batches/PackagingStepCard";
+import { ReadingsSection } from "../../src/components/batches/ReadingsSection";
+import { RemindersSection } from "../../src/components/batches/RemindersSection";
+import { Banner, Button, Card, SegmentedControl } from "../../src/components/ui";
+import { useServer } from "../../src/state/server";
+import { useUnits } from "../../src/state/units";
+import { colors, radii, spacing } from "../../src/theme";
+
+type BatchTab = "readings" | "brewday" | "reminders" | "packaging" | "notes";
+
+const TAB_OPTIONS: readonly { value: BatchTab; label: string; accessibilityLabel: string }[] = [
+  { value: "readings", label: "Readings", accessibilityLabel: "Batch readings and chart" },
+  { value: "brewday", label: "Brew Day", accessibilityLabel: "Brew day checklist and timers" },
+  { value: "reminders", label: "Reminders", accessibilityLabel: "Batch reminders" },
+  { value: "packaging", label: "Packaging", accessibilityLabel: "Packaging and carbonation" },
+  { value: "notes", label: "Notes", accessibilityLabel: "Batch notes and tasting scores" },
+];
+
+export default function BatchDetailScreen() {
+  const router = useRouter();
+  const params = useLocalSearchParams<{ id?: string }>();
+  const batchId = typeof params.id === "string" ? params.id : "";
+
+  const { serverUrl, authToken } = useServer();
+  const { unitSystem } = useUnits();
+
+  const [tab, setTab] = useState<BatchTab>("readings");
+  const [statusNotice, setStatusNotice] = useState<string | null>(null);
+  const [statusError, setStatusError] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  const currentUser = useCurrentUser(serverUrl, authToken);
+  const detailQuery = useBatchDetail(serverUrl, authToken, batchId || null);
+  const readingsQuery = useBatchReadings(serverUrl, authToken, batchId || null);
+  const remindersQuery = useBatchReminders(serverUrl, authToken, batchId || null);
+  const notesQuery = useBatchNotes(serverUrl, authToken, batchId || null);
+
+  const batch = detailQuery.data;
+  const recipeVersionQuery = useRecipeVersion(
+    serverUrl,
+    authToken,
+    batch?.recipe.id ?? null,
+    batch?.recipe.version ?? null,
+  );
+
+  const changeStatus = useChangeBatchStatus(serverUrl, authToken, batchId);
+  const deleteBatch = useDeleteBatch(serverUrl, authToken);
+  const addReading = useAddReading(serverUrl, authToken, batchId);
+  const updateReading = useUpdateReading(serverUrl, authToken, batchId);
+  const deleteReading = useDeleteReading(serverUrl, authToken, batchId);
+  const addReminder = useAddReminder(serverUrl, authToken, batchId);
+  const completeReminder = useCompleteReminder(serverUrl, authToken, batchId);
+  const createNote = useCreateNote(serverUrl, authToken, batchId);
+  const deleteNote = useDeleteNote(serverUrl, authToken, batchId);
+
+  if (!serverUrl) {
+    return (
+      <AppShell title="Batch" subtitle="Connect to a server to view batches.">
+        <Card>
+          <Banner tone="info" message="Connect to a Brew-Bruvs server to view this batch." />
+          <Button label="Connect to server" onPress={() => router.push("/connect")} />
+        </Card>
+      </AppShell>
+    );
+  }
+
+  if (detailQuery.isPending) {
+    return (
+      <AppShell title="Batch">
+        <Card>
+          <Banner tone="info" message="Loading batch..." />
+        </Card>
+      </AppShell>
+    );
+  }
+
+  if (detailQuery.isError || !batch) {
+    return (
+      <AppShell title="Batch">
+        <Card>
+          <Banner
+            tone="error"
+            message={
+              detailQuery.error instanceof Error
+                ? detailQuery.error.message
+                : "Batch could not be loaded."
+            }
+          />
+          <Button
+            label="Back to batches"
+            variant="secondary"
+            onPress={() => router.push("/batches")}
+          />
+        </Card>
+      </AppShell>
+    );
+  }
+
+  const canEdit = Boolean(
+    currentUser.data && (currentUser.data.id === batch.owner.id || currentUser.data.isAdmin),
+  );
+  const flow = getStatusFlow(batch.beverage);
+  const currentIdx = flow.indexOf(batch.status);
+
+  const handleChangeStatus = async (nextStatus: BatchStatus) => {
+    setStatusError(null);
+    setStatusNotice(null);
+    try {
+      const res = await changeStatus.mutateAsync(nextStatus);
+      if (res.addedReminders.length > 0) {
+        setStatusNotice(
+          `Moved to ${formatBatchStatus(nextStatus)}. Added ${res.addedReminders.length} scheduled reminder${res.addedReminders.length === 1 ? "" : "s"}!`,
+        );
+      } else if (res.scheduleError) {
+        setStatusNotice(`Moved to ${formatBatchStatus(nextStatus)} (note: ${res.scheduleError}).`);
+      } else {
+        setStatusNotice(`Batch status updated to ${formatBatchStatus(nextStatus)}.`);
+      }
+    } catch (err) {
+      setStatusError(err instanceof Error ? err.message : "Could not change batch status.");
+    }
+  };
+
+  const handleDeleteBatch = async () => {
+    await deleteBatch.mutateAsync(batch.id);
+    router.replace("/batches");
+  };
+
+  return (
+    <AppShell
+      title={batch.name}
+      subtitle={`${batch.beverage.toUpperCase()} · ${formatBatchStatus(batch.status)} · ${formatVolume(batch.batchSizeL, unitSystem)} · Recipe v${batch.recipe.version}`}
+    >
+      {/* Status Flow & Header Actions */}
+      <Card>
+        <View style={styles.headerRow}>
+          <View style={styles.headerMeta}>
+            <Text style={styles.sectionTitle}>
+              {batch.beverage === "beer"
+                ? "Beer Workflow"
+                : `${batch.beverage.toUpperCase()} Workflow`}
+            </Text>
+            <Text style={styles.muted} testID="batch-current-status">
+              Current stage: {formatBatchStatus(batch.status)}
+              {batch.brewedAt ? ` · Started ${formatDateTime(batch.brewedAt)}` : ""}
+            </Text>
+          </View>
+          <View style={styles.headerActions}>
+            <Button
+              label={`View recipe v${batch.recipe.version}`}
+              variant="secondary"
+              onPress={() => router.push(`/recipes/${batch.recipe.id}`)}
+              testID="batch-open-recipe-button"
+            />
+            {canEdit ? (
+              confirmDelete ? (
+                <>
+                  <Button
+                    label={deleteBatch.isPending ? "Deleting..." : "Confirm delete"}
+                    variant="primary"
+                    disabled={deleteBatch.isPending}
+                    onPress={() => void handleDeleteBatch()}
+                    testID="batch-confirm-delete-button"
+                  />
+                  <Button label="Cancel" variant="ghost" onPress={() => setConfirmDelete(false)} />
+                </>
+              ) : (
+                <Button
+                  label="Delete"
+                  variant="ghost"
+                  onPress={() => setConfirmDelete(true)}
+                  testID="batch-delete-button"
+                />
+              )
+            ) : null}
+          </View>
+        </View>
+
+        <View style={styles.flowTrack} testID="batch-status-flow">
+          {flow.map((stage, idx) => {
+            const isCurrent = stage === batch.status;
+            const isAllowed = canEdit && batch.allowedStatuses.includes(stage);
+            const isPast = currentIdx > idx;
+            return (
+              <Pressable
+                key={stage}
+                disabled={!isAllowed || changeStatus.isPending}
+                onPress={() => void handleChangeStatus(stage)}
+                accessibilityRole="button"
+                accessibilityLabel={`Move batch to ${formatBatchStatus(stage)}`}
+                accessibilityState={{ selected: isCurrent, disabled: !isAllowed }}
+                testID={`status-step-${stage}`}
+                style={[
+                  styles.stagePill,
+                  isPast && styles.stagePillPast,
+                  isCurrent && styles.stagePillCurrent,
+                  isAllowed && !isCurrent && styles.stagePillAllowed,
+                  !isAllowed && !isCurrent && !isPast && styles.stagePillLocked,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.stageText,
+                    isPast && styles.stageTextPast,
+                    isCurrent && styles.stageTextCurrent,
+                    isAllowed && !isCurrent && styles.stageTextAllowed,
+                  ]}
+                >
+                  {isPast ? "✓ " : ""}
+                  {formatBatchStatus(stage)}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+
+        {statusNotice ? (
+          <Banner tone="success" message={statusNotice} testID="batch-status-notice" />
+        ) : null}
+        {statusError ? (
+          <Banner tone="error" message={statusError} testID="batch-status-error" />
+        ) : null}
+
+        {batch.statusHistory.length > 0 ? (
+          <View style={styles.historyRow}>
+            <Text style={styles.historyLabel}>History:</Text>
+            {batch.statusHistory.map((h, i) => (
+              <Text key={`${h.status}-${h.changedAt}`} style={styles.historyItem}>
+                {formatBatchStatus(h.status)} ({formatDateTime(h.changedAt)})
+                {i < batch.statusHistory.length - 1 ? " →" : ""}
+              </Text>
+            ))}
+          </View>
+        ) : null}
+      </Card>
+
+      {/* Section Navigation */}
+      <SegmentedControl
+        options={TAB_OPTIONS}
+        value={tab}
+        onChange={setTab}
+        accessibilityLabel="Batch sections"
+      />
+
+      {tab === "readings" ? (
+        <ReadingsSection
+          beverage={batch.beverage}
+          readings={readingsQuery.data ?? []}
+          loading={readingsQuery.isPending}
+          canEdit={canEdit}
+          saving={addReading.isPending || updateReading.isPending || deleteReading.isPending}
+          onAddReading={async (input) => {
+            await addReading.mutateAsync(input);
+          }}
+          onUpdateReading={async (readingId, patch) => {
+            await updateReading.mutateAsync({ readingId, patch });
+          }}
+          onDeleteReading={async (readingId) => {
+            await deleteReading.mutateAsync(readingId);
+          }}
+        />
+      ) : null}
+
+      {tab === "brewday" ? (
+        <BrewDayMode
+          batchId={batch.id}
+          batchName={batch.name}
+          beverage={batch.beverage}
+          recipeVersion={recipeVersionQuery.data}
+          loadingRecipe={recipeVersionQuery.isPending}
+        />
+      ) : null}
+
+      {tab === "reminders" ? (
+        <RemindersSection
+          reminders={remindersQuery.data ?? []}
+          loading={remindersQuery.isPending}
+          canEdit={canEdit}
+          saving={addReminder.isPending || completeReminder.isPending}
+          onAddReminder={async (input) => {
+            await addReminder.mutateAsync(input);
+          }}
+          onCompleteReminder={async (reminderId) => {
+            await completeReminder.mutateAsync(reminderId);
+          }}
+        />
+      ) : null}
+
+      {tab === "packaging" ? (
+        <PackagingStepCard
+          batch={batch}
+          canEdit={canEdit}
+          saving={changeStatus.isPending}
+          onChangeStatus={handleChangeStatus}
+          onOpenCalculators={() => router.push("/calculators")}
+        />
+      ) : null}
+
+      {tab === "notes" ? (
+        <BatchNotesSection
+          batchId={batch.id}
+          notes={notesQuery.data ?? []}
+          loading={notesQuery.isPending}
+          canEdit={canEdit}
+          saving={createNote.isPending || deleteNote.isPending}
+          onCreateNote={async (input) => {
+            await createNote.mutateAsync(input);
+          }}
+          onDeleteNote={async (noteId) => {
+            await deleteNote.mutateAsync(noteId);
+          }}
+        />
+      ) : null}
+    </AppShell>
+  );
+}
+
+const styles = StyleSheet.create({
+  headerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    flexWrap: "wrap",
+    gap: spacing.sm,
+  },
+  headerMeta: { flex: 1, minWidth: 200, gap: 2 },
+  headerActions: { flexDirection: "row", alignItems: "center", gap: spacing.xs, flexWrap: "wrap" },
+  sectionTitle: { fontSize: 18, fontWeight: "700", color: colors.text },
+  muted: { fontSize: 13, color: colors.textMuted },
+  flowTrack: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.xs,
+  },
+  stagePill: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: radii.pill,
+    borderWidth: 1,
+  },
+  stagePillPast: {
+    backgroundColor: colors.successSoft,
+    borderColor: colors.success,
+  },
+  stagePillCurrent: {
+    backgroundColor: colors.accent,
+    borderColor: colors.accentPressed,
+  },
+  stagePillAllowed: {
+    backgroundColor: colors.surface,
+    borderColor: colors.accent,
+  },
+  stagePillLocked: {
+    backgroundColor: colors.surfaceSubtle,
+    borderColor: colors.border,
+    opacity: 0.65,
+  },
+  stageText: { fontSize: 13, fontWeight: "600", color: colors.textMuted },
+  stageTextPast: { color: colors.success },
+  stageTextCurrent: { color: colors.accentText, fontWeight: "700" },
+  stageTextAllowed: { color: colors.accentPressed },
+  historyRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+    paddingTop: spacing.xs,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  historyLabel: { fontSize: 12, fontWeight: "700", color: colors.textMuted },
+  historyItem: { fontSize: 12, color: colors.textMuted },
+});

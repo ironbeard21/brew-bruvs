@@ -126,6 +126,73 @@ test.describe("Brew-Bruvs app shell", () => {
 
     await page.getByTestId("recipe-fork-button").click();
     await expect(page.getByTestId("recipe-forked-from-box")).toContainText("Forked from");
+
+    // P1-13: Start a batch from the recipe, advance status, log two readings,
+    // and verify both readings appear on the fermentation chart.
+    await page.getByTestId("start-batch-button").click();
+    await expect(page).toHaveURL(/\/batches\/[0-9a-f-]+$/);
+    await expect(page.getByTestId("batch-current-status")).toContainText("Planned");
+
+    await page.getByTestId("status-step-brewing").click();
+    await expect(page.getByTestId("batch-current-status")).toContainText("Brewing");
+
+    await page.getByTestId("status-step-fermenting").click();
+    await expect(page.getByTestId("batch-current-status")).toContainText("Fermenting");
+
+    // Log first reading (OG)
+    await page.getByTestId("reading-gravity-input").fill("1.055");
+    await page.getByTestId("reading-temp-input").fill("68");
+    await page.getByTestId("reading-note-input").fill("Opening gravity");
+    await page.getByTestId("reading-submit-button").click();
+    await expect(page.getByTestId("chart-gravity-point-0")).toBeVisible();
+
+    // Log second reading (FG)
+    await page.getByTestId("reading-gravity-input").fill("1.012");
+    await page.getByTestId("reading-temp-input").fill("69");
+    await page.getByTestId("reading-note-input").fill("Terminal gravity");
+    await page.getByTestId("reading-submit-button").click();
+
+    // Verify both readings are plotted on the fermentation chart
+    await expect(page.getByTestId("fermentation-chart")).toBeVisible();
+    await expect(page.getByTestId("chart-gravity-point-0")).toBeVisible();
+    await expect(page.getByTestId("chart-gravity-point-1")).toBeVisible();
+    await expect(page.getByTestId("chart-latest-sg")).toHaveText("1.012");
+    await expect(page.getByTestId("chart-est-abv")).toHaveText("5.64%");
+
+    // Verify Brew Day checklist & timers tab
+    await page.getByRole("tab", { name: "Brew day checklist and timers" }).click();
+    await expect(page.getByTestId("brew-day-mode")).toBeVisible();
+    await page.getByTestId("brew-step-0").click();
+    await page.getByTestId("brew-timer-start-0").click();
+    await expect(page.getByTestId("brew-timer-pause-0")).toBeVisible();
+
+    // Verify Reminders tab
+    await page.getByRole("tab", { name: "Batch reminders" }).click();
+    await page.getByTestId("reminder-note-input").fill("Dry hop with Columbus");
+    await page.getByTestId("reminder-submit-button").click();
+    await expect(page.getByTestId("reminder-pending-0")).toContainText("Dry hop with Columbus");
+
+    // Verify Packaging step embeds the carbonation calculator
+    await page.getByRole("tab", { name: "Packaging and carbonation" }).click();
+    await expect(page.getByTestId("packaging-step-card")).toBeVisible();
+    await expect(page.getByTestId("carb-priming-result")).toBeVisible();
+
+    // Verify Notes & BJCP tasting note
+    await page.getByRole("tab", { name: "Batch notes and tasting scores" }).click();
+    await page.getByRole("tab", { name: "Tasting Note (BJCP /50)" }).click();
+    await page.getByTestId("tasting-score-aroma").fill("10");
+    await page.getByTestId("tasting-score-appearance").fill("3");
+    await page.getByTestId("tasting-score-flavor").fill("17");
+    await page.getByTestId("tasting-score-mouthfeel").fill("4");
+    await page.getByTestId("tasting-score-overall").fill("8");
+    await page.getByTestId("note-body-input").fill("Clean citrus hop finish.");
+    await page.getByTestId("note-submit-button").click();
+    await expect(page.getByTestId("note-item-0")).toContainText("42/50 BJCP");
+
+    // Verify batch appears in the Batches list
+    await page.getByTestId("nav-batches").click();
+    await expect(page).toHaveURL(/\/batches$/);
+    await expect(page.getByText(/Backyard Pale Ale/).first()).toBeVisible();
   });
 
   test("calculators work completely offline without a server", async ({ page, context }) => {
