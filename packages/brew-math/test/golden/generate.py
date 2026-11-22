@@ -291,6 +291,8 @@ def stats_args(vol, eff, ferms, att, hops, boil=None, method=None):
     if method: a["ibuMethod"] = method
     return a
 
+def scale(v0, v1, e0, e1): return {"amounts": v1 / v0, "mashed": v1 / v0 * e0 / e1}
+def scale_args(v0, v1, e0, e1): return {"fromVolumeL": v0, "toVolumeL": v1, "fromEfficiencyPct": e0, "toEfficiencyPct": e1}
 def og_args(vol, eff, ferms): return [{"volumeL": vol, "efficiencyPct": eff, "fermentables": ferms}]
 recipe = {
     "estimateOg": [
@@ -323,6 +325,13 @@ recipe = {
         case([stats_args(19, 72, [honey], 100, [])], stats(19, 72, [honey], 100, []), 1e-9),
         case([stats_args(23, 72, [{"liters": 23, "sg": 1.095}], 105, [])], stats(23, 72, [{"liters": 23, "sg": 1.095}], 105, []), 1e-9),
         case([stats_args(19, 72, [{"liters": 19, "sg": 1.05}], 100, [])], stats(19, 72, [{"liters": 19, "sg": 1.05}], 100, []), 1e-9),
+    ],
+    "scaleFactors": [
+        case([scale_args(19, 38, 72, 72)], {"amounts": 2, "mashed": 2}, 1e-12,
+             "definition: double the volume at the same efficiency doubles everything"),
+        case([scale_args(20, 40, 72, 80)], {"amounts": 2, "mashed": 1.8}, 1e-12,
+             "Palmer, How to Brew: points = PPG × lb × efficiency / gal, so grain scales by 72/80 when efficiency rises"),
+        case([scale_args(23, 10, 65, 75)], scale(23, 10, 65, 75), 1e-12),
     ],
     "styleFit": [
         case([{"og": 1.054, "fg": 1.012, "abvPct": 5.5, "ibu": 38, "colorEbc": 14},

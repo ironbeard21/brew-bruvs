@@ -9,6 +9,8 @@ import { recipeContentJsonSchema } from "./contracts/recipe-content.ts";
 import { createLogger } from "./logger.ts";
 import { createAuthService } from "./services/auth.ts";
 import { createCatalogService } from "./services/catalog.ts";
+import { createEquipmentProfileService } from "./services/equipment-profiles.ts";
+import { createRecipeService } from "./services/recipes.ts";
 
 const out = process.argv[2];
 if (!out) throw new Error("usage: node src/write-openapi.ts <output.json>");
@@ -16,10 +18,13 @@ if (!out) throw new Error("usage: node src/write-openapi.ts <output.json>");
 // Building the document never queries the database; pg connects lazily.
 const { db } = createDb("postgres://unused@localhost/unused");
 const baseUrl = "http://localhost";
+const profiles = createEquipmentProfileService(db, { baseUrl });
 const app = createApp({
   logger: createLogger("error"),
   webDir: undefined,
   catalog: createCatalogService(db),
+  profiles,
+  recipes: createRecipeService(db, { baseUrl, profiles }),
   auth: {
     auth: createAuthService(db, { baseUrl, signupMode: "invite" }),
     oidc: undefined,

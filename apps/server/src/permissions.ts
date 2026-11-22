@@ -3,7 +3,8 @@
 
 export type Action = "read" | "edit" | "delete" | "share";
 export type BreweryRole = "owner" | "admin" | "brewer" | "viewer";
-export type Visibility = "private" | "server" | "public";
+// unlisted: anyone with the link can read it; lists and search leave it out.
+export type Visibility = "private" | "unlisted" | "server" | "public";
 export type ShareLevel = "read" | "edit";
 
 export type Principal = { type: "user"; id: string } | { type: "brewery"; id: string };
@@ -58,6 +59,6 @@ export function can(user: User | null, action: Action, resource: Resource): bool
   }
 
   if (action !== "read") return false;
-  if (resource.visibility === "public") return true;
+  if (resource.visibility === "public" || resource.visibility === "unlisted") return true;
   return resource.visibility === "server" && user !== null;
 }

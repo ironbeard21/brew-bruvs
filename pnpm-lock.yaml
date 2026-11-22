@@ -90,6 +90,9 @@ importers:
 
   apps/server:
     dependencies:
+      '@brew-bruvs/brew-math':
+        specifier: workspace:*
+        version: link:../../packages/brew-math
       '@brew-bruvs/catalog-seed':
         specifier: workspace:*
         version: link:../../packages/catalog-seed

@@ -406,6 +406,56 @@
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     }
   ],
+  "scaleFactors": [
+    {
+      "args": [
+        {
+          "fromVolumeL": 19,
+          "toVolumeL": 38,
+          "fromEfficiencyPct": 72,
+          "toEfficiencyPct": 72
+        }
+      ],
+      "expected": {
+        "amounts": 2,
+        "mashed": 2
+      },
+      "tolerance": 1e-12,
+      "source": "definition: double the volume at the same efficiency doubles everything"
+    },
+    {
+      "args": [
+        {
+          "fromVolumeL": 20,
+          "toVolumeL": 40,
+          "fromEfficiencyPct": 72,
+          "toEfficiencyPct": 80
+        }
+      ],
+      "expected": {
+        "amounts": 2,
+        "mashed": 1.8
+      },
+      "tolerance": 1e-12,
+      "source": "Palmer, How to Brew: points = PPG \u00d7 lb \u00d7 efficiency / gal, so grain scales by 72/80 when efficiency rises"
+    },
+    {
+      "args": [
+        {
+          "fromVolumeL": 23,
+          "toVolumeL": 10,
+          "fromEfficiencyPct": 65,
+          "toEfficiencyPct": 75
+        }
+      ],
+      "expected": {
+        "amounts": 0.43478260869565216,
+        "mashed": 0.37681159420289856
+      },
+      "tolerance": 1e-12,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    }
+  ],
   "styleFit": [
     {
       "args": [

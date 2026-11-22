@@ -13,6 +13,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@brew-bruvs/brew-math": "workspace:*",
     "@brew-bruvs/catalog-seed": "workspace:*",
     "@brew-bruvs/db": "workspace:*",
     "@hono/node-server": "^2.1.11",

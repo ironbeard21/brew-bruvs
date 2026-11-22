@@ -24,7 +24,7 @@ import {
   sugarToRaiseGravity,
   yanTarget,
 } from "../src/mead-wine.ts";
-import { estimateFg, estimateOg, recipeStats } from "../src/recipe.ts";
+import { estimateFg, estimateOg, recipeStats, scaleFactors } from "../src/recipe.ts";
 import { refractometerFinalGravity, refractometerSg } from "../src/refractometer.ts";
 import type { CalcResult } from "../src/result.ts";
 import { cellsNeeded, packsNeeded, starterCells } from "../src/yeast.ts";
@@ -198,6 +198,12 @@ const cases: [string, () => CalcResult<unknown>, string][] = [
     "recipeStats: grain colour beyond Morey",
     () => recipeStats({ ...brew, fermentables: [{ ...malt, colorEbc: 4000 }] }),
     "Grain color",
+  ],
+  [
+    "scaleFactors: efficiency as a fraction",
+    () =>
+      scaleFactors({ fromVolumeL: 20, toVolumeL: 40, fromEfficiencyPct: 72, toEfficiencyPct: 0.8 }),
+    "New efficiency",
   ],
   ["blend: empty lot", () => blend([{ volumeL: 10 }, { volumeL: 0 }]), "Lot volume"],
 ];

@@ -1362,6 +1362,681 @@
           "mashTunVolumeL",
           "grainAbsorptionLPerKg"
         ]
+      },
+      "RecipePage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Recipe"
+            }
+          },
+          "nextOffset": {
+            "type": ["integer", "null"]
+          }
+        },
+        "required": ["items", "nextOffset"]
+      },
+      "Recipe": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "uri": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "beverage": {
+            "type": "string",
+            "enum": ["beer", "mead", "wine", "cider"]
+          },
+          "visibility": {
+            "type": "string",
+            "enum": ["private", "unlisted", "server", "public"],
+            "description": "private: owner, brewery and shares only. unlisted: anyone with the link, never listed. server: every signed-in user here. public: anyone."
+          },
+          "owner": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": ["user", "brewery"]
+              },
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              }
+            },
+            "required": ["type", "id"]
+          },
+          "credit": {
+            "$ref": "#/components/schemas/Credit"
+          },
+          "forkedFrom": {
+            "type": ["object", "null"],
+            "properties": {
+              "uri": {
+                "type": "string"
+              },
+              "recipeId": {
+                "type": ["string", "null"],
+                "format": "uuid",
+                "description": "Null once the original is gone"
+              }
+            },
+            "required": ["uri", "recipeId"]
+          },
+          "publicSharingBlocked": {
+            "type": "boolean"
+          },
+          "latestVersion": {
+            "type": "integer",
+            "exclusiveMinimum": 0
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "uri",
+          "name",
+          "beverage",
+          "visibility",
+          "owner",
+          "credit",
+          "forkedFrom",
+          "publicSharingBlocked",
+          "latestVersion",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "Credit": {
+        "type": ["object", "null"],
+        "properties": {
+          "sourceUrl": {
+            "type": ["string", "null"]
+          },
+          "site": {
+            "type": ["string", "null"]
+          },
+          "author": {
+            "type": ["string", "null"]
+          },
+          "importedAt": {
+            "type": ["string", "null"]
+          },
+          "license": {
+            "type": ["string", "null"]
+          }
+        },
+        "required": ["sourceUrl", "site", "author", "importedAt", "license"],
+        "description": "Import credit; can never be removed"
+      },
+      "RecipeDetail": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Recipe"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "version": {
+                "$ref": "#/components/schemas/RecipeVersion"
+              }
+            },
+            "required": ["version"]
+          }
+        ]
+      },
+      "RecipeVersion": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "version": {
+            "type": "integer",
+            "exclusiveMinimum": 0
+          },
+          "name": {
+            "type": "string"
+          },
+          "beverage": {
+            "type": "string",
+            "enum": ["beer", "mead", "wine", "cider"]
+          },
+          "styleId": {
+            "type": ["string", "null"]
+          },
+          "batchSizeL": {
+            "type": "number"
+          },
+          "equipmentProfileId": {
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "content": {
+            "$ref": "#/components/schemas/RecipeContent"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "stats": {
+            "$ref": "#/components/schemas/RecipeStats"
+          },
+          "statsError": {
+            "type": ["string", "null"],
+            "description": "Why stats is null"
+          },
+          "styleFit": {
+            "$ref": "#/components/schemas/StyleFit"
+          }
+        },
+        "required": [
+          "id",
+          "version",
+          "name",
+          "beverage",
+          "styleId",
+          "batchSizeL",
+          "equipmentProfileId",
+          "content",
+          "createdAt",
+          "stats",
+          "statsError",
+          "styleFit"
+        ]
+      },
+      "RecipeStats": {
+        "type": ["object", "null"],
+        "properties": {
+          "og": {
+            "type": "number"
+          },
+          "fg": {
+            "type": "number"
+          },
+          "abvPct": {
+            "type": "number"
+          },
+          "ibu": {
+            "type": "number"
+          },
+          "colorSrm": {
+            "type": "number"
+          },
+          "colorEbc": {
+            "type": "number"
+          }
+        },
+        "required": ["og", "fg", "abvPct", "ibu", "colorSrm", "colorEbc"],
+        "description": "Estimated by brew-math; null when an ingredient is missing a value it needs"
+      },
+      "StyleFit": {
+        "type": ["object", "null"],
+        "properties": {
+          "og": {
+            "type": "string",
+            "enum": ["below", "inside", "above", "unknown"]
+          },
+          "fg": {
+            "type": "string",
+            "enum": ["below", "inside", "above", "unknown"]
+          },
+          "abvPct": {
+            "type": "string",
+            "enum": ["below", "inside", "above", "unknown"]
+          },
+          "ibu": {
+            "type": "string",
+            "enum": ["below", "inside", "above", "unknown"]
+          },
+          "colorEbc": {
+            "type": "string",
+            "enum": ["below", "inside", "above", "unknown"]
+          }
+        },
+        "required": ["og", "fg", "abvPct", "ibu", "colorEbc"],
+        "description": "Set when the version has a style"
+      },
+      "CreateRecipe": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/RecipeVersionInput"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "beverage": {
+                "type": "string",
+                "enum": ["beer", "mead", "wine", "cider"]
+              },
+              "visibility": {
+                "type": "string",
+                "enum": ["private", "unlisted", "server", "public"],
+                "default": "private",
+                "description": "private: owner, brewery and shares only. unlisted: anyone with the link, never listed. server: every signed-in user here. public: anyone."
+              },
+              "credit": {
+                "$ref": "#/components/schemas/CreditInput"
+              }
+            },
+            "required": ["beverage"],
+            "additionalProperties": false
+          }
+        ]
+      },
+      "CreditInput": {
+        "type": "object",
+        "properties": {
+          "sourceUrl": {
+            "type": "string",
+            "maxLength": 2000,
+            "format": "uri"
+          },
+          "site": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "author": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "license": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "publicSharingBlocked": {
+            "type": "boolean",
+            "default": false,
+            "description": "Set when the source's terms forbid reuse; the recipe can never be made public"
+          }
+        },
+        "required": ["sourceUrl"],
+        "additionalProperties": false,
+        "description": "For imported recipes; permanent once saved"
+      },
+      "RecipeVersionInput": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "styleId": {
+            "type": ["string", "null"],
+            "minLength": 1,
+            "maxLength": 200,
+            "description": "Catalog style id"
+          },
+          "batchSizeL": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 100000
+          },
+          "equipmentProfileId": {
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "content": {
+            "$ref": "#/components/schemas/RecipeContent"
+          }
+        },
+        "required": ["name", "batchSizeL", "content"],
+        "additionalProperties": false
+      },
+      "RecipePatch": {
+        "type": "object",
+        "properties": {
+          "visibility": {
+            "type": "string",
+            "enum": ["private", "unlisted", "server", "public"],
+            "description": "private: owner, brewery and shares only. unlisted: anyone with the link, never listed. server: every signed-in user here. public: anyone."
+          },
+          "confirmPublic": {
+            "type": "boolean",
+            "default": false,
+            "description": "Required to make an imported or credited recipe unlisted or public: confirms its source allows it"
+          }
+        },
+        "required": ["visibility"],
+        "additionalProperties": false
+      },
+      "RecipeVersionSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "version": {
+            "type": "integer",
+            "exclusiveMinimum": 0
+          },
+          "name": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "version", "name", "createdAt"]
+      },
+      "ForkInput": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          }
+        },
+        "additionalProperties": false
+      },
+      "ScaledRecipe": {
+        "type": "object",
+        "properties": {
+          "batchSizeL": {
+            "type": "number"
+          },
+          "equipmentProfileId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "content": {
+            "$ref": "#/components/schemas/RecipeContent"
+          },
+          "stats": {
+            "$ref": "#/components/schemas/RecipeStats"
+          },
+          "statsError": {
+            "type": ["string", "null"],
+            "description": "Why stats is null"
+          }
+        },
+        "required": ["batchSizeL", "equipmentProfileId", "content", "stats", "statsError"],
+        "description": "A draft, not saved: post it as a new version to keep it"
+      },
+      "ScaleInput": {
+        "type": "object",
+        "properties": {
+          "equipmentProfileId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "version": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "description": "Defaults to the latest"
+          }
+        },
+        "required": ["equipmentProfileId"],
+        "additionalProperties": false
+      },
+      "Share": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "user": {
+            "type": ["object", "null"],
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "displayName": {
+                "type": "string"
+              }
+            },
+            "required": ["id", "displayName"]
+          },
+          "breweryId": {
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "level": {
+            "type": "string",
+            "enum": ["read", "edit"]
+          },
+          "createdAt": {
+            "type": "string"
+          }
+        },
+        "required": ["id", "user", "breweryId", "level", "createdAt"]
+      },
+      "ShareInput": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "maxLength": 254,
+            "format": "email",
+            "description": "A user on this server"
+          },
+          "breweryId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "level": {
+            "type": "string",
+            "enum": ["read", "edit"]
+          }
+        },
+        "required": ["level"],
+        "additionalProperties": false
+      },
+      "EquipmentProfile": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "uri": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "catalogId": {
+            "type": ["string", "null"]
+          },
+          "batchSizeL": {
+            "type": ["number", "null"]
+          },
+          "boilSizeL": {
+            "type": ["number", "null"]
+          },
+          "kettleVolumeL": {
+            "type": ["number", "null"]
+          },
+          "kettleLossL": {
+            "type": ["number", "null"]
+          },
+          "boilRateLPerHr": {
+            "type": ["number", "null"]
+          },
+          "mashTunVolumeL": {
+            "type": ["number", "null"]
+          },
+          "grainAbsorptionLPerKg": {
+            "type": ["number", "null"]
+          },
+          "efficiencyPct": {
+            "type": ["number", "null"]
+          },
+          "fermenterLossL": {
+            "type": ["number", "null"]
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "uri",
+          "name",
+          "catalogId",
+          "batchSizeL",
+          "boilSizeL",
+          "kettleVolumeL",
+          "kettleLossL",
+          "boilRateLPerHr",
+          "mashTunVolumeL",
+          "grainAbsorptionLPerKg",
+          "efficiencyPct",
+          "fermenterLossL",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "EquipmentProfileInput": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "catalogId": {
+            "type": ["string", "null"],
+            "minLength": 1,
+            "maxLength": 200,
+            "description": "The catalog equipment row this profile started from"
+          },
+          "batchSizeL": {
+            "type": ["number", "null"],
+            "exclusiveMinimum": 0,
+            "maximum": 100000,
+            "description": "Volume into the fermenter"
+          },
+          "boilSizeL": {
+            "type": ["number", "null"],
+            "exclusiveMinimum": 0,
+            "maximum": 100000
+          },
+          "kettleVolumeL": {
+            "type": ["number", "null"],
+            "exclusiveMinimum": 0,
+            "maximum": 100000
+          },
+          "kettleLossL": {
+            "type": ["number", "null"],
+            "minimum": 0,
+            "maximum": 100000
+          },
+          "boilRateLPerHr": {
+            "type": ["number", "null"],
+            "minimum": 0,
+            "maximum": 100000
+          },
+          "mashTunVolumeL": {
+            "type": ["number", "null"],
+            "exclusiveMinimum": 0,
+            "maximum": 100000
+          },
+          "grainAbsorptionLPerKg": {
+            "type": ["number", "null"],
+            "minimum": 0,
+            "maximum": 5
+          },
+          "efficiencyPct": {
+            "type": ["number", "null"],
+            "exclusiveMinimum": 0,
+            "maximum": 100
+          },
+          "fermenterLossL": {
+            "type": ["number", "null"],
+            "minimum": 0,
+            "maximum": 100000
+          }
+        },
+        "required": ["name"],
+        "additionalProperties": false
+      },
+      "EquipmentProfilePatch": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "catalogId": {
+            "type": ["string", "null"],
+            "minLength": 1,
+            "maxLength": 200,
+            "description": "The catalog equipment row this profile started from"
+          },
+          "batchSizeL": {
+            "type": ["number", "null"],
+            "exclusiveMinimum": 0,
+            "maximum": 100000,
+            "description": "Volume into the fermenter"
+          },
+          "boilSizeL": {
+            "type": ["number", "null"],
+            "exclusiveMinimum": 0,
+            "maximum": 100000
+          },
+          "kettleVolumeL": {
+            "type": ["number", "null"],
+            "exclusiveMinimum": 0,
+            "maximum": 100000
+          },
+          "kettleLossL": {
+            "type": ["number", "null"],
+            "minimum": 0,
+            "maximum": 100000
+          },
+          "boilRateLPerHr": {
+            "type": ["number", "null"],
+            "minimum": 0,
+            "maximum": 100000
+          },
+          "mashTunVolumeL": {
+            "type": ["number", "null"],
+            "exclusiveMinimum": 0,
+            "maximum": 100000
+          },
+          "grainAbsorptionLPerKg": {
+            "type": ["number", "null"],
+            "minimum": 0,
+            "maximum": 5
+          },
+          "efficiencyPct": {
+            "type": ["number", "null"],
+            "exclusiveMinimum": 0,
+            "maximum": 100
+          },
+          "fermenterLossL": {
+            "type": ["number", "null"],
+            "minimum": 0,
+            "maximum": 100000
+          }
+        },
+        "additionalProperties": false
       }
     },
     "parameters": {}
@@ -2663,6 +3338,1312 @@
             }
           },
           "401": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/recipes": {
+      "get": {
+        "tags": ["recipes"],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "operationId": "listRecipes",
+        "summary": "Recipes you can read, newest first; search by name. Unlisted ones are never listed",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            "required": false,
+            "name": "q",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": ["true", "false"],
+              "default": "false",
+              "description": "Only recipes you own"
+            },
+            "required": false,
+            "description": "Only recipes you own",
+            "name": "mine",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 25
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647,
+              "default": 0
+            },
+            "required": false,
+            "name": "offset",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Recipes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecipePage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["recipes"],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "operationId": "createRecipe",
+        "summary": "Create a recipe with its first version",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRecipe"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecipeDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/recipes/{id}": {
+      "get": {
+        "tags": ["recipes"],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "operationId": "getRecipe",
+        "summary": "A recipe with its latest version and stats",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Recipe",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecipeDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": ["recipes"],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "operationId": "setRecipeVisibility",
+        "summary": "Change who can see a recipe",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecipePatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Recipe"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["recipes"],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "operationId": "deleteRecipe",
+        "summary": "Delete a recipe and all its versions (refused while batches use it)",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done"
+          },
+          "400": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/recipes/{id}/versions": {
+      "get": {
+        "tags": ["recipes"],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "operationId": "listRecipeVersions",
+        "summary": "Every saved version, newest first",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Versions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RecipeVersionSummary"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["recipes"],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "operationId": "saveRecipeVersion",
+        "summary": "Save changes as a new version; earlier versions never change",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecipeVersionInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Saved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecipeVersion"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/recipes/{id}/versions/{version}": {
+      "get": {
+        "tags": ["recipes"],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "operationId": "getRecipeVersion",
+        "summary": "One version with its stats",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0
+            },
+            "required": true,
+            "name": "version",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Version",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecipeVersion"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/recipes/{id}/fork": {
+      "post": {
+        "tags": ["recipes"],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "operationId": "forkRecipe",
+        "summary": "Copy a recipe you can read into your own, with a permanent forked-from credit",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ForkInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Forked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecipeDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/recipes/{id}/scale": {
+      "post": {
+        "tags": ["recipes"],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "operationId": "scaleRecipe",
+        "summary": "Scale a version to an equipment profile; returns a draft and saves nothing",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScaleInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Scaled draft",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScaledRecipe"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/recipes/{id}/shares": {
+      "get": {
+        "tags": ["recipes"],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "operationId": "listRecipeShares",
+        "summary": "Who a recipe is shared with",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Shares",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Share"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["recipes"],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "operationId": "shareRecipe",
+        "summary": "Share with a user or brewery; sharing again changes the level",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShareInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Shared",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Share"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/recipes/{id}/shares/{shareId}": {
+      "delete": {
+        "tags": ["recipes"],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "operationId": "unshareRecipe",
+        "summary": "Stop sharing",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "shareId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done"
+          },
+          "400": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/equipment-profiles": {
+      "get": {
+        "tags": ["equipment"],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "operationId": "listEquipmentProfiles",
+        "summary": "Your equipment profiles",
+        "responses": {
+          "200": {
+            "description": "Profiles",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EquipmentProfile"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["equipment"],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "operationId": "createEquipmentProfile",
+        "summary": "Add an equipment profile",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EquipmentProfileInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EquipmentProfile"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/equipment-profiles/{id}": {
+      "get": {
+        "tags": ["equipment"],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "operationId": "getEquipmentProfile",
+        "summary": "One equipment profile",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EquipmentProfile"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": ["equipment"],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "operationId": "updateEquipmentProfile",
+        "summary": "Change an equipment profile; null clears a value",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EquipmentProfilePatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EquipmentProfile"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["equipment"],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "operationId": "deleteEquipmentProfile",
+        "summary": "Delete an equipment profile; versions and batches that used it keep their numbers",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done"
+          },
+          "400": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
             "description": "Error",
             "content": {
               "application/json": {

@@ -37,3 +37,9 @@ export function errorResponses<S extends number>(...statuses: S[]) {
     { description: string; content: typeof content }
   >;
 }
+
+/** The Postgres error code (e.g. 23505 unique violation) of a database error. */
+export function pgCode(err: unknown): string | undefined {
+  const e = err as { code?: string; cause?: { code?: string } };
+  return e.code ?? e.cause?.code;
+}
