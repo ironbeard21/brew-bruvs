@@ -1,0 +1,543 @@
+{
+  "estimateOg": [
+    {
+      "args": [
+        {
+          "volumeL": 18.92705892,
+          "efficiencyPct": 75,
+          "fermentables": [
+            {
+              "kg": 3.62873896,
+              "potentialSg": 1.037,
+              "mashed": true
+            }
+          ]
+        }
+      ],
+      "expected": 1.0444,
+      "tolerance": 1e-9,
+      "source": "Palmer, How to Brew, extract efficiency: 8 lb \u00d7 37 PPG \u00d7 75% / 5 gal = 44.4 points"
+    },
+    {
+      "args": [
+        {
+          "volumeL": 3.785411784,
+          "efficiencyPct": 70,
+          "fermentables": [
+            {
+              "kg": 0.45359237,
+              "potentialSg": 1.035,
+              "mashed": false
+            }
+          ]
+        }
+      ],
+      "expected": 1.035,
+      "tolerance": 1e-9,
+      "source": "worked example: 1 lb honey at 35 PPG in 1 gal is 35 points; efficiency doesn't apply"
+    },
+    {
+      "args": [
+        {
+          "volumeL": 18.92705892,
+          "efficiencyPct": 75,
+          "fermentables": [
+            {
+              "kg": 2.7215542200000002,
+              "potentialSg": 1.044,
+              "mashed": false
+            }
+          ]
+        }
+      ],
+      "expected": 1.0528,
+      "tolerance": 1e-9,
+      "source": "worked example: 6 lb dry malt extract at 44 PPG in 5 gal = 52.8 points"
+    },
+    {
+      "args": [
+        {
+          "volumeL": 19,
+          "efficiencyPct": 72,
+          "fermentables": [
+            {
+              "liters": 19,
+              "sg": 1.05
+            }
+          ]
+        }
+      ],
+      "expected": 1.05,
+      "tolerance": 1e-9,
+      "source": "definition: undiluted juice keeps its own gravity"
+    },
+    {
+      "args": [
+        {
+          "volumeL": 20,
+          "efficiencyPct": 72,
+          "fermentables": [
+            {
+              "liters": 10,
+              "sg": 1.06
+            }
+          ]
+        }
+      ],
+      "expected": 1.03,
+      "tolerance": 1e-9,
+      "source": "dilution by gravity points: 10 L at 1.060 topped up to 20 L = 30 points"
+    },
+    {
+      "args": [
+        {
+          "volumeL": 20,
+          "efficiencyPct": 72,
+          "fermentables": [
+            {
+              "kg": 4.5,
+              "potentialSg": 1.037,
+              "mashed": true,
+              "colorEbc": 3.9
+            },
+            {
+              "kg": 0.35,
+              "potentialSg": 1.034,
+              "mashed": true,
+              "colorEbc": 79
+            }
+          ]
+        }
+      ],
+      "expected": 1.0535975255526489,
+      "tolerance": 1e-12,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        {
+          "volumeL": 23,
+          "efficiencyPct": 65,
+          "fermentables": [
+            {
+              "liters": 15,
+              "sg": 1.05
+            },
+            {
+              "kg": 1,
+              "potentialSg": 1.046,
+              "mashed": false
+            }
+          ]
+        }
+      ],
+      "expected": 1.0492995045562126,
+      "tolerance": 1e-12,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        {
+          "volumeL": 19,
+          "efficiencyPct": 72,
+          "fermentables": [
+            {
+              "kg": 4.4,
+              "potentialSg": 1.035,
+              "mashed": false,
+              "colorEbc": 4
+            }
+          ]
+        }
+      ],
+      "expected": 1.067641699242683,
+      "tolerance": 1e-12,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    }
+  ],
+  "estimateFg": [
+    {
+      "args": [1.05, 75],
+      "expected": 1.0125,
+      "tolerance": 1e-12,
+      "source": "worked example: 75% apparent attenuation of 50 points leaves 12.5"
+    },
+    {
+      "args": [1.1, 100],
+      "expected": 1.0,
+      "tolerance": 1e-12,
+      "source": "definition: 100% apparent attenuation ends at 1.000"
+    },
+    {
+      "args": [1.095, 105],
+      "expected": 0.99525,
+      "tolerance": 1e-12,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [1.065, 80],
+      "expected": 1.013,
+      "tolerance": 1e-12,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [1.04, 0],
+      "expected": 1.04,
+      "tolerance": 1e-12,
+      "source": "definition: no attenuation, no change"
+    }
+  ],
+  "recipeStats": [
+    {
+      "args": [
+        {
+          "volumeL": 20,
+          "efficiencyPct": 72,
+          "fermentables": [
+            {
+              "kg": 4.5,
+              "potentialSg": 1.037,
+              "mashed": true,
+              "colorEbc": 3.9
+            },
+            {
+              "kg": 0.35,
+              "potentialSg": 1.034,
+              "mashed": true,
+              "colorEbc": 79
+            }
+          ],
+          "attenuationPct": 78,
+          "hops": [
+            {
+              "alphaAcidPct": 10,
+              "hopGrams": 14,
+              "minutes": 60
+            },
+            {
+              "alphaAcidPct": 5.5,
+              "hopGrams": 28,
+              "minutes": 10
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "og": 1.0535975255526489,
+        "fg": 1.0117914556215828,
+        "abvPct": 5.48704667845242,
+        "ibu": 21.867600525864475,
+        "colorSrm": 6.320130010079947,
+        "colorEbc": 12.450656119857497
+      },
+      "tolerance": 1e-9,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        {
+          "volumeL": 20,
+          "efficiencyPct": 72,
+          "fermentables": [
+            {
+              "kg": 4.5,
+              "potentialSg": 1.037,
+              "mashed": true,
+              "colorEbc": 3.9
+            },
+            {
+              "kg": 0.35,
+              "potentialSg": 1.034,
+              "mashed": true,
+              "colorEbc": 79
+            }
+          ],
+          "attenuationPct": 78,
+          "hops": [
+            {
+              "alphaAcidPct": 10,
+              "hopGrams": 14,
+              "minutes": 60
+            },
+            {
+              "alphaAcidPct": 5.5,
+              "hopGrams": 28,
+              "minutes": 10
+            }
+          ],
+          "boilVolumeL": 26
+        }
+      ],
+      "expected": {
+        "og": 1.0535975255526489,
+        "fg": 1.0117914556215828,
+        "abvPct": 5.48704667845242,
+        "ibu": 24.438645048755784,
+        "colorSrm": 6.320130010079947,
+        "colorEbc": 12.450656119857497
+      },
+      "tolerance": 1e-9,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        {
+          "volumeL": 20,
+          "efficiencyPct": 72,
+          "fermentables": [
+            {
+              "kg": 4.5,
+              "potentialSg": 1.037,
+              "mashed": true,
+              "colorEbc": 3.9
+            },
+            {
+              "kg": 0.35,
+              "potentialSg": 1.034,
+              "mashed": true,
+              "colorEbc": 79
+            }
+          ],
+          "attenuationPct": 78,
+          "hops": [
+            {
+              "alphaAcidPct": 10,
+              "hopGrams": 14,
+              "minutes": 60
+            },
+            {
+              "alphaAcidPct": 5.5,
+              "hopGrams": 28,
+              "minutes": 10
+            }
+          ],
+          "ibuMethod": "rager"
+        }
+      ],
+      "expected": {
+        "og": 1.0535975255526489,
+        "fg": 1.0117914556215828,
+        "abvPct": 5.48704667845242,
+        "ibu": 26.25970153479032,
+        "colorSrm": 6.320130010079947,
+        "colorEbc": 12.450656119857497
+      },
+      "tolerance": 1e-9,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        {
+          "volumeL": 19,
+          "efficiencyPct": 72,
+          "fermentables": [
+            {
+              "kg": 4.4,
+              "potentialSg": 1.035,
+              "mashed": false,
+              "colorEbc": 4
+            }
+          ],
+          "attenuationPct": 100,
+          "hops": []
+        }
+      ],
+      "expected": {
+        "og": 1.067641699242683,
+        "fg": 1.0,
+        "abvPct": 8.877973025602135,
+        "ibu": 0,
+        "colorSrm": 3.8492345766600415,
+        "colorEbc": 7.582992116020281
+      },
+      "tolerance": 1e-9,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        {
+          "volumeL": 23,
+          "efficiencyPct": 72,
+          "fermentables": [
+            {
+              "liters": 23,
+              "sg": 1.095
+            }
+          ],
+          "attenuationPct": 105,
+          "hops": []
+        }
+      ],
+      "expected": {
+        "og": 1.095,
+        "fg": 0.99525,
+        "abvPct": 13.988984192102533,
+        "ibu": 0,
+        "colorSrm": 0.0,
+        "colorEbc": 0.0
+      },
+      "tolerance": 1e-9,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        {
+          "volumeL": 19,
+          "efficiencyPct": 72,
+          "fermentables": [
+            {
+              "liters": 19,
+              "sg": 1.05
+            }
+          ],
+          "attenuationPct": 100,
+          "hops": []
+        }
+      ],
+      "expected": {
+        "og": 1.05,
+        "fg": 1.0,
+        "abvPct": 6.562500000000006,
+        "ibu": 0,
+        "colorSrm": 0.0,
+        "colorEbc": 0.0
+      },
+      "tolerance": 1e-9,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    }
+  ],
+  "styleFit": [
+    {
+      "args": [
+        {
+          "og": 1.054,
+          "fg": 1.012,
+          "abvPct": 5.5,
+          "ibu": 38,
+          "colorEbc": 14
+        },
+        {
+          "ogMin": 1.045,
+          "ogMax": 1.06,
+          "fgMin": 1.01,
+          "fgMax": 1.015,
+          "abvMinPct": 4.5,
+          "abvMaxPct": 6.2,
+          "ibuMin": 30,
+          "ibuMax": 50,
+          "colorEbcMin": 9.85,
+          "colorEbcMax": 19.7
+        }
+      ],
+      "expected": {
+        "og": "inside",
+        "fg": "inside",
+        "abvPct": "inside",
+        "ibu": "inside",
+        "colorEbc": "inside"
+      },
+      "tolerance": 0,
+      "source": "BJCP 2021 18B American Pale Ale ranges (SRM 5\u201310 as EBC): a typical APA is inside every range"
+    },
+    {
+      "args": [
+        {
+          "og": 1.04,
+          "fg": 1.016,
+          "abvPct": 3.2,
+          "ibu": 60,
+          "colorEbc": 30
+        },
+        {
+          "ogMin": 1.045,
+          "ogMax": 1.06,
+          "fgMin": 1.01,
+          "fgMax": 1.015,
+          "abvMinPct": 4.5,
+          "abvMaxPct": 6.2,
+          "ibuMin": 30,
+          "ibuMax": 50,
+          "colorEbcMin": 9.85,
+          "colorEbcMax": 19.7
+        }
+      ],
+      "expected": {
+        "og": "below",
+        "fg": "above",
+        "abvPct": "below",
+        "ibu": "above",
+        "colorEbc": "above"
+      },
+      "tolerance": 0,
+      "source": "definition: outside each bound"
+    },
+    {
+      "args": [
+        {
+          "og": 1.045,
+          "ibu": 50
+        },
+        {
+          "ogMin": 1.045,
+          "ogMax": 1.06,
+          "ibuMin": 30,
+          "ibuMax": 50
+        }
+      ],
+      "expected": {
+        "og": "inside",
+        "fg": "unknown",
+        "abvPct": "unknown",
+        "ibu": "inside",
+        "colorEbc": "unknown"
+      },
+      "tolerance": 0,
+      "source": "definition: bounds are inclusive; missing stats are unknown"
+    },
+    {
+      "args": [
+        {
+          "og": 1.1,
+          "fg": 0.998,
+          "abvPct": 13.4
+        },
+        {
+          "ogMin": null,
+          "ogMax": null,
+          "fgMax": 1.01,
+          "abvMinPct": 7.5
+        }
+      ],
+      "expected": {
+        "og": "unknown",
+        "fg": "inside",
+        "abvPct": "inside",
+        "ibu": "unknown",
+        "colorEbc": "unknown"
+      },
+      "tolerance": 0,
+      "source": "definition: a style with no OG bounds (null) is unknown; one bound checks one side (BJCP M1A dry mead has no IBU or colour range)"
+    },
+    {
+      "args": [
+        {
+          "fg": 1.02,
+          "abvPct": 6
+        },
+        {
+          "fgMax": 1.01,
+          "abvMinPct": 7.5
+        }
+      ],
+      "expected": {
+        "og": "unknown",
+        "fg": "above",
+        "abvPct": "below",
+        "ibu": "unknown",
+        "colorEbc": "unknown"
+      },
+      "tolerance": 0,
+      "source": "definition: one bound checks one side"
+    }
+  ]
+}

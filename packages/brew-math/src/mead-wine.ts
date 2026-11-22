@@ -155,3 +155,23 @@ export function blend(lots: Lot[]): CalcResult<Lot> {
   }
   return ok(result);
 }
+
+/** Mass fraction of sorbic acid in potassium sorbate (112.13 / 150.22 g/mol). */
+export const SORBIC_ACID_FRACTION = 112.13 / 150.22;
+
+/**
+ * Potassium sorbate to stabilize a finished wine, mead or cider before backsweetening.
+ * Sorbic acid needed falls as alcohol rises: 150 mg/L at 10% ABV, 25 mg/L less per extra 1%
+ * (the home-winemaking table 10% → 150, 11% → 125, 12% → 100, 13% → 75, 14% → 50 mg/L),
+ * extended linearly to 4–15% ABV. Grams = mg/L × L / 1000 / sorbic acid fraction.
+ * Always pair with sulfite; sorbate alone doesn't stop malolactic bacteria.
+ */
+export function potassiumSorbate(
+  abvPct: number,
+  volumeL: number,
+): CalcResult<{ sorbicAcidMgL: number; grams: number }> {
+  const err = outside("ABV", abvPct, 4, 15) ?? outside("Volume", volumeL, 0.1, 100000);
+  if (err) return fail(err);
+  const sorbicAcidMgL = 150 - 25 * (abvPct - 10);
+  return ok({ sorbicAcidMgL, grams: (sorbicAcidMgL * volumeL) / 1000 / SORBIC_ACID_FRACTION });
+}

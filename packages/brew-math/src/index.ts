@@ -8,6 +8,7 @@ export * from "./hydrometer.ts";
 export * from "./ibu.ts";
 export * from "./mash-water.ts";
 export * from "./mead-wine.ts";
+export * from "./recipe.ts";
 export * from "./refractometer.ts";
 export * from "./result.ts";
 export * as units from "./units.ts";

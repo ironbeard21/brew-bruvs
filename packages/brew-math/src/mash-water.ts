@@ -45,3 +45,36 @@ export function infusionVolume(input: {
       (infusionTempC - targetTempC),
   );
 }
+
+/** Water kept by spent grain: Palmer's 0.125 US gal per lb, in L/kg (about 1.04). */
+export const GRAIN_ABSORPTION_L_PER_KG = (0.125 * 3.785411784) / 0.45359237;
+
+/**
+ * Sparge water (L) to reach the pre-boil volume:
+ * sparge = pre-boil volume − (mash water − grain kg × absorption − mash tun dead space).
+ * Returns 0 when the mash water alone already covers it (full-volume and BIAB mashes).
+ */
+export function spargeVolume(input: {
+  preBoilVolumeL: number;
+  mashWaterL: number;
+  grainKg: number;
+  grainAbsorptionLPerKg?: number;
+  mashTunDeadspaceL?: number;
+}): CalcResult<number> {
+  const {
+    preBoilVolumeL,
+    mashWaterL,
+    grainKg,
+    grainAbsorptionLPerKg = GRAIN_ABSORPTION_L_PER_KG,
+    mashTunDeadspaceL = 0,
+  } = input;
+  const err =
+    outside("Pre-boil volume", preBoilVolumeL, 0.1, 100000) ??
+    outside("Mash water", mashWaterL, 0, 100000) ??
+    outside("Grain weight", grainKg, 0, 10000) ??
+    outside("Grain absorption", grainAbsorptionLPerKg, 0, 3) ??
+    outside("Mash tun dead space", mashTunDeadspaceL, 0, 1000);
+  if (err) return fail(err);
+  const runoff = mashWaterL - grainKg * grainAbsorptionLPerKg - mashTunDeadspaceL;
+  return ok(Math.max(preBoilVolumeL - runoff, 0));
+}

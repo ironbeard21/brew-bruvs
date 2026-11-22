@@ -117,5 +117,87 @@
       "tolerance": 1e-9,
       "source": "independent Python implementation of the published formula (test/golden/generate.py)"
     }
+  ],
+  "spargeVolume": [
+    {
+      "args": [
+        {
+          "preBoilVolumeL": 24.605176596,
+          "mashWaterL": 14.19529419,
+          "grainKg": 4.535923700000001
+        }
+      ],
+      "expected": 15.141647136,
+      "tolerance": 1e-9,
+      "source": "worked example with Palmer's 0.125 gal/lb absorption: 10 lb grain, 3.75 gal mash, 6.5 gal pre-boil \u2192 6.5 \u2212 (3.75 \u2212 1.25) = 4 gal"
+    },
+    {
+      "args": [
+        {
+          "preBoilVolumeL": 28,
+          "mashWaterL": 15,
+          "grainKg": 5,
+          "grainAbsorptionLPerKg": 1.0,
+          "mashTunDeadspaceL": 1.0
+        }
+      ],
+      "expected": 19.0,
+      "tolerance": 1e-9,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        {
+          "preBoilVolumeL": 32,
+          "mashWaterL": 18,
+          "grainKg": 6,
+          "grainAbsorptionLPerKg": 0.8,
+          "mashTunDeadspaceL": 2.0
+        }
+      ],
+      "expected": 20.8,
+      "tolerance": 1e-9,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        {
+          "preBoilVolumeL": 60,
+          "mashWaterL": 35,
+          "grainKg": 12,
+          "grainAbsorptionLPerKg": 1.04,
+          "mashTunDeadspaceL": 3.0
+        }
+      ],
+      "expected": 40.480000000000004,
+      "tolerance": 1e-9,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        {
+          "preBoilVolumeL": 12,
+          "mashWaterL": 7,
+          "grainKg": 2.5,
+          "grainAbsorptionLPerKg": 1.1,
+          "mashTunDeadspaceL": 0.5
+        }
+      ],
+      "expected": 8.25,
+      "tolerance": 1e-9,
+      "source": "independent Python implementation of the published formula (test/golden/generate.py)"
+    },
+    {
+      "args": [
+        {
+          "preBoilVolumeL": 26,
+          "mashWaterL": 32,
+          "grainKg": 5
+        }
+      ],
+      "expected": 0,
+      "tolerance": 0,
+      "source": "full-volume (BIAB) mash: the mash water already covers the pre-boil volume, so no sparge"
+    }
   ]
 }
