@@ -99,6 +99,11 @@ describe("can: visibility", () => {
     expect(allowed(null, withVisibility("private"))).toEqual([]);
   });
 
+  it("unlisted: anyone with the link can read, nobody else can change it", () => {
+    expect(allowed(bob, withVisibility("unlisted"))).toEqual(["read"]);
+    expect(allowed(null, withVisibility("unlisted"))).toEqual(["read"]);
+  });
+
   it("server: any signed-in user can read, anonymous visitors cannot", () => {
     expect(allowed(bob, withVisibility("server"))).toEqual(["read"]);
     expect(allowed(null, withVisibility("server"))).toEqual([]);

@@ -8,14 +8,19 @@ import { loadConfig } from "./config.ts";
 import { createLogger } from "./logger.ts";
 import { createAuthService } from "./services/auth.ts";
 import { createCatalogService } from "./services/catalog.ts";
+import { createEquipmentProfileService } from "./services/equipment-profiles.ts";
+import { createRecipeService } from "./services/recipes.ts";
 
 const config = loadConfig(process.env);
 const logger = createLogger(config.logLevel);
 const { db } = createDb(config.databaseUrl);
+const profiles = createEquipmentProfileService(db, { baseUrl: config.baseUrl });
 const app = createApp({
   logger,
   webDir: config.webDir,
   catalog: createCatalogService(db),
+  profiles,
+  recipes: createRecipeService(db, { baseUrl: config.baseUrl, profiles }),
   auth: {
     auth: createAuthService(db, { baseUrl: config.baseUrl, signupMode: config.signupMode }),
     oidc:

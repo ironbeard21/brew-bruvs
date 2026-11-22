@@ -9,6 +9,8 @@ import type { Oidc } from "../src/auth/oidc.ts";
 import { createLogger } from "../src/logger.ts";
 import { createAuthService } from "../src/services/auth.ts";
 import { createCatalogService } from "../src/services/catalog.ts";
+import { createEquipmentProfileService } from "../src/services/equipment-profiles.ts";
+import { createRecipeService } from "../src/services/recipes.ts";
 
 export const BASE_URL = "http://brew.test";
 export const TEST_DATABASE_URL = process.env.TEST_DATABASE_URL;
@@ -18,10 +20,13 @@ function deps(
   signupMode: "open" | "invite",
   oidc?: Oidc,
 ): AppDeps {
+  const profiles = createEquipmentProfileService(db, { baseUrl: BASE_URL });
   return {
     logger: createLogger("error", () => {}),
     webDir: undefined,
     catalog: createCatalogService(db),
+    profiles,
+    recipes: createRecipeService(db, { baseUrl: BASE_URL, profiles }),
     auth: {
       auth: createAuthService(db, { baseUrl: BASE_URL, signupMode }),
       oidc,
@@ -100,4 +105,16 @@ export async function invite(app: TestApp, adminToken: string): Promise<string> 
   const r = await call(app, "POST", "/api/invites", { token: adminToken });
   expect(r.status).toBe(201);
   return r.json.code as string;
+}
+
+/** Admin plus Ann (invited), both signed in with app tokens. */
+export async function twoUsers(app: TestApp) {
+  const adminToken = await setupAdmin(app);
+  const code = await invite(app, adminToken);
+  const r = await call(app, "POST", "/api/auth/signup", {
+    body: { ...ann, inviteCode: code, client: "app" },
+  });
+  expect(r.status).toBe(201);
+  const annId = (r.json.user as { id: string }).id;
+  return { adminToken, annToken: r.json.token as string, annId };
 }

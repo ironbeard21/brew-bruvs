@@ -7,24 +7,12 @@ import {
   admin,
   ann,
   call,
-  invite,
   setupAdmin,
   TEST_DATABASE_URL,
   type TestApp,
+  twoUsers,
   withApp,
 } from "./helpers.ts";
-
-/** Admin plus Ann (invited), both signed in with app tokens. */
-async function twoUsers(app: TestApp) {
-  const adminToken = await setupAdmin(app);
-  const code = await invite(app, adminToken);
-  const r = await call(app, "POST", "/api/auth/signup", {
-    body: { ...ann, inviteCode: code, client: "app" },
-  });
-  expect(r.status).toBe(201);
-  const annId = (r.json.user as { id: string }).id;
-  return { adminToken, annToken: r.json.token as string, annId };
-}
 
 const login = (app: TestApp, email: string, password: string, ip = "198.51.100.1") =>
   call(app, "POST", "/api/auth/login", { body: { email, password, client: "app" }, ip });

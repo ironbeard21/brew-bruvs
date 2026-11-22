@@ -11,7 +11,10 @@ import { registerAdminRoutes } from "./routes/admin.ts";
 import { type AuthRouteDeps, registerAuthRoutes } from "./routes/auth.ts";
 import { registerCatalogRoutes } from "./routes/catalog.ts";
 import { registerHealthRoutes } from "./routes/health.ts";
+import { registerRecipeRoutes } from "./routes/recipes.ts";
 import type { CatalogService } from "./services/catalog.ts";
+import type { EquipmentProfileService } from "./services/equipment-profiles.ts";
+import type { RecipeService } from "./services/recipes.ts";
 
 export const OPENAPI_PATH = "/api/openapi.json";
 
@@ -30,9 +33,11 @@ export interface AppDeps {
   webDir: string | undefined;
   auth: AuthRouteDeps;
   catalog: CatalogService;
+  recipes: RecipeService;
+  profiles: EquipmentProfileService;
 }
 
-export function createApp({ logger, webDir, auth, catalog }: AppDeps) {
+export function createApp({ logger, webDir, auth, catalog, recipes, profiles }: AppDeps) {
   const app = new OpenAPIHono<AppEnv>({
     defaultHook: (result, c) => {
       if (!result.success) {
@@ -57,13 +62,13 @@ export function createApp({ logger, webDir, auth, catalog }: AppDeps) {
   });
 
   app.openAPIRegistry.register("Error", ErrorSchema);
-  // Not used by a route yet (recipes arrive in P1-05); registered so the contract publishes it.
   app.openAPIRegistry.register("RecipeContent", RecipeContent);
   app.use("/api/*", sessionMiddleware(auth.auth));
   registerHealthRoutes(app);
   registerAuthRoutes(app, auth);
   registerAdminRoutes(app, auth);
   registerCatalogRoutes(app, catalog);
+  registerRecipeRoutes(app, { recipes, profiles });
   app.doc31(OPENAPI_PATH, OPENAPI_INFO);
 
   if (webDir) {

@@ -132,6 +132,29 @@ export function recipeStats(input: {
   });
 }
 
+/**
+ * Factors for scaling a recipe to other equipment. Every amount scales with the volume ratio
+ * (to / from); mashed and steeped grain also by old efficiency / new efficiency, so the same
+ * gravity points come out of the mash (Palmer, "How to Brew", extract efficiency). Hops and
+ * everything else scale with volume only, which keeps their concentration.
+ */
+export function scaleFactors(input: {
+  fromVolumeL: number;
+  toVolumeL: number;
+  fromEfficiencyPct: number;
+  toEfficiencyPct: number;
+}): CalcResult<{ amounts: number; mashed: number }> {
+  const { fromVolumeL, toVolumeL, fromEfficiencyPct, toEfficiencyPct } = input;
+  const err =
+    outside("Recipe volume", fromVolumeL, 0.1, 100000) ??
+    outside("New volume", toVolumeL, 0.1, 100000) ??
+    outside("Recipe efficiency", fromEfficiencyPct, 1, 100) ??
+    outside("New efficiency", toEfficiencyPct, 1, 100);
+  if (err) return fail(err);
+  const amounts = toVolumeL / fromVolumeL;
+  return ok({ amounts, mashed: (amounts * fromEfficiencyPct) / toEfficiencyPct });
+}
+
 /** Style ranges as the catalog stores them; a missing bound is null or omitted. */
 export interface StyleRanges {
   ogMin?: number | null;

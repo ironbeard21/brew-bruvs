@@ -9,7 +9,7 @@ import {
   newSecret,
   verifyPassword,
 } from "../auth/secrets.ts";
-import { ApiError } from "../errors.ts";
+import { ApiError, pgCode } from "../errors.ts";
 import type { User as PermissionUser } from "../permissions.ts";
 
 const { users, memberships, authTokens, invites, passwordResets } = schema;
@@ -66,11 +66,6 @@ const publicColumns = {
   isAdmin: users.isAdmin,
   units: users.units,
 };
-
-function pgCode(err: unknown): string | undefined {
-  const e = err as { code?: string; cause?: { code?: string } };
-  return e.code ?? e.cause?.code;
-}
 
 export function createAuthService(
   db: Db,
