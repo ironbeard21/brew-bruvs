@@ -4,6 +4,7 @@ import { useState } from "react";
 import { StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { colors, DESKTOP_BREAKPOINT, spacing } from "../../theme";
 import { Banner, Card, ResultRow, SegmentedControl, TextField } from "../ui";
+import { FormulaDisclosure, SaveToBatchNote } from "./CalculatorExtras";
 import { formatFixed, parseNumber } from "./parseNumber";
 
 type CategoryId = "gravity" | "temperature" | "mass" | "volume" | "color" | "pressure";
@@ -158,7 +159,7 @@ export function UnitConverter() {
 
   return (
     <View style={[styles.layout, isDesktop && styles.layoutDesktop]}>
-      <Card style={styles.column}>
+      <Card style={isDesktop ? styles.column : undefined}>
         <Text style={styles.sectionTitle}>Brewing Unit Converter</Text>
         <Text style={styles.sectionSubtitle}>
           Convert gravity, temperature, mass, volume, color, and pressure using SI-backed brewing
@@ -190,7 +191,7 @@ export function UnitConverter() {
         />
       </Card>
 
-      <Card style={styles.column}>
+      <Card style={isDesktop ? styles.column : undefined}>
         <Text style={styles.sectionTitle}>Converted Values</Text>
         {baseValue === null ? (
           <Banner
@@ -209,8 +210,16 @@ export function UnitConverter() {
                 testID={`converter-result-${u.id}`}
               />
             ))}
+            <SaveToBatchNote
+              calculatorName={`Unit Converter (${category.label})`}
+              noteBody={category.units
+                .map((u) => `${formatFixed(u.fromBase(baseValue), u.digits)} ${u.label}`)
+                .join(" = ")}
+            />
           </View>
         )}
+
+        <FormulaDisclosure formula="SI-backed conversions: ASBC SG ↔ °Plato/Brix polynomial, °F = °C × 9/5 + 32, 1 lb = 0.45359237 kg, 1 US gal = 3.785411784 L, EBC = SRM × 1.97, SRM = 1.3546 × °L − 0.76, 1 PSI = 6.8948 kPa." />
       </Card>
     </View>
   );

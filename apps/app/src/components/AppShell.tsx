@@ -132,7 +132,7 @@ const styles = StyleSheet.create({
   },
   headerInner: {
     width: "100%",
-    maxWidth: 960,
+    maxWidth: 1120,
     alignSelf: "center",
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
@@ -222,7 +222,7 @@ const styles = StyleSheet.create({
   },
   container: {
     width: "100%",
-    maxWidth: 960,
+    maxWidth: 1120,
     alignSelf: "center",
     gap: spacing.lg,
   },

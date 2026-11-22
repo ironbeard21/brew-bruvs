@@ -228,6 +228,10 @@ export function ServerProvider({
   );
 }
 
+export function useOptionalServer(): ServerContextValue | null {
+  return useContext(ServerContext);
+}
+
 export function useServer(): ServerContextValue {
   const ctx = useContext(ServerContext);
   if (!ctx) {
