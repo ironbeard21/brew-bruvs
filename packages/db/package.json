@@ -10,8 +10,15 @@
   "scripts": {
     "build": "tsc -p . --noEmit false --rewriteRelativeImportExtensions --outDir dist",
     "db:generate": "node -e \"console.log('not implemented yet (P0-08)')\"",
-    "db:migrate": "node -e \"console.log('not implemented yet (P0-03, P0-08)')\"",
+    "db:migrate": "node --env-file-if-exists=../../.env src/migrate.ts",
     "typecheck": "tsc --noEmit -p .",
     "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.45.4",
+    "pg": "^8.22.0"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.20.0"
   }
 }

@@ -19,3 +19,18 @@ Read `AGENTS.md` first. It holds the working rules, hard rules, repo map, comman
 Keep every `AGENTS.md` under 10,000 characters: Antigravity limits rule files to 12,000. Put long reference material in `docs/` and link to it.
 
 Decisions live in `docs/adr/`. Product and phase plans live in `docs/plan/`.
+
+## Development database
+
+Copy `.env.example` to `.env` and keep the PostgreSQL password in `DATABASE_URL` and
+`POSTGRES_PASSWORD` in sync. From the repository root, run:
+
+```sh
+docker compose -f docker/compose.dev.yml up -d --wait
+pnpm db:migrate
+```
+
+Postgres listens on `127.0.0.1:5432` and keeps its data in the `postgres-dev` volume.
+`pnpm db:migrate` verifies the connection before the initial schema migrations land in P0-08.
+To run the integration test, set `TEST_DATABASE_URL` in your shell to a connection whose
+role can create databases, then run `pnpm --filter @brew-bruvs/db test`.
