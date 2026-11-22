@@ -33,7 +33,7 @@ const profile = { tags: ["equipment"], security } satisfies Pick<RouteConfig, "t
 const id = z.object({ id: z.uuid() });
 const noContent = { description: "Done" };
 
-const parseDecimal = (value: unknown) =>
+export const parseDecimal = (value: unknown) =>
   typeof value === "string" && /^\d+$/.test(value) ? Number(value) : value;
 
 const routes = {

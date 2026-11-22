@@ -3,7 +3,7 @@
 // and scaling to an equipment profile. Every access goes through can().
 import { styleFit } from "@brew-bruvs/brew-math";
 import { type Db, schema } from "@brew-bruvs/db";
-import { and, desc, eq, exists, inArray, or, type SQL, sql } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import type { z } from "zod";
 import { RecipeContent } from "../contracts/recipe-content.ts";
 import type {
@@ -15,41 +15,26 @@ import type {
   ShareInput,
 } from "../contracts/recipes.ts";
 import { ApiError, pgCode } from "../errors.ts";
-import { type Action, can, type Resource, type User } from "../permissions.ts";
+import type { Action, User } from "../permissions.ts";
+import { authorizeRow, newId, ownerOf, readableBy, signedIn, type Tx } from "./access.ts";
 import type { EquipmentProfileService } from "./equipment-profiles.ts";
-import { catalogValues, computeStats, efficiencyOf, scaleContent } from "./recipe-stats.ts";
+import {
+  catalogValues,
+  computeStats,
+  efficiencyOf,
+  equipmentOf,
+  scaleContent,
+  versionStats,
+} from "./recipe-stats.ts";
 
-const { recipes, recipeVersions, shares, styles, users, breweries, equipmentProfiles } = schema;
+const { recipes, recipeVersions, shares, styles, users, breweries } = schema;
 
-export type Tx = Db | Parameters<Parameters<Db["transaction"]>[0]>[0];
 type RecipeRow = typeof recipes.$inferSelect;
 type VersionRow = typeof recipeVersions.$inferSelect;
 
 // Written out in full: drizzle leaves single-table columns unqualified, which would bind "id"
 // to recipe_versions inside the subquery.
 const latestVersion = sql<number>`(SELECT max(v.version) FROM recipe_versions v WHERE v.recipe_id = "recipes"."id")`;
-
-export function ownerOf(row: {
-  ownerUserId: string | null;
-  ownerBreweryId: string | null;
-}): Resource["owner"] {
-  if (row.ownerUserId) return { type: "user", id: row.ownerUserId };
-  return row.ownerBreweryId ? { type: "brewery", id: row.ownerBreweryId } : null;
-}
-
-/** Reading something you can't see is "not found", so private recipes don't leak. */
-export function denied(user: User | null, action: Action, resource: Resource, what: string) {
-  if (!can(user, "read", resource)) return new ApiError(404, "not_found", `${what} not found`);
-  if (!can(user, action, resource)) {
-    return new ApiError(403, "forbidden", `You can't ${action} this ${what.toLowerCase()}`);
-  }
-  return null;
-}
-
-function signedIn(user: User | null): User {
-  if (!user) throw new ApiError(401, "unauthorized", "Sign in first");
-  return user;
-}
 
 const iso = (d: Date | null) => d?.toISOString() ?? null;
 
@@ -88,9 +73,6 @@ export function createRecipeService(
 ) {
   const { profiles } = opts;
 
-  const newId = async (tx: Tx) =>
-    (await tx.execute<{ id: string }>(sql`SELECT uuidv7() AS id`)).rows[0]?.id as string;
-
   /** Loads a recipe and checks `action`; locks the row for updates when asked. */
   async function authorize(tx: Tx, user: User | null, action: Action, id: string, lock = false) {
     const query = tx
@@ -99,22 +81,7 @@ export function createRecipeService(
       .where(eq(recipes.id, id));
     const [row] = await (lock ? query.for("update", { of: recipes }) : query);
     if (!row) throw new ApiError(404, "not_found", "Recipe not found");
-    const grants = await tx
-      .select()
-      .from(shares)
-      .where(and(eq(shares.resourceType, "recipe"), eq(shares.resourceId, id)));
-    const resource: Resource = {
-      owner: ownerOf(row.recipe),
-      visibility: row.recipe.visibility,
-      shares: grants.map((s) => ({
-        to: s.toUserId
-          ? { type: "user", id: s.toUserId }
-          : { type: "brewery", id: s.toBreweryId as string },
-        level: s.level,
-      })),
-    };
-    const err = denied(user, action, resource, "Recipe");
-    if (err) throw err;
+    await authorizeRow(tx, user, action, "recipe", row.recipe, "Recipe");
     return { ...row.recipe, latestVersion: row.latestVersion };
   }
 
@@ -159,26 +126,8 @@ export function createRecipeService(
     return row as VersionRow;
   }
 
-  async function equipmentOf(tx: Tx, id: string | null) {
-    if (!id) return null;
-    const [row] = await tx
-      .select({
-        efficiencyPct: equipmentProfiles.efficiencyPct,
-        boilSizeL: equipmentProfiles.boilSizeL,
-      })
-      .from(equipmentProfiles)
-      .where(eq(equipmentProfiles.id, id));
-    return row ?? null;
-  }
-
   async function viewVersion(tx: Tx, row: VersionRow) {
-    const content = RecipeContent.parse(row.content);
-    const computed = computeStats(
-      content,
-      row.batchSizeL,
-      await equipmentOf(tx, row.equipmentProfileId),
-      await catalogValues(tx, content),
-    );
+    const { content, ...computed } = await versionStats(tx, row);
     let fit = null;
     if (row.styleId) {
       const [style] = await tx.select().from(styles).where(eq(styles.id, row.styleId));
@@ -239,37 +188,11 @@ export function createRecipeService(
       viewer: User | null,
       page: { q?: string | undefined; mine: boolean; limit: number; offset: number },
     ) {
-      const breweryIds = viewer?.memberships.map((m) => m.breweryId) ?? [];
-      let access: SQL | undefined;
-      if (viewer) {
-        const shared = exists(
-          db
-            .select({ one: sql`1` })
-            .from(shares)
-            .where(
-              and(
-                eq(shares.resourceType, "recipe"),
-                eq(shares.resourceId, recipes.id),
-                or(
-                  eq(shares.toUserId, viewer.id),
-                  breweryIds.length ? inArray(shares.toBreweryId, breweryIds) : undefined,
-                ),
-              ),
-            ),
-        );
-        const own = eq(recipes.ownerUserId, viewer.id);
-        access = page.mine
-          ? own
-          : or(
-              own,
-              breweryIds.length ? inArray(recipes.ownerBreweryId, breweryIds) : undefined,
-              shared,
-              inArray(recipes.visibility, ["server", "public"]),
-            );
-      } else {
-        if (page.mine) throw new ApiError(401, "unauthorized", "Sign in first");
-        access = eq(recipes.visibility, "public");
-      }
+      if (page.mine && !viewer) throw new ApiError(401, "unauthorized", "Sign in first");
+      const access =
+        page.mine && viewer
+          ? eq(recipes.ownerUserId, viewer.id)
+          : readableBy(db, viewer, "recipe", recipes);
       const search = page.q ? sql`strpos(lower(${recipes.name}), lower(${page.q})) > 0` : undefined;
       const rows = await db
         .select({ recipe: recipes, latestVersion })

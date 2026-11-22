@@ -71,6 +71,15 @@ export const AGED_STATUSES = [
   "bottle_aging",
   "finished",
 ] as const;
+export const noteKind = pgEnum("note_kind", ["general", "tasting"]);
+// BJCP score sheet maximums (beer sheet; also used here for mead, wine and cider).
+export const TASTING_SCORE_MAX = {
+  aroma: 12,
+  appearance: 3,
+  flavor: 20,
+  mouthfeel: 5,
+  overall: 10,
+} as const;
 export const readingSource = pgEnum("reading_source", ["manual", "device"]);
 export const reminderKind = pgEnum("reminder_kind", [
   "nutrient",
@@ -570,11 +579,30 @@ export const notes = pgTable(
     ...shareableColumns(),
     recipeId: uuid("recipe_id").references(() => recipes.id, { onDelete: "cascade" }),
     batchId: uuid("batch_id").references(() => batches.id, { onDelete: "cascade" }),
+    kind: noteKind("kind").notNull().default("general"),
     body: text("body").notNull(),
+    // Tasting notes only; each optional, out of TASTING_SCORE_MAX.
+    scoreAroma: integer("score_aroma"),
+    scoreAppearance: integer("score_appearance"),
+    scoreFlavor: integer("score_flavor"),
+    scoreMouthfeel: integer("score_mouthfeel"),
+    scoreOverall: integer("score_overall"),
   },
   (t) => [
     ...ownerChecks("notes", t),
     check("notes_one_subject", sql`num_nonnulls(${t.recipeId}, ${t.batchId}) <= 1`),
+    check(
+      "notes_scores_only_tasting",
+      sql`${t.kind} = 'tasting' OR num_nonnulls(${t.scoreAroma}, ${t.scoreAppearance}, ${t.scoreFlavor}, ${t.scoreMouthfeel}, ${t.scoreOverall}) = 0`,
+    ),
+    check(
+      "notes_scores_range",
+      sql.raw(
+        Object.entries(TASTING_SCORE_MAX)
+          .map(([k, max]) => `("score_${k}" BETWEEN 0 AND ${max})`)
+          .join(" AND "),
+      ),
+    ),
     index().on(t.recipeId),
     index().on(t.batchId),
   ],

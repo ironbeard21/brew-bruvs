@@ -9,10 +9,10 @@ import {
   scaleFactors,
 } from "@brew-bruvs/brew-math";
 import { schema } from "@brew-bruvs/db";
-import { inArray } from "drizzle-orm";
-import type { RecipeContent } from "../contracts/recipe-content.ts";
+import { eq, inArray } from "drizzle-orm";
+import { RecipeContent } from "../contracts/recipe-content.ts";
 import { ApiError } from "../errors.ts";
-import type { Tx } from "./recipes.ts";
+import type { Tx } from "./access.ts";
 
 /** Used when neither the recipe nor its equipment profile gives a brewhouse efficiency. */
 export const DEFAULT_EFFICIENCY_PCT = 72;
@@ -185,4 +185,32 @@ export function scaleContent(
     miscs: content.miscs.map((m) => times(m, ["amountKg", "amountL", "count"], amounts)),
     mash: content.mash.map((s) => times(s, ["infuseL"], mashed)),
   };
+}
+
+export async function equipmentOf(tx: Tx, id: string | null): Promise<Equipment | null> {
+  if (!id) return null;
+  const { equipmentProfiles } = schema;
+  const [row] = await tx
+    .select({
+      efficiencyPct: equipmentProfiles.efficiencyPct,
+      boilSizeL: equipmentProfiles.boilSizeL,
+    })
+    .from(equipmentProfiles)
+    .where(eq(equipmentProfiles.id, id));
+  return row ?? null;
+}
+
+/** Stats of a saved recipe version, with its parsed content. */
+export async function versionStats(
+  tx: Tx,
+  row: { content: unknown; batchSizeL: number; equipmentProfileId: string | null },
+): Promise<Computed & { content: RecipeContent }> {
+  const content = RecipeContent.parse(row.content);
+  const computed = computeStats(
+    content,
+    row.batchSizeL,
+    await equipmentOf(tx, row.equipmentProfileId),
+    await catalogValues(tx, content),
+  );
+  return { ...computed, content };
 }

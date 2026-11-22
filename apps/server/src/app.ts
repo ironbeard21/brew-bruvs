@@ -9,11 +9,14 @@ import { ApiError, ErrorSchema, errorBody } from "./errors.ts";
 import type { Logger } from "./logger.ts";
 import { registerAdminRoutes } from "./routes/admin.ts";
 import { type AuthRouteDeps, registerAuthRoutes } from "./routes/auth.ts";
+import { registerBatchRoutes } from "./routes/batches.ts";
 import { registerCatalogRoutes } from "./routes/catalog.ts";
 import { registerHealthRoutes } from "./routes/health.ts";
 import { registerRecipeRoutes } from "./routes/recipes.ts";
+import type { BatchService } from "./services/batches.ts";
 import type { CatalogService } from "./services/catalog.ts";
 import type { EquipmentProfileService } from "./services/equipment-profiles.ts";
+import type { NoteService } from "./services/notes.ts";
 import type { RecipeService } from "./services/recipes.ts";
 
 export const OPENAPI_PATH = "/api/openapi.json";
@@ -35,9 +38,12 @@ export interface AppDeps {
   catalog: CatalogService;
   recipes: RecipeService;
   profiles: EquipmentProfileService;
+  batches: BatchService;
+  notes: NoteService;
 }
 
-export function createApp({ logger, webDir, auth, catalog, recipes, profiles }: AppDeps) {
+export function createApp(deps: AppDeps) {
+  const { logger, webDir, auth, catalog, recipes, profiles, batches, notes } = deps;
   const app = new OpenAPIHono<AppEnv>({
     defaultHook: (result, c) => {
       if (!result.success) {
@@ -69,6 +75,7 @@ export function createApp({ logger, webDir, auth, catalog, recipes, profiles }: 
   registerAdminRoutes(app, auth);
   registerCatalogRoutes(app, catalog);
   registerRecipeRoutes(app, { recipes, profiles });
+  registerBatchRoutes(app, { batches, notes });
   app.doc31(OPENAPI_PATH, OPENAPI_INFO);
 
   if (webDir) {

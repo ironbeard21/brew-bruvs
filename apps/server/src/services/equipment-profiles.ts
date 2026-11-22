@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // A brewer's own equipment profiles: volumes, losses and efficiency used to scale recipes.
 import { type Db, schema } from "@brew-bruvs/db";
-import { eq, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import type { z } from "zod";
 import type { EquipmentProfileInput, EquipmentProfilePatch } from "../contracts/recipes.ts";
 import { ApiError, pgCode } from "../errors.ts";
 import type { Action, User } from "../permissions.ts";
-import { denied, ownerOf, type Tx } from "./recipes.ts";
+import { denied, newId, ownerOf, signedIn, type Tx } from "./access.ts";
 
 const { equipmentProfiles } = schema;
 type ProfileRow = typeof equipmentProfiles.$inferSelect;
@@ -29,11 +29,6 @@ function view(row: ProfileRow) {
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };
-}
-
-function signedIn(user: User | null): User {
-  if (!user) throw new ApiError(401, "unauthorized", "Sign in first");
-  return user;
 }
 
 async function catalogChecked<T>(run: () => Promise<T>): Promise<T> {
@@ -87,8 +82,7 @@ export function createEquipmentProfileService(db: Db, opts: { baseUrl: string })
       const user = signedIn(viewer);
       return catalogChecked(() =>
         db.transaction(async (tx) => {
-          const { rows } = await tx.execute<{ id: string }>(sql`SELECT uuidv7() AS id`);
-          const id = rows[0]?.id as string;
+          const id = await newId(tx);
           const [row] = await tx
             .insert(equipmentProfiles)
             .values({
