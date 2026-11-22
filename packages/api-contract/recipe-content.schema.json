@@ -1,0 +1,407 @@
+{
+  "$id": "urn:brew-bruvs:schema:recipe-content:1",
+  "title": "Brew-Bruvs recipe content, schema version 1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "type": "number",
+      "const": 1
+    },
+    "efficiencyPct": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "maximum": 100
+    },
+    "boilTimeMin": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 10000
+    },
+    "fermentables": {
+      "maxItems": 100,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "catalogId": {
+            "description": "Catalog row id, e.g. \"hop-citra\". Omit for free-text lines.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "kind": {
+            "type": "string",
+            "enum": ["grain", "extract", "sugar", "honey", "juice", "fruit", "adjunct", "other"]
+          },
+          "amountKg": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 10000
+          },
+          "amountL": {
+            "description": "For juices and must measured by volume",
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 100000
+          },
+          "use": {
+            "type": "string",
+            "enum": ["mash", "steep", "boil", "fermentation", "package"]
+          },
+          "dayOffset": {
+            "description": "For staggered additions: days after pitching",
+            "type": "number",
+            "minimum": 0,
+            "maximum": 3650
+          },
+          "potentialSg": {
+            "description": "Per kg in 1 L (grains, sugars, honey) or the juice's own SG",
+            "type": "number",
+            "minimum": 0.98,
+            "maximum": 1.3
+          },
+          "colorEbc": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 5000
+          },
+          "yieldPct": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 2000
+          }
+        },
+        "required": ["name", "kind"],
+        "additionalProperties": false
+      }
+    },
+    "hops": {
+      "maxItems": 100,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "catalogId": {
+            "description": "Catalog row id, e.g. \"hop-citra\". Omit for free-text lines.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "amountKg": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 10000
+          },
+          "alphaAcidPct": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "form": {
+            "type": "string",
+            "enum": ["pellet", "leaf", "plug", "extract"]
+          },
+          "use": {
+            "type": "string",
+            "enum": ["mash", "first_wort", "boil", "whirlpool", "dry_hop"]
+          },
+          "timeMin": {
+            "description": "Boil or whirlpool minutes; required for boil additions",
+            "type": "number",
+            "minimum": 0,
+            "maximum": 10000
+          },
+          "tempC": {
+            "description": "Whirlpool temperature",
+            "type": "number",
+            "minimum": -10,
+            "maximum": 110
+          },
+          "days": {
+            "description": "Dry-hop contact time",
+            "type": "number",
+            "minimum": 0,
+            "maximum": 3650
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 2000
+          }
+        },
+        "required": ["name", "amountKg", "use"],
+        "additionalProperties": false
+      }
+    },
+    "yeasts": {
+      "maxItems": 20,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "catalogId": {
+            "description": "Catalog row id, e.g. \"hop-citra\". Omit for free-text lines.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "form": {
+            "type": "string",
+            "enum": ["dry", "liquid", "slurry", "culture"]
+          },
+          "packs": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 1000
+          },
+          "amountKg": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 10000
+          },
+          "amountL": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 100000
+          },
+          "attenuationPct": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 2000
+          }
+        },
+        "required": ["name"],
+        "additionalProperties": false
+      }
+    },
+    "miscs": {
+      "maxItems": 100,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "catalogId": {
+            "description": "Catalog row id, e.g. \"hop-citra\". Omit for free-text lines.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "spice",
+              "herb",
+              "flavor",
+              "fining",
+              "water_agent",
+              "nutrient",
+              "sulfite",
+              "acid",
+              "enzyme",
+              "tannin",
+              "stabilizer",
+              "oak",
+              "other"
+            ]
+          },
+          "amountKg": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 10000
+          },
+          "amountL": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 100000
+          },
+          "count": {
+            "description": "For items counted, e.g. Campden tablets",
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 10000
+          },
+          "use": {
+            "type": "string",
+            "enum": ["mash", "boil", "primary", "secondary", "bulk_aging", "bottling"]
+          },
+          "timeMin": {
+            "description": "Boil or mash minutes",
+            "type": "number",
+            "minimum": 0,
+            "maximum": 10000
+          },
+          "dayOffset": {
+            "description": "Days after pitching, e.g. staggered nutrient additions",
+            "type": "number",
+            "minimum": 0,
+            "maximum": 3650
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 2000
+          }
+        },
+        "required": ["name", "kind", "use"],
+        "additionalProperties": false
+      }
+    },
+    "mash": {
+      "maxItems": 20,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "type": {
+            "type": "string",
+            "enum": ["infusion", "temperature", "decoction"]
+          },
+          "tempC": {
+            "type": "number",
+            "minimum": -10,
+            "maximum": 110
+          },
+          "timeMin": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 10000
+          },
+          "infuseL": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 100000
+          }
+        },
+        "required": ["name", "type", "tempC", "timeMin"],
+        "additionalProperties": false
+      }
+    },
+    "fermentation": {
+      "maxItems": 20,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "stage": {
+            "type": "string",
+            "enum": [
+              "primary",
+              "secondary",
+              "conditioning",
+              "lagering",
+              "cold_crash",
+              "bulk_aging",
+              "bottle_aging",
+              "other"
+            ]
+          },
+          "tempC": {
+            "type": "number",
+            "minimum": -10,
+            "maximum": 110
+          },
+          "days": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 3650
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 2000
+          }
+        },
+        "required": ["name", "stage"],
+        "additionalProperties": false
+      }
+    },
+    "targets": {
+      "type": "object",
+      "properties": {
+        "og": {
+          "type": "number",
+          "minimum": 0.98,
+          "maximum": 1.3
+        },
+        "fg": {
+          "type": "number",
+          "minimum": 0.98,
+          "maximum": 1.3
+        },
+        "abvPct": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 30
+        },
+        "ibu": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 300
+        },
+        "colorEbc": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1000
+        },
+        "carbonationVols": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 6
+        },
+        "ph": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 14
+        },
+        "titratableAcidityGPerL": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 50
+        }
+      },
+      "additionalProperties": false
+    },
+    "notes": {
+      "type": "string",
+      "maxLength": 20000
+    }
+  },
+  "required": ["schemaVersion", "fermentables", "hops", "yeasts", "miscs", "mash", "fermentation"],
+  "additionalProperties": false
+}

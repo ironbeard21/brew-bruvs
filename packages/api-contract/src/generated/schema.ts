@@ -723,6 +723,114 @@ export interface components {
                 message: string;
             };
         };
+        /** @description The recipe document stored with each recipe version. SI units; lines may omit catalogId. */
+        RecipeContent: {
+            /** @enum {number} */
+            schemaVersion: 1;
+            efficiencyPct?: number;
+            boilTimeMin?: number;
+            fermentables: components["schemas"]["FermentableLine"][];
+            hops: components["schemas"]["HopLine"][];
+            yeasts: components["schemas"]["YeastLine"][];
+            miscs: components["schemas"]["MiscLine"][];
+            mash: components["schemas"]["MashStep"][];
+            fermentation: components["schemas"]["FermentationStep"][];
+            targets?: components["schemas"]["RecipeTargets"];
+            notes?: string;
+        };
+        FermentableLine: {
+            name: string;
+            /** @description Catalog row id, e.g. "hop-citra". Omit for free-text lines. */
+            catalogId?: string;
+            /** @enum {string} */
+            kind: "grain" | "extract" | "sugar" | "honey" | "juice" | "fruit" | "adjunct" | "other";
+            amountKg?: number;
+            /** @description For juices and must measured by volume */
+            amountL?: number;
+            /** @enum {string} */
+            use?: "mash" | "steep" | "boil" | "fermentation" | "package";
+            /** @description For staggered additions: days after pitching */
+            dayOffset?: number;
+            /** @description Per kg in 1 L (grains, sugars, honey) or the juice's own SG */
+            potentialSg?: number;
+            colorEbc?: number;
+            yieldPct?: number;
+            note?: string;
+        };
+        HopLine: {
+            name: string;
+            /** @description Catalog row id, e.g. "hop-citra". Omit for free-text lines. */
+            catalogId?: string;
+            amountKg: number;
+            alphaAcidPct?: number;
+            /** @enum {string} */
+            form?: "pellet" | "leaf" | "plug" | "extract";
+            /** @enum {string} */
+            use: "mash" | "first_wort" | "boil" | "whirlpool" | "dry_hop";
+            /** @description Boil or whirlpool minutes; required for boil additions */
+            timeMin?: number;
+            /** @description Whirlpool temperature */
+            tempC?: number;
+            /** @description Dry-hop contact time */
+            days?: number;
+            note?: string;
+        };
+        YeastLine: {
+            name: string;
+            /** @description Catalog row id, e.g. "hop-citra". Omit for free-text lines. */
+            catalogId?: string;
+            /** @enum {string} */
+            form?: "dry" | "liquid" | "slurry" | "culture";
+            packs?: number;
+            amountKg?: number;
+            amountL?: number;
+            attenuationPct?: number;
+            note?: string;
+        };
+        MiscLine: {
+            name: string;
+            /** @description Catalog row id, e.g. "hop-citra". Omit for free-text lines. */
+            catalogId?: string;
+            /** @enum {string} */
+            kind: "spice" | "herb" | "flavor" | "fining" | "water_agent" | "nutrient" | "sulfite" | "acid" | "enzyme" | "tannin" | "stabilizer" | "oak" | "other";
+            amountKg?: number;
+            amountL?: number;
+            /** @description For items counted, e.g. Campden tablets */
+            count?: number;
+            /** @enum {string} */
+            use: "mash" | "boil" | "primary" | "secondary" | "bulk_aging" | "bottling";
+            /** @description Boil or mash minutes */
+            timeMin?: number;
+            /** @description Days after pitching, e.g. staggered nutrient additions */
+            dayOffset?: number;
+            note?: string;
+        };
+        MashStep: {
+            name: string;
+            /** @enum {string} */
+            type: "infusion" | "temperature" | "decoction";
+            tempC: number;
+            timeMin: number;
+            infuseL?: number;
+        };
+        FermentationStep: {
+            name: string;
+            /** @enum {string} */
+            stage: "primary" | "secondary" | "conditioning" | "lagering" | "cold_crash" | "bulk_aging" | "bottle_aging" | "other";
+            tempC?: number;
+            days?: number;
+            note?: string;
+        };
+        RecipeTargets: {
+            og?: number;
+            fg?: number;
+            abvPct?: number;
+            ibu?: number;
+            colorEbc?: number;
+            carbonationVols?: number;
+            ph?: number;
+            titratableAcidityGPerL?: number;
+        };
         Health: {
             /** @enum {string} */
             status: "ok";

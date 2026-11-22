@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "fermentables": [
+    {
+      "name": "Apple Juice (fresh-pressed)",
+      "catalogId": "ferm-apple-juice-fresh-pressed",
+      "kind": "juice",
+      "amountL": 19,
+      "use": "fermentation",
+      "potentialSg": 1.05
+    }
+  ],
+  "hops": [],
+  "yeasts": [
+    { "name": "Safcider", "catalogId": "yeast-fermentis-safcider", "form": "dry", "packs": 1 }
+  ],
+  "miscs": [
+    {
+      "name": "Campden Tablet",
+      "catalogId": "misc-campden-tablet",
+      "kind": "sulfite",
+      "count": 8,
+      "use": "primary",
+      "dayOffset": 0
+    },
+    {
+      "name": "Pectic Enzyme",
+      "catalogId": "misc-pectic-enzyme",
+      "kind": "enzyme",
+      "amountKg": 0.004,
+      "use": "primary",
+      "dayOffset": 0
+    },
+    {
+      "name": "Potassium Sorbate",
+      "catalogId": "misc-potassium-sorbate",
+      "kind": "stabilizer",
+      "amountKg": 0.0095,
+      "use": "bulk_aging",
+      "dayOffset": 21
+    }
+  ],
+  "mash": [],
+  "fermentation": [
+    { "name": "Primary", "stage": "primary", "tempC": 16, "days": 14 },
+    { "name": "Clear and stabilize", "stage": "bulk_aging", "tempC": 10, "days": 14 },
+    { "name": "Bottle conditioning", "stage": "bottle_aging", "days": 30 }
+  ],
+  "targets": { "og": 1.05, "fg": 1, "abvPct": 6.6, "carbonationVols": 2.5 },
+  "notes": "Kegged and backsweetened with 1 L of fresh juice after stabilizing."
+}
