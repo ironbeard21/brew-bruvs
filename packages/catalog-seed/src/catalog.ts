@@ -1,21 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { readFile } from "node:fs/promises";
 import { units } from "@brew-bruvs/brew-math";
-import { schema } from "@brew-bruvs/db";
+import { type CatalogName, catalogNameMatches, catalogTables as tables } from "@brew-bruvs/db";
 import { getTableColumns, sql } from "drizzle-orm";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
 
-const tables = {
-  hops: schema.hops,
-  fermentables: schema.fermentables,
-  yeasts: schema.yeasts,
-  miscs: schema.miscs,
-  styles: schema.styles,
-  water_profiles: schema.waterProfiles,
-  equipment: schema.equipment,
-};
-
-type Catalog = keyof typeof tables;
 type SourceRow = Record<string, string | number> & {
   id: string;
   aliases: string;
@@ -23,8 +12,9 @@ type SourceRow = Record<string, string | number> & {
   licenses: string;
 };
 type SeedData = {
-  sources: Record<string, { license: string }>;
-  catalog: Record<Catalog, SourceRow[]>;
+  sources: Record<string, { name: string; repo: string; url: string; license: string }>;
+  commits: Record<string, string>;
+  catalog: Record<CatalogName, SourceRow[]>;
 };
 
 const openLicenses = new Set(["CC-BY-SA-4.0", "CC0-1.0", "GPL-3.0", "MIT"]);
@@ -34,7 +24,7 @@ const splitList = (value: string) =>
     .map((part) => part.trim())
     .filter(Boolean);
 
-function toDatabaseRow(row: SourceRow, catalog: Catalog, sourceRegistry: SeedData["sources"]) {
+function toDatabaseRow(row: SourceRow, catalog: CatalogName, sourceRegistry: SeedData["sources"]) {
   const record: Record<string, string | number | string[] | null> = Object.fromEntries(
     Object.entries(row).map(([key, value]) => [key, value === "" ? null : value]),
   );
@@ -67,13 +57,45 @@ function toDatabaseRow(row: SourceRow, catalog: Catalog, sourceRegistry: SeedDat
   return record;
 }
 
-export async function importCatalog(db: NodePgDatabase) {
+async function readSeedData(): Promise<SeedData> {
   const input = await readFile(new URL("../data/catalog.json", import.meta.url), "utf8");
-  const { catalog, sources } = JSON.parse(input) as SeedData;
+  return JSON.parse(input) as SeedData;
+}
+
+async function loadCatalogAttribution() {
+  const [{ catalog, commits, sources }, attribution] = await Promise.all([
+    readSeedData(),
+    readFile(new URL("../ATTRIBUTION.md", import.meta.url), "utf8"),
+  ]);
+  const used = new Set(
+    Object.values(catalog).flatMap((rows) => rows.flatMap((row) => splitList(row.sources))),
+  );
+  return {
+    attribution,
+    sources: Object.fromEntries(
+      Object.entries(sources)
+        .filter(([id]) => used.has(id))
+        .map(([id, { name, repo, url, license }]) => [
+          id,
+          { name, url, license, commit: commits[repo] || null },
+        ]),
+    ),
+  };
+}
+
+let attribution: Awaited<ReturnType<typeof loadCatalogAttribution>> | undefined;
+
+export async function readCatalogAttribution() {
+  attribution ??= await loadCatalogAttribution();
+  return attribution;
+}
+
+export async function importCatalog(db: NodePgDatabase) {
+  const { catalog, sources } = await readSeedData();
 
   return db.transaction(async (tx) => {
     let changed = 0;
-    for (const name of Object.keys(tables) as Catalog[]) {
+    for (const name of Object.keys(tables) as CatalogName[]) {
       const table = tables[name];
       const rows = catalog[name].map((row) => toDatabaseRow(row, name, sources));
       const columns = Object.values(getTableColumns(table)).map(({ name }) => name);
@@ -99,7 +121,7 @@ export async function importCatalog(db: NodePgDatabase) {
   });
 }
 
-export async function findCatalogMatches(db: NodePgDatabase, catalog: Catalog, search: string) {
+export async function findCatalogMatches(db: NodePgDatabase, catalog: CatalogName, search: string) {
   const term = search.trim();
   if (!term) return [];
 
@@ -107,11 +129,6 @@ export async function findCatalogMatches(db: NodePgDatabase, catalog: Catalog, s
   return db
     .select({ id: table.id, name: table.name })
     .from(table)
-    .where(sql`
-    strpos(lower(${table.name}), lower(${term})) > 0 OR EXISTS (
-      SELECT FROM unnest(${table.aliases}) AS alias(name)
-      WHERE strpos(lower(alias.name), lower(${term})) > 0
-    )
-  `)
+    .where(catalogNameMatches(table, term))
     .orderBy(table.name, table.id);
 }

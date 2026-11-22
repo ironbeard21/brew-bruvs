@@ -8,6 +8,7 @@ import { createApp, OPENAPI_INFO } from "./app.ts";
 import { recipeContentJsonSchema } from "./contracts/recipe-content.ts";
 import { createLogger } from "./logger.ts";
 import { createAuthService } from "./services/auth.ts";
+import { createCatalogService } from "./services/catalog.ts";
 
 const out = process.argv[2];
 if (!out) throw new Error("usage: node src/write-openapi.ts <output.json>");
@@ -18,6 +19,7 @@ const baseUrl = "http://localhost";
 const app = createApp({
   logger: createLogger("error"),
   webDir: undefined,
+  catalog: createCatalogService(db),
   auth: {
     auth: createAuthService(db, { baseUrl, signupMode: "invite" }),
     oidc: undefined,

@@ -7,6 +7,7 @@ import { type AppDeps, createApp } from "../src/app.ts";
 import type { Oidc } from "../src/auth/oidc.ts";
 import { createLogger } from "../src/logger.ts";
 import { createAuthService } from "../src/services/auth.ts";
+import { createCatalogService } from "../src/services/catalog.ts";
 
 export const BASE_URL = "http://brew.test";
 export const TEST_DATABASE_URL = process.env.TEST_DATABASE_URL;
@@ -19,6 +20,7 @@ function deps(
   return {
     logger: createLogger("error", () => {}),
     webDir: undefined,
+    catalog: createCatalogService(db),
     auth: {
       auth: createAuthService(db, { baseUrl: BASE_URL, signupMode }),
       oidc,

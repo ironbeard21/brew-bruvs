@@ -9,6 +9,17 @@
     }
   },
   "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer"
+      },
+      "sessionCookie": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "bb_session"
+      }
+    },
     "schemas": {
       "Error": {
         "type": "object",
@@ -582,6 +593,732 @@
           }
         },
         "required": ["code", "expiresAt"]
+      },
+      "CatalogAttribution": {
+        "type": "object",
+        "properties": {
+          "sources": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/CatalogSource"
+            },
+            "description": "Sources keyed by their catalog source ID."
+          },
+          "attribution": {
+            "type": "string",
+            "description": "Catalog attribution in Markdown."
+          }
+        },
+        "required": ["sources", "attribution"]
+      },
+      "CatalogSource": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string",
+            "description": "Source URL or local source reference."
+          },
+          "license": {
+            "type": "string"
+          },
+          "commit": {
+            "type": ["string", "null"]
+          }
+        },
+        "required": ["name", "url", "license", "commit"]
+      },
+      "CatalogPage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CatalogItem"
+            }
+          },
+          "nextOffset": {
+            "type": ["integer", "null"],
+            "minimum": 0
+          }
+        },
+        "required": ["items", "nextOffset"]
+      },
+      "CatalogItem": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/CatalogHop"
+          },
+          {
+            "$ref": "#/components/schemas/CatalogFermentable"
+          },
+          {
+            "$ref": "#/components/schemas/CatalogYeast"
+          },
+          {
+            "$ref": "#/components/schemas/CatalogMisc"
+          },
+          {
+            "$ref": "#/components/schemas/CatalogStyle"
+          },
+          {
+            "$ref": "#/components/schemas/CatalogWaterProfile"
+          },
+          {
+            "$ref": "#/components/schemas/CatalogEquipment"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "catalog",
+          "mapping": {
+            "hops": "#/components/schemas/CatalogHop",
+            "fermentables": "#/components/schemas/CatalogFermentable",
+            "yeasts": "#/components/schemas/CatalogYeast",
+            "miscs": "#/components/schemas/CatalogMisc",
+            "styles": "#/components/schemas/CatalogStyle",
+            "water_profiles": "#/components/schemas/CatalogWaterProfile",
+            "equipment": "#/components/schemas/CatalogEquipment"
+          }
+        }
+      },
+      "CatalogHop": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "aliases": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "licenses": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "notes": {
+            "type": ["string", "null"]
+          },
+          "catalog": {
+            "type": "string",
+            "enum": ["hops"]
+          },
+          "origin": {
+            "type": ["string", "null"]
+          },
+          "hopType": {
+            "type": ["string", "null"]
+          },
+          "alphaAcidPct": {
+            "type": ["number", "null"]
+          },
+          "alphaAcidMinPct": {
+            "type": ["number", "null"]
+          },
+          "alphaAcidMaxPct": {
+            "type": ["number", "null"]
+          },
+          "betaAcidPct": {
+            "type": ["number", "null"]
+          },
+          "cohumulonePct": {
+            "type": ["number", "null"]
+          },
+          "totalOilMlPer100g": {
+            "type": ["number", "null"]
+          },
+          "myrcenePct": {
+            "type": ["number", "null"]
+          },
+          "humulenePct": {
+            "type": ["number", "null"]
+          },
+          "caryophyllenePct": {
+            "type": ["number", "null"]
+          },
+          "farnesenePct": {
+            "type": ["number", "null"]
+          },
+          "hsi": {
+            "type": ["number", "null"]
+          },
+          "substitutes": {
+            "type": ["string", "null"]
+          },
+          "beverages": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": ["beer", "mead", "wine", "cider"]
+            }
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "aliases",
+          "sources",
+          "licenses",
+          "notes",
+          "catalog",
+          "origin",
+          "hopType",
+          "alphaAcidPct",
+          "alphaAcidMinPct",
+          "alphaAcidMaxPct",
+          "betaAcidPct",
+          "cohumulonePct",
+          "totalOilMlPer100g",
+          "myrcenePct",
+          "humulenePct",
+          "caryophyllenePct",
+          "farnesenePct",
+          "hsi",
+          "substitutes",
+          "beverages"
+        ]
+      },
+      "CatalogFermentable": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "aliases": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "licenses": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "notes": {
+            "type": ["string", "null"]
+          },
+          "catalog": {
+            "type": "string",
+            "enum": ["fermentables"]
+          },
+          "fermentableType": {
+            "type": ["string", "null"]
+          },
+          "producer": {
+            "type": ["string", "null"]
+          },
+          "productId": {
+            "type": ["string", "null"]
+          },
+          "origin": {
+            "type": ["string", "null"]
+          },
+          "category": {
+            "type": ["string", "null"]
+          },
+          "colorEbc": {
+            "type": ["number", "null"]
+          },
+          "yieldPct": {
+            "type": ["number", "null"]
+          },
+          "potentialSg": {
+            "type": ["number", "null"],
+            "description": "Specific gravity of 1 lb in 1 US gal, e.g. 1.037."
+          },
+          "maxInBatchPct": {
+            "type": ["number", "null"]
+          },
+          "diastaticPowerLintner": {
+            "type": ["number", "null"]
+          },
+          "proteinPct": {
+            "type": ["number", "null"]
+          },
+          "moisturePct": {
+            "type": ["number", "null"]
+          },
+          "beverages": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": ["beer", "mead", "wine", "cider"]
+            }
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "aliases",
+          "sources",
+          "licenses",
+          "notes",
+          "catalog",
+          "fermentableType",
+          "producer",
+          "productId",
+          "origin",
+          "category",
+          "colorEbc",
+          "yieldPct",
+          "potentialSg",
+          "maxInBatchPct",
+          "diastaticPowerLintner",
+          "proteinPct",
+          "moisturePct",
+          "beverages"
+        ]
+      },
+      "CatalogYeast": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "aliases": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "licenses": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "notes": {
+            "type": ["string", "null"]
+          },
+          "catalog": {
+            "type": "string",
+            "enum": ["yeasts"]
+          },
+          "producer": {
+            "type": ["string", "null"]
+          },
+          "productId": {
+            "type": ["string", "null"]
+          },
+          "yeastType": {
+            "type": ["string", "null"]
+          },
+          "form": {
+            "type": ["string", "null"]
+          },
+          "tempMinC": {
+            "type": ["number", "null"]
+          },
+          "tempMaxC": {
+            "type": ["number", "null"]
+          },
+          "attenuationMinPct": {
+            "type": ["number", "null"]
+          },
+          "attenuationMaxPct": {
+            "type": ["number", "null"]
+          },
+          "flocculation": {
+            "type": ["string", "null"]
+          },
+          "alcoholTolerancePct": {
+            "type": ["number", "null"]
+          },
+          "bestFor": {
+            "type": ["string", "null"]
+          },
+          "beverages": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": ["beer", "mead", "wine", "cider"]
+            }
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "aliases",
+          "sources",
+          "licenses",
+          "notes",
+          "catalog",
+          "producer",
+          "productId",
+          "yeastType",
+          "form",
+          "tempMinC",
+          "tempMaxC",
+          "attenuationMinPct",
+          "attenuationMaxPct",
+          "flocculation",
+          "alcoholTolerancePct",
+          "bestFor",
+          "beverages"
+        ]
+      },
+      "CatalogMisc": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "aliases": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "licenses": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "notes": {
+            "type": ["string", "null"]
+          },
+          "catalog": {
+            "type": "string",
+            "enum": ["miscs"]
+          },
+          "miscType": {
+            "type": ["string", "null"]
+          },
+          "waterAgentType": {
+            "type": ["string", "null"]
+          },
+          "use": {
+            "type": ["string", "null"]
+          },
+          "useFor": {
+            "type": ["string", "null"]
+          },
+          "category": {
+            "type": ["string", "null"]
+          },
+          "beverages": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": ["beer", "mead", "wine", "cider"]
+            }
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "aliases",
+          "sources",
+          "licenses",
+          "notes",
+          "catalog",
+          "miscType",
+          "waterAgentType",
+          "use",
+          "useFor",
+          "category",
+          "beverages"
+        ]
+      },
+      "CatalogStyle": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "aliases": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "licenses": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "notes": {
+            "type": ["string", "null"]
+          },
+          "catalog": {
+            "type": "string",
+            "enum": ["styles"]
+          },
+          "styleGuide": {
+            "type": "string"
+          },
+          "styleId": {
+            "type": "string"
+          },
+          "category": {
+            "type": ["string", "null"]
+          },
+          "beverage": {
+            "type": "string",
+            "enum": ["beer", "mead", "wine", "cider"]
+          },
+          "ogMin": {
+            "type": ["number", "null"]
+          },
+          "ogMax": {
+            "type": ["number", "null"]
+          },
+          "fgMin": {
+            "type": ["number", "null"]
+          },
+          "fgMax": {
+            "type": ["number", "null"]
+          },
+          "ibuMin": {
+            "type": ["number", "null"]
+          },
+          "ibuMax": {
+            "type": ["number", "null"]
+          },
+          "colorEbcMin": {
+            "type": ["number", "null"]
+          },
+          "colorEbcMax": {
+            "type": ["number", "null"]
+          },
+          "abvMinPct": {
+            "type": ["number", "null"]
+          },
+          "abvMaxPct": {
+            "type": ["number", "null"]
+          },
+          "carbVolsMin": {
+            "type": ["number", "null"]
+          },
+          "carbVolsMax": {
+            "type": ["number", "null"]
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "aliases",
+          "sources",
+          "licenses",
+          "notes",
+          "catalog",
+          "styleGuide",
+          "styleId",
+          "category",
+          "beverage",
+          "ogMin",
+          "ogMax",
+          "fgMin",
+          "fgMax",
+          "ibuMin",
+          "ibuMax",
+          "colorEbcMin",
+          "colorEbcMax",
+          "abvMinPct",
+          "abvMaxPct",
+          "carbVolsMin",
+          "carbVolsMax"
+        ]
+      },
+      "CatalogWaterProfile": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "aliases": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "licenses": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "notes": {
+            "type": ["string", "null"]
+          },
+          "catalog": {
+            "type": "string",
+            "enum": ["water_profiles"]
+          },
+          "calciumPpm": {
+            "type": ["number", "null"]
+          },
+          "magnesiumPpm": {
+            "type": ["number", "null"]
+          },
+          "sodiumPpm": {
+            "type": ["number", "null"]
+          },
+          "sulfatePpm": {
+            "type": ["number", "null"]
+          },
+          "chloridePpm": {
+            "type": ["number", "null"]
+          },
+          "bicarbonatePpm": {
+            "type": ["number", "null"]
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "aliases",
+          "sources",
+          "licenses",
+          "notes",
+          "catalog",
+          "calciumPpm",
+          "magnesiumPpm",
+          "sodiumPpm",
+          "sulfatePpm",
+          "chloridePpm",
+          "bicarbonatePpm"
+        ]
+      },
+      "CatalogEquipment": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "aliases": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "sources": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "licenses": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "notes": {
+            "type": ["string", "null"]
+          },
+          "catalog": {
+            "type": "string",
+            "enum": ["equipment"]
+          },
+          "category": {
+            "type": ["string", "null"]
+          },
+          "batchSizeL": {
+            "type": ["number", "null"]
+          },
+          "boilSizeL": {
+            "type": ["number", "null"]
+          },
+          "kettleVolumeL": {
+            "type": ["number", "null"]
+          },
+          "kettleLossL": {
+            "type": ["number", "null"]
+          },
+          "boilRateLPerHr": {
+            "type": ["number", "null"]
+          },
+          "mashTunVolumeL": {
+            "type": ["number", "null"]
+          },
+          "grainAbsorptionLPerKg": {
+            "type": ["number", "null"]
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "aliases",
+          "sources",
+          "licenses",
+          "notes",
+          "catalog",
+          "category",
+          "batchSizeL",
+          "boilSizeL",
+          "kettleVolumeL",
+          "kettleLossL",
+          "boilRateLPerHr",
+          "mashTunVolumeL",
+          "grainAbsorptionLPerKg"
+        ]
       }
     },
     "parameters": {}
@@ -1159,6 +1896,237 @@
             }
           },
           "409": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/catalog/sources": {
+      "get": {
+        "tags": ["catalog"],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "operationId": "getCatalogSources",
+        "summary": "Get catalog sources and attribution",
+        "responses": {
+          "200": {
+            "description": "Catalog attribution",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogAttribution"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/catalog/{catalog}": {
+      "get": {
+        "tags": ["catalog"],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "operationId": "listCatalogItems",
+        "summary": "Search catalog items by name or alias",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "hops",
+                "fermentables",
+                "yeasts",
+                "miscs",
+                "styles",
+                "water_profiles",
+                "equipment"
+              ]
+            },
+            "required": true,
+            "name": "catalog",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            "required": false,
+            "name": "q",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 25
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647,
+              "default": 0
+            },
+            "required": false,
+            "name": "offset",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Matching catalog items ordered by name and ID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/catalog/{catalog}/{id}": {
+      "get": {
+        "tags": ["catalog"],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "operationId": "getCatalogItem",
+        "summary": "Get a catalog item with its sources and licenses",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "hops",
+                "fermentables",
+                "yeasts",
+                "miscs",
+                "styles",
+                "water_profiles",
+                "equipment"
+              ]
+            },
+            "required": true,
+            "name": "catalog",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 200,
+              "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Catalog item",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogItem"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
             "description": "Error",
             "content": {
               "application/json": {
