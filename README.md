@@ -34,3 +34,17 @@ Postgres listens on `127.0.0.1:5432` and keeps its data in the `postgres-dev` vo
 `pnpm db:migrate` verifies the connection before the initial schema migrations land in P0-08.
 To run the integration test, set `TEST_DATABASE_URL` in your shell to a connection whose
 role can create databases, then run `pnpm --filter @brew-bruvs/db test`.
+
+## Run with Docker
+
+Copy `.env.example` to `.env`. Set `POSTGRES_PASSWORD` to a URL-safe random value, such as
+the output of `openssl rand -hex 24`, and set `BASE_URL` to the address users will open.
+Run this command from the repository root.
+
+```sh
+docker compose -f docker/compose.yml up -d --wait
+```
+
+Compose starts PostgreSQL on a private network and runs pending migrations before the app
+starts. Open `BASE_URL` and complete first-run setup. Set `BREW_BRUVS_IMAGE` to use a particular
+release, or run `docker compose -f docker/compose.yml build app` to build from source.

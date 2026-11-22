@@ -1,0 +1,41 @@
+name: brew-bruvs
+
+services:
+  app:
+    image: ${BREW_BRUVS_IMAGE:-ghcr.io/ironbeard21/brew-bruvs:latest}
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    init: true
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      BASE_URL: ${BASE_URL:-http://localhost:8080}
+      DATABASE_URL: postgres://brew:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in the root .env file}@postgres:5432/brew
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      SIGNUP_MODE: ${SIGNUP_MODE:-invite}
+      OIDC_ISSUER: ${OIDC_ISSUER:-}
+      OIDC_CLIENT_ID: ${OIDC_CLIENT_ID:-}
+      OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET:-}
+    ports:
+      - "${PORT:-8080}:8080"
+
+  postgres:
+    image: postgres:18
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: brew
+      POSTGRES_DB: brew
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in the root .env file}
+    volumes:
+      - postgres:/var/lib/postgresql
+    healthcheck:
+      test: [CMD, pg_isready, -h, localhost, -U, brew, -d, brew]
+      interval: 2s
+      timeout: 2s
+      retries: 15
+
+volumes:
+  postgres:
