@@ -26,6 +26,11 @@ test.describe("Brew-Bruvs app shell", () => {
     const loginSubmit = page.getByTestId("auth-login-submit");
     await expect(setupSubmit.or(loginSubmit)).toBeVisible();
 
+    // The fresh Compose database must expose setup to the first browser project.
+    if (process.env.PLAYWRIGHT_BASE_URL && test.info().project.name === "desktop") {
+      await expect(setupSubmit).toBeVisible();
+    }
+
     if (await setupSubmit.isVisible()) {
       await page.getByTestId("auth-display-name-input").fill("Head Brewer");
       await page.getByTestId("auth-email-input").fill("admin@brew.test");

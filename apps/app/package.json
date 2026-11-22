@@ -12,7 +12,7 @@
     "dev:android": "expo start --android",
     "typecheck": "tsc --noEmit -p .",
     "test": "vitest run",
-    "test:e2e": "pnpm run build && playwright test"
+    "test:e2e": "if [ -z \"${PLAYWRIGHT_BASE_URL:-}\" ]; then pnpm run build || exit $?; fi; playwright test"
   },
   "dependencies": {
     "@brew-bruvs/api-contract": "workspace:*",
