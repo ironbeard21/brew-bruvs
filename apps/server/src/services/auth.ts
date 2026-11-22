@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Accounts, sign-in tokens and invites. The only auth code that touches the database.
+// Accounts, sign-in tokens, invites, password resets. The only auth code that touches the database.
 import { type Db, schema } from "@brew-bruvs/db";
-import { and, count, eq, gt, inArray, isNull, or, sql } from "drizzle-orm";
+import { and, count, eq, gt, inArray, isNull, ne, or, sql } from "drizzle-orm";
 import {
   burnPasswordCheck,
   hashPassword,
@@ -12,14 +12,16 @@ import {
 import { ApiError } from "../errors.ts";
 import type { User as PermissionUser } from "../permissions.ts";
 
-const { users, memberships, authTokens, invites } = schema;
+const { users, memberships, authTokens, invites, passwordResets } = schema;
 
 const SESSION_DAYS = 30;
 const INVITE_DAYS = 7;
+const RESET_HOURS = 24;
 const days = (n: number) => new Date(Date.now() + n * 86_400_000);
 
 export type TokenKind = "session" | "app" | "personal";
 export type Scope = "read" | "write";
+export type Units = "us" | "metric";
 
 export interface PublicUser {
   id: string;
@@ -27,7 +29,21 @@ export interface PublicUser {
   email: string;
   displayName: string;
   isAdmin: boolean;
+  units: Units;
 }
+
+/** What admins see in the user list. */
+export interface AdminUser {
+  id: string;
+  email: string;
+  displayName: string;
+  isAdmin: boolean;
+  disabled: boolean;
+  createdAt: Date;
+}
+
+const disabledError = () =>
+  new ApiError(403, "account_disabled", "This account is disabled; ask an admin");
 
 export interface Session {
   user: PublicUser & PermissionUser;
@@ -48,6 +64,7 @@ const publicColumns = {
   email: users.email,
   displayName: users.displayName,
   isAdmin: users.isAdmin,
+  units: users.units,
 };
 
 function pgCode(err: unknown): string | undefined {
@@ -98,6 +115,18 @@ export function createAuthService(
   // Serialises account creation so "is this the first user?" can't race.
   const lockUsers = (tx: Tx) => tx.execute(sql`LOCK TABLE ${users} IN SHARE ROW EXCLUSIVE MODE`);
   const userCount = async (tx: Tx | Db) => (await tx.select({ n: count() }).from(users))[0]?.n ?? 0;
+  // Signs a user out everywhere, optionally keeping the token making the request.
+  const revokeAll = (tx: Tx, userId: string, exceptTokenId?: string) =>
+    tx
+      .update(authTokens)
+      .set({ revokedAt: new Date() })
+      .where(
+        and(
+          eq(authTokens.userId, userId),
+          isNull(authTokens.revokedAt),
+          exceptTokenId ? ne(authTokens.id, exceptTokenId) : undefined,
+        ),
+      );
 
   return {
     async setupNeeded(): Promise<boolean> {
@@ -155,14 +184,20 @@ export function createAuthService(
 
     async login(email: string, password: string): Promise<PublicUser> {
       const [row] = await db
-        .select({ ...publicColumns, passwordHash: users.passwordHash })
+        .select({
+          ...publicColumns,
+          passwordHash: users.passwordHash,
+          disabledAt: users.disabledAt,
+        })
         .from(users)
         .where(eq(sql`lower(${users.email})`, email.toLowerCase()));
       const ok = row?.passwordHash
         ? await verifyPassword(password, row.passwordHash)
         : await burnPasswordCheck(password);
       if (!row || !ok) throw new ApiError(401, "invalid_credentials", "Wrong email or password");
-      const { passwordHash: _, ...user } = row;
+      // Only after the password matched, so this doesn't reveal which emails have accounts.
+      if (row.disabledAt) throw disabledError();
+      const { passwordHash: _, disabledAt: __, ...user } = row;
       return user;
     },
 
@@ -183,7 +218,7 @@ export function createAuthService(
       return { secret, id: row?.id as string, createdAt: row?.createdAt as Date };
     },
 
-    /** Looks up a live token. Returns null for unknown, revoked or expired tokens. */
+    /** Looks up a live token. Returns null for unknown, revoked or expired tokens and disabled users. */
     async resolve(secret: string): Promise<Session | null> {
       const [row] = await db
         .update(authTokens)
@@ -202,7 +237,10 @@ export function createAuthService(
           scopes: authTokens.scopes,
         });
       if (!row) return null;
-      const [user] = await db.select(publicColumns).from(users).where(eq(users.id, row.userId));
+      const [user] = await db
+        .select(publicColumns)
+        .from(users)
+        .where(and(eq(users.id, row.userId), isNull(users.disabledAt)));
       if (!user) return null;
       const roles = await db
         .select({ breweryId: memberships.breweryId, role: memberships.role })
@@ -275,27 +313,36 @@ export function createAuthService(
       return db.transaction(async (tx) => {
         await lockUsers(tx);
         const [linked] = await tx
-          .select(publicColumns)
+          .select({ ...publicColumns, disabledAt: users.disabledAt })
           .from(users)
           .where(and(eq(users.oidcIssuer, claims.issuer), eq(users.oidcSubject, claims.subject)));
-        if (linked) return linked;
+        if (linked) {
+          if (linked.disabledAt) throw disabledError();
+          const { disabledAt: _, ...user } = linked;
+          return user;
+        }
 
         if ((await userCount(tx)) === 0)
           throw new ApiError(409, "setup_required", "Finish first-run setup first");
 
         const [sameEmail] = await tx
-          .select({ ...publicColumns, oidcSubject: users.oidcSubject })
+          .select({
+            ...publicColumns,
+            oidcSubject: users.oidcSubject,
+            disabledAt: users.disabledAt,
+          })
           .from(users)
           .where(eq(sql`lower(${users.email})`, claims.email.toLowerCase()));
         if (sameEmail) {
           if (!claims.emailVerified || sameEmail.oidcSubject) {
             throw new ApiError(409, "email_taken", "That email already has an account");
           }
+          if (sameEmail.disabledAt) throw disabledError();
           await tx
             .update(users)
             .set({ oidcIssuer: claims.issuer, oidcSubject: claims.subject })
             .where(eq(users.id, sameEmail.id));
-          const { oidcSubject: _, ...user } = sameEmail;
+          const { oidcSubject: _, disabledAt: __, ...user } = sameEmail;
           return user;
         }
 
@@ -305,6 +352,129 @@ export function createAuthService(
           passwordHash: null,
           oidc: { issuer: claims.issuer, subject: claims.subject },
         });
+      });
+    },
+
+    // ── Settings ─────────────────────────────────────────────────────────
+
+    async updateProfile(
+      userId: string,
+      changes: { displayName?: string | undefined; units?: Units | undefined },
+    ): Promise<PublicUser> {
+      const [user] = await db
+        .update(users)
+        .set(changes)
+        .where(eq(users.id, userId))
+        .returning(publicColumns);
+      if (!user) throw new ApiError(404, "not_found", "User not found");
+      return user;
+    },
+
+    /** Changes the password and signs out every other session and app. */
+    async changePassword(
+      userId: string,
+      current: string,
+      next: string,
+      keepTokenId: string,
+    ): Promise<void> {
+      const [row] = await db
+        .select({ passwordHash: users.passwordHash })
+        .from(users)
+        .where(eq(users.id, userId));
+      if (!row?.passwordHash) {
+        throw new ApiError(
+          409,
+          "no_password",
+          "This account signs in with single sign-on; ask an admin for a reset link to add a password",
+        );
+      }
+      if (!(await verifyPassword(current, row.passwordHash))) {
+        throw new ApiError(403, "wrong_password", "Current password is wrong");
+      }
+      const passwordHash = await hashPassword(next);
+      await db.transaction(async (tx) => {
+        await tx.update(users).set({ passwordHash }).where(eq(users.id, userId));
+        await revokeAll(tx, userId, keepTokenId);
+      });
+    },
+
+    // ── Password reset links (admins create them; there is no email) ────
+
+    async createPasswordReset(createdByUserId: string, userId: string) {
+      const [user] = await db.select({ id: users.id }).from(users).where(eq(users.id, userId));
+      if (!user) throw new ApiError(404, "not_found", "User not found");
+      const token = newSecret();
+      const expiresAt = new Date(Date.now() + RESET_HOURS * 3_600_000);
+      await db
+        .insert(passwordResets)
+        .values({ userId, tokenHash: hashSecret(token), createdByUserId, expiresAt });
+      return { token, expiresAt };
+    },
+
+    /** Sets a new password from a reset link, then signs the user out everywhere. */
+    async redeemPasswordReset(token: string, password: string): Promise<void> {
+      const passwordHash = await hashPassword(password);
+      await db.transaction(async (tx) => {
+        const [reset] = await tx
+          .select({ id: passwordResets.id, userId: passwordResets.userId })
+          .from(passwordResets)
+          .where(
+            and(
+              eq(passwordResets.tokenHash, hashSecret(token)),
+              isNull(passwordResets.usedAt),
+              gt(passwordResets.expiresAt, new Date()),
+            ),
+          )
+          .for("update");
+        if (!reset) {
+          throw new ApiError(400, "invalid_reset", "This reset link is invalid or has expired");
+        }
+        await tx
+          .update(passwordResets)
+          .set({ usedAt: new Date() })
+          .where(eq(passwordResets.id, reset.id));
+        await tx.update(users).set({ passwordHash }).where(eq(users.id, reset.userId));
+        await revokeAll(tx, reset.userId);
+      });
+    },
+
+    // ── Admin ────────────────────────────────────────────────────────────
+
+    async listUsers(): Promise<AdminUser[]> {
+      const rows = await db
+        .select({
+          id: users.id,
+          email: users.email,
+          displayName: users.displayName,
+          isAdmin: users.isAdmin,
+          disabledAt: users.disabledAt,
+          createdAt: users.createdAt,
+        })
+        .from(users)
+        .orderBy(users.createdAt);
+      return rows.map(({ disabledAt, ...u }) => ({ ...u, disabled: disabledAt !== null }));
+    },
+
+    /** Disables or re-enables an account. Disabling revokes all its tokens. */
+    async setDisabled(adminId: string, userId: string, disabled: boolean): Promise<AdminUser> {
+      if (adminId === userId) {
+        throw new ApiError(409, "cannot_disable_self", "You can't disable your own account");
+      }
+      return db.transaction(async (tx) => {
+        const [row] = await tx
+          .update(users)
+          .set({ disabledAt: disabled ? new Date() : null })
+          .where(eq(users.id, userId))
+          .returning({
+            id: users.id,
+            email: users.email,
+            displayName: users.displayName,
+            isAdmin: users.isAdmin,
+            createdAt: users.createdAt,
+          });
+        if (!row) throw new ApiError(404, "not_found", "User not found");
+        if (disabled) await revokeAll(tx, userId);
+        return { ...row, disabled };
       });
     },
   };

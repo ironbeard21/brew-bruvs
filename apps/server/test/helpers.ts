@@ -3,6 +3,7 @@
 import { createDb, migrateUp } from "@brew-bruvs/db";
 import { withTestDatabase } from "@brew-bruvs/db/testing";
 import { Client } from "pg";
+import { expect } from "vitest";
 import { type AppDeps, createApp } from "../src/app.ts";
 import type { Oidc } from "../src/auth/oidc.ts";
 import { createLogger } from "../src/logger.ts";
@@ -26,6 +27,8 @@ function deps(
       oidc,
       baseUrl: BASE_URL,
       signupMode,
+      // Tests send X-Forwarded-For to act as different clients.
+      trustProxy: true,
     },
   };
 }
@@ -55,4 +58,46 @@ export async function withApp(
       await sql.end();
     }
   });
+}
+
+export const admin = { email: "admin@brew.test", password: "admin-password", displayName: "Admin" };
+export const ann = { email: "ann@brew.test", password: "ann-password", displayName: "Ann" };
+
+export type Json = Record<string, unknown> & { error?: { code: string; message: string } };
+
+/** One request; `ip` sets X-Forwarded-For so tests can act as different clients. */
+export async function call(
+  app: TestApp,
+  method: string,
+  path: string,
+  opts: {
+    body?: unknown;
+    token?: string | undefined;
+    cookie?: string | undefined;
+    ip?: string;
+  } = {},
+) {
+  const headers: Record<string, string> = {};
+  if (opts.body !== undefined) headers["content-type"] = "application/json";
+  if (opts.token) headers.authorization = `Bearer ${opts.token}`;
+  if (opts.cookie) headers.cookie = opts.cookie;
+  if (opts.ip) headers["x-forwarded-for"] = opts.ip;
+  const init: RequestInit = { method, headers };
+  if (opts.body !== undefined) init.body = JSON.stringify(opts.body);
+  const res = await app.request(path, init);
+  const text = await res.text();
+  return { status: res.status, json: (text ? JSON.parse(text) : {}) as Json, res };
+}
+
+/** Runs setup and returns the admin's app token. */
+export async function setupAdmin(app: TestApp): Promise<string> {
+  const r = await call(app, "POST", "/api/setup", { body: { ...admin, client: "app" } });
+  expect(r.status).toBe(201);
+  return r.json.token as string;
+}
+
+export async function invite(app: TestApp, adminToken: string): Promise<string> {
+  const r = await call(app, "POST", "/api/invites", { token: adminToken });
+  expect(r.status).toBe(201);
+  return r.json.code as string;
 }

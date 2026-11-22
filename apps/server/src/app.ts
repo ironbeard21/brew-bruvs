@@ -7,6 +7,7 @@ import { type AppEnv, sessionMiddleware } from "./auth/middleware.ts";
 import { RecipeContent } from "./contracts/recipe-content.ts";
 import { ApiError, ErrorSchema, errorBody } from "./errors.ts";
 import type { Logger } from "./logger.ts";
+import { registerAdminRoutes } from "./routes/admin.ts";
 import { type AuthRouteDeps, registerAuthRoutes } from "./routes/auth.ts";
 import { registerCatalogRoutes } from "./routes/catalog.ts";
 import { registerHealthRoutes } from "./routes/health.ts";
@@ -61,6 +62,7 @@ export function createApp({ logger, webDir, auth, catalog }: AppDeps) {
   app.use("/api/*", sessionMiddleware(auth.auth));
   registerHealthRoutes(app);
   registerAuthRoutes(app, auth);
+  registerAdminRoutes(app, auth);
   registerCatalogRoutes(app, catalog);
   app.doc31(OPENAPI_PATH, OPENAPI_INFO);
 

@@ -14,6 +14,7 @@ describe("loadConfig", () => {
       databaseUrl: "postgres://db/brew",
       baseUrl: "https://brew.example",
       signupMode: "invite",
+      trustProxy: false,
       oidc: undefined,
     });
   });
@@ -25,6 +26,7 @@ describe("loadConfig", () => {
       LOG_LEVEL: "debug",
       WEB_DIR: "/srv/web",
       SIGNUP_MODE: "open",
+      TRUST_PROXY: "true",
       OIDC_ISSUER: "https://id.example",
       OIDC_CLIENT_ID: "brew",
       OIDC_CLIENT_SECRET: "s3cret",
@@ -34,6 +36,7 @@ describe("loadConfig", () => {
       logLevel: "debug",
       webDir: "/srv/web",
       signupMode: "open",
+      trustProxy: true,
     });
     expect(config.oidc).toEqual({
       issuer: "https://id.example",

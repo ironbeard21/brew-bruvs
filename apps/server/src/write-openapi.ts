@@ -25,6 +25,7 @@ const app = createApp({
     oidc: undefined,
     baseUrl,
     signupMode: "invite",
+    trustProxy: false,
   },
 });
 const json = (value: unknown) => `${JSON.stringify(value, null, 2)}\n`;

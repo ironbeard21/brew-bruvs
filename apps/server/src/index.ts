@@ -23,6 +23,7 @@ const app = createApp({
       createOidc({ ...config.oidc, redirectUri: `${config.baseUrl}/api/auth/oidc/callback` }),
     baseUrl: config.baseUrl,
     signupMode: config.signupMode,
+    trustProxy: config.trustProxy,
   },
 });
 
