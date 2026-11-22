@@ -16,6 +16,7 @@ services:
       DATABASE_URL: postgres://brew:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in the root .env file}@postgres:5432/brew
       LOG_LEVEL: ${LOG_LEVEL:-info}
       SIGNUP_MODE: ${SIGNUP_MODE:-invite}
+      TRUST_PROXY: ${TRUST_PROXY:-false}
       OIDC_ISSUER: ${OIDC_ISSUER:-}
       OIDC_CLIENT_ID: ${OIDC_CLIENT_ID:-}
       OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET:-}

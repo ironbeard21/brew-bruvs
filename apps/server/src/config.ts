@@ -17,6 +17,11 @@ const schema = z
     DATABASE_URL: z.string().min(1),
     BASE_URL: z.url().transform((v) => v.replace(/\/+$/, "")),
     SIGNUP_MODE: z.enum(["open", "invite"]).default("invite"),
+    // true behind a reverse proxy, so sign-in rate limits see the real client address.
+    TRUST_PROXY: z
+      .enum(["true", "false"])
+      .default("false")
+      .transform((v) => v === "true"),
     OIDC_ISSUER: optional,
     OIDC_CLIENT_ID: optional,
     OIDC_CLIENT_SECRET: optional,
@@ -41,6 +46,8 @@ export interface Config {
   /** Public address without a trailing slash. */
   baseUrl: string;
   signupMode: "open" | "invite";
+  /** Take the client address from X-Forwarded-For (set by the reverse proxy). */
+  trustProxy: boolean;
   oidc: { issuer: string; clientId: string; clientSecret: string } | undefined;
 }
 
@@ -58,6 +65,7 @@ export function loadConfig(env: Record<string, string | undefined>): Config {
     databaseUrl: e.DATABASE_URL,
     baseUrl: e.BASE_URL,
     signupMode: e.SIGNUP_MODE,
+    trustProxy: e.TRUST_PROXY,
     oidc:
       e.OIDC_ISSUER && e.OIDC_CLIENT_ID && e.OIDC_CLIENT_SECRET
         ? { issuer: e.OIDC_ISSUER, clientId: e.OIDC_CLIENT_ID, clientSecret: e.OIDC_CLIENT_SECRET }

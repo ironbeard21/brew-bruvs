@@ -2,42 +2,17 @@
 // Auth API tests against a real Postgres database (set TEST_DATABASE_URL; skipped otherwise).
 import { describe, expect, it } from "vitest";
 import type { Oidc, OidcClaims } from "../src/auth/oidc.ts";
-import { BASE_URL, TEST_DATABASE_URL, type TestApp, withApp } from "./helpers.ts";
-
-const admin = { email: "admin@brew.test", password: "admin-password", displayName: "Admin" };
-const ann = { email: "ann@brew.test", password: "ann-password", displayName: "Ann" };
-
-type Json = Record<string, unknown> & { error?: { code: string; message: string } };
-
-async function call(
-  app: TestApp,
-  method: string,
-  path: string,
-  opts: { body?: unknown; token?: string | undefined; cookie?: string | undefined } = {},
-) {
-  const headers: Record<string, string> = {};
-  if (opts.body !== undefined) headers["content-type"] = "application/json";
-  if (opts.token) headers.authorization = `Bearer ${opts.token}`;
-  if (opts.cookie) headers.cookie = opts.cookie;
-  const init: RequestInit = { method, headers };
-  if (opts.body !== undefined) init.body = JSON.stringify(opts.body);
-  const res = await app.request(path, init);
-  const text = await res.text();
-  return { status: res.status, json: (text ? JSON.parse(text) : {}) as Json, res };
-}
-
-/** Runs setup and returns the admin's app token. */
-async function setupAdmin(app: TestApp): Promise<string> {
-  const r = await call(app, "POST", "/api/setup", { body: { ...admin, client: "app" } });
-  expect(r.status).toBe(201);
-  return r.json.token as string;
-}
-
-async function invite(app: TestApp, adminToken: string): Promise<string> {
-  const r = await call(app, "POST", "/api/invites", { token: adminToken });
-  expect(r.status).toBe(201);
-  return r.json.code as string;
-}
+import {
+  admin,
+  ann,
+  BASE_URL,
+  call,
+  invite,
+  setupAdmin,
+  TEST_DATABASE_URL,
+  type TestApp,
+  withApp,
+} from "./helpers.ts";
 
 const sessionCookie = (res: Response) =>
   res.headers.get("set-cookie")?.match(/bb_session=[^;]+/)?.[0];
@@ -370,6 +345,21 @@ describe.skipIf(!TEST_DATABASE_URL)("auth API (TEST_DATABASE_URL)", () => {
         const second = await ssoLogin(app);
         const me2 = await call(app, "GET", "/api/me", { cookie: sessionCookie(second.res) });
         expect(me2.json.id).toBe(me.json.id);
+      });
+    });
+
+    it("refuses a disabled account", async () => {
+      await withApp({ oidc: fakeOidc(claims) }, async (app) => {
+        const adminToken = await setupAdmin(app);
+        const first = await ssoLogin(app);
+        const me = await call(app, "GET", "/api/me", { cookie: sessionCookie(first.res) });
+        const off = await call(app, "POST", `/api/admin/users/${me.json.id}/disable`, {
+          token: adminToken,
+        });
+        expect(off.status).toBe(200);
+        const again = await ssoLogin(app);
+        expect(again.status).toBe(403);
+        expect(again.json.error?.code).toBe("account_disabled");
       });
     });
 

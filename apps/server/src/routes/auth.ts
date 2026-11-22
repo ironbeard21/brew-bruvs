@@ -1,20 +1,24 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// First-run setup, sign-up, login/logout, tokens, invites and optional OIDC login.
+// First-run setup, sign-up, login/logout, settings, password reset, tokens, invites, OIDC login.
 import { createRoute, type OpenAPIHono, z } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import { type AppEnv, requireSession, SESSION_COOKIE } from "../auth/middleware.ts";
 import type { Oidc } from "../auth/oidc.ts";
+import { clientIp, enforce, RateLimiter } from "../auth/rate-limit.ts";
 import { ApiError, errorResponses } from "../errors.ts";
 import type { AuthService, PublicUser } from "../services/auth.ts";
 
 const OIDC_COOKIE = "bb_oidc";
+const MINUTE = 60_000;
 
 export interface AuthRouteDeps {
   auth: AuthService;
   oidc: Oidc | undefined;
   baseUrl: string;
   signupMode: "open" | "invite";
+  /** Read the client address from X-Forwarded-For (TRUST_PROXY). */
+  trustProxy: boolean;
 }
 
 const UserSchema = z
@@ -24,8 +28,11 @@ const UserSchema = z
     email: z.string(),
     displayName: z.string(),
     isAdmin: z.boolean(),
+    units: z.enum(["us", "metric"]).openapi({ description: "Display units; data is stored in SI" }),
   })
   .openapi("User");
+
+const password = z.string().min(8).max(256);
 
 const SignedInSchema = z
   .object({
@@ -41,7 +48,7 @@ const client = z
 
 const accountFields = {
   email: z.email().max(254),
-  password: z.string().min(8).max(256),
+  password,
   displayName: z.string().trim().min(1).max(100),
   client,
   deviceName: z.string().max(100).optional(),
@@ -58,11 +65,11 @@ const TokenSchema = z
   })
   .openapi("Token");
 
-const json = <T extends z.ZodType>(schema: T, description: string) => ({
+export const json = <T extends z.ZodType>(schema: T, description: string) => ({
   description,
   content: { "application/json": { schema } },
 });
-const body = <T extends z.ZodType>(schema: T) => ({
+export const body = <T extends z.ZodType>(schema: T) => ({
   body: { content: { "application/json": { schema } }, required: true },
 });
 
@@ -93,7 +100,7 @@ const routes = {
     request: body(z.object(accountFields)),
     responses: {
       201: json(SignedInSchema, "Admin created and signed in"),
-      ...errorResponses(400, 409),
+      ...errorResponses(400, 409, 429),
     },
   }),
   signup: createRoute({
@@ -104,7 +111,7 @@ const routes = {
     request: body(z.object({ ...accountFields, inviteCode: z.string().optional() })),
     responses: {
       201: json(SignedInSchema, "Account created and signed in"),
-      ...errorResponses(400, 403, 409),
+      ...errorResponses(400, 403, 409, 429),
     },
   }),
   login: createRoute({
@@ -120,7 +127,18 @@ const routes = {
         deviceName: accountFields.deviceName,
       }),
     ),
-    responses: { 200: json(SignedInSchema, "Signed in"), ...errorResponses(400, 401) },
+    responses: {
+      200: json(SignedInSchema, "Signed in"),
+      ...errorResponses(400, 401, 403, 429),
+    },
+  }),
+  passwordReset: createRoute({
+    method: "post",
+    path: "/api/auth/password-reset",
+    tags: ["auth"],
+    summary: "Set a new password from an admin's reset link; signs out everywhere",
+    request: body(z.object({ token: z.string().min(1).max(200), password })),
+    responses: { 204: { description: "Password changed" }, ...errorResponses(400, 429) },
   }),
   logout: createRoute({
     method: "post",
@@ -135,6 +153,34 @@ const routes = {
     tags: ["auth"],
     summary: "The signed-in user",
     responses: { 200: json(UserSchema, "Current user"), ...errorResponses(401) },
+  }),
+  updateMe: createRoute({
+    method: "patch",
+    path: "/api/me",
+    tags: ["auth"],
+    summary: "Change your display name or units",
+    request: body(
+      z
+        .object({
+          displayName: z.string().trim().min(1).max(100).optional(),
+          units: z.enum(["us", "metric"]).optional(),
+        })
+        .refine((v) => v.displayName !== undefined || v.units !== undefined, {
+          message: "change at least one field",
+        }),
+    ),
+    responses: { 200: json(UserSchema, "Updated user"), ...errorResponses(400, 401, 403) },
+  }),
+  changePassword: createRoute({
+    method: "post",
+    path: "/api/me/password",
+    tags: ["auth"],
+    summary: "Change your password; signs out your other sessions and apps",
+    request: body(z.object({ currentPassword: z.string().min(1).max(256), newPassword: password })),
+    responses: {
+      204: { description: "Password changed" },
+      ...errorResponses(400, 401, 403, 409),
+    },
   }),
   listTokens: createRoute({
     method: "get",
@@ -234,6 +280,18 @@ export function registerAuthRoutes(app: OpenAPIHono<AppEnv>, deps: AuthRouteDeps
     return deps.oidc;
   };
 
+  // Every login attempt counts per address; only failures count per account, and a success
+  // clears them. Account creation and reset links share a slower per-address limit.
+  const loginByIp = new RateLimiter(30, 15 * MINUTE);
+  const failuresByAccount = new RateLimiter(10, 15 * MINUTE);
+  const accountCreationByIp = new RateLimiter(10, 60 * MINUTE);
+  const ip = (c: Context<AppEnv>) => `ip:${clientIp(c, deps.trustProxy)}`;
+  const limitAccountCreation = (c: Context<AppEnv>) => {
+    const key = ip(c);
+    enforce(c, accountCreationByIp, key);
+    accountCreationByIp.hit(key);
+  };
+
   app.openapi(routes.status, async (c) =>
     c.json(
       {
@@ -246,12 +304,14 @@ export function registerAuthRoutes(app: OpenAPIHono<AppEnv>, deps: AuthRouteDeps
   );
 
   app.openapi(routes.setup, async (c) => {
+    limitAccountCreation(c);
     const input = c.req.valid("json");
     const user = await auth.setup(input);
     return c.json(await signIn(c, user, input.client, input.deviceName), 201);
   });
 
   app.openapi(routes.signup, async (c) => {
+    limitAccountCreation(c);
     const input = c.req.valid("json");
     const user = await auth.signup(input);
     return c.json(await signIn(c, user, input.client, input.deviceName), 201);
@@ -259,8 +319,29 @@ export function registerAuthRoutes(app: OpenAPIHono<AppEnv>, deps: AuthRouteDeps
 
   app.openapi(routes.login, async (c) => {
     const input = c.req.valid("json");
-    const user = await auth.login(input.email, input.password);
+    const byIp = ip(c);
+    const byAccount = `account:${input.email.trim().toLowerCase()}`;
+    enforce(c, loginByIp, byIp);
+    enforce(c, failuresByAccount, byAccount);
+    loginByIp.hit(byIp);
+    let user: PublicUser;
+    try {
+      user = await auth.login(input.email, input.password);
+    } catch (err) {
+      if (err instanceof ApiError && err.code === "invalid_credentials") {
+        failuresByAccount.hit(byAccount);
+      }
+      throw err;
+    }
+    failuresByAccount.clear(byAccount);
     return c.json(await signIn(c, user, input.client, input.deviceName), 200);
+  });
+
+  app.openapi(routes.passwordReset, async (c) => {
+    limitAccountCreation(c);
+    const { token, password } = c.req.valid("json");
+    await auth.redeemPasswordReset(token, password);
+    return c.body(null, 204);
   });
 
   app.openapi(routes.logout, async (c) => {
@@ -273,6 +354,22 @@ export function registerAuthRoutes(app: OpenAPIHono<AppEnv>, deps: AuthRouteDeps
   app.openapi(routes.me, (c) => {
     const { memberships: _, ...user } = requireSession(c).user;
     return c.json(user, 200);
+  });
+
+  app.openapi(routes.updateMe, async (c) => {
+    const user = await auth.updateProfile(requireSession(c).user.id, c.req.valid("json"));
+    return c.json(user, 200);
+  });
+
+  app.openapi(routes.changePassword, async (c) => {
+    const session = requireSession(c);
+    // An integration's API token must not be able to take over the account.
+    if (session.kind === "personal") {
+      throw new ApiError(403, "forbidden", "Sign in to change your password");
+    }
+    const { currentPassword, newPassword } = c.req.valid("json");
+    await auth.changePassword(session.user.id, currentPassword, newPassword, session.tokenId);
+    return c.body(null, 204);
   });
 
   app.openapi(routes.listTokens, async (c) => {

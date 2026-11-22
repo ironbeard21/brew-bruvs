@@ -224,8 +224,11 @@ describe.skipIf(!connectionString)("schema v2 on Postgres (TEST_DATABASE_URL)", 
     await withDb(async (client, userId) => {
       const unlisted = await recipe(client, userId, "visibility", ["unlisted"]);
       const server = await recipe(client, userId, "visibility", ["server"]);
-      expect(await rollbackLatest(client)).toBe("0003_recipe_guards");
-      expect(await rollbackLatest(client)).toBe("0002_schema_v2");
+      // Roll back everything after schema v2, then v2 itself.
+      for (let tag = await rollbackLatest(client); ; tag = await rollbackLatest(client)) {
+        if (tag === "0002_schema_v2") break;
+        expect(tag).not.toBeNull();
+      }
       const { rows } = await client.query<{ id: string; visibility: string }>(
         "SELECT id, visibility FROM recipes",
       );

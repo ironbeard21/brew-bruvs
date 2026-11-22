@@ -108,6 +108,8 @@ export const users = pgTable(
     passwordHash: text("password_hash"),
     oidcIssuer: text("oidc_issuer"),
     oidcSubject: text("oidc_subject"),
+    // Set by an admin: the account can't sign in and its tokens stop working.
+    disabledAt: timestamp("disabled_at", { withTimezone: true }),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
@@ -148,6 +150,25 @@ export const invites = pgTable("invites", {
   usedAt: timestamp("used_at", { withTimezone: true }),
   usedByUserId: uuid("used_by_user_id").references(() => users.id, { onDelete: "set null" }),
 });
+
+// One-time password reset links an admin creates for a user (there is no email). Hash only.
+export const passwordResets = pgTable(
+  "password_resets",
+  {
+    id: id(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    tokenHash: text("token_hash").notNull().unique(),
+    createdByUserId: uuid("created_by_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    createdAt: createdAt(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    usedAt: timestamp("used_at", { withTimezone: true }),
+  },
+  (t) => [index().on(t.userId)],
+);
 
 export const breweries = pgTable("breweries", {
   id: id(),
