@@ -33,6 +33,8 @@ export const shareableType = pgEnum("shareable_type", [
   "note",
 ]);
 export const quantityUnit = pgEnum("quantity_unit", ["kg", "l", "each"]);
+// session: web cookie · app: phone sign-in · personal: scoped API token
+export const tokenKind = pgEnum("token_kind", ["session", "app", "personal"]);
 
 const id = () => uuid("id").primaryKey().default(sql`uuidv7()`);
 const createdAt = () => timestamp("created_at", { withTimezone: true }).notNull().defaultNow();
@@ -55,11 +57,50 @@ export const users = pgTable(
     city: text("city"),
     state: text("state"),
     isAdmin: boolean("is_admin").notNull().default(false),
+    // Null for accounts that only sign in through OIDC.
+    passwordHash: text("password_hash"),
+    oidcIssuer: text("oidc_issuer"),
+    oidcSubject: text("oidc_subject"),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
-  (t) => [uniqueIndex("users_email_lower_key").on(sql`lower(${t.email})`)],
+  (t) => [
+    uniqueIndex("users_email_lower_key").on(sql`lower(${t.email})`),
+    unique("users_oidc_key").on(t.oidcIssuer, t.oidcSubject),
+  ],
 );
+
+// Only SHA-256 hashes of tokens are stored; the token itself is shown once.
+export const authTokens = pgTable(
+  "auth_tokens",
+  {
+    id: id(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    kind: tokenKind("kind").notNull(),
+    tokenHash: text("token_hash").notNull().unique(),
+    name: text("name"),
+    scopes: text("scopes").array().notNull().default(sql`'{}'`),
+    createdAt: createdAt(),
+    lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  },
+  (t) => [index().on(t.userId)],
+);
+
+export const invites = pgTable("invites", {
+  id: id(),
+  codeHash: text("code_hash").notNull().unique(),
+  createdByUserId: uuid("created_by_user_id").references(() => users.id, {
+    onDelete: "set null",
+  }),
+  createdAt: createdAt(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  usedAt: timestamp("used_at", { withTimezone: true }),
+  usedByUserId: uuid("used_by_user_id").references(() => users.id, { onDelete: "set null" }),
+});
 
 export const breweries = pgTable("breweries", {
   id: id(),

@@ -19,6 +19,11 @@ describe("down files", () => {
     expect(names(down, /DROP TYPE "public"\."(\w+)"/g)).toEqual(
       names(up, /CREATE TYPE "public"\."(\w+)"/g),
     );
+    const pairs = (sql: string, re: RegExp) =>
+      [...sql.matchAll(re)].map((m) => `${m[1]}.${m[2]}`).sort();
+    expect(pairs(down, /ALTER TABLE "(\w+)" DROP COLUMN "(\w+)"/g)).toEqual(
+      pairs(up, /ALTER TABLE "(\w+)" ADD COLUMN "(\w+)"/g),
+    );
   });
 });
 
@@ -48,9 +53,13 @@ const tables = async (client: Client) =>
 describe.skipIf(!connectionString)("schema v1 on Postgres (TEST_DATABASE_URL)", () => {
   it("applies to an empty database, rolls back to empty, and re-applies", async () => {
     await withMigratedDb(async (client) => {
-      expect(await tables(client)).toHaveLength(18);
+      expect(await tables(client)).toHaveLength(20);
 
-      expect(await rollbackLatest(client)).toBe("0000_init");
+      const rolledBack: string[] = [];
+      for (let tag = await rollbackLatest(client); tag; tag = await rollbackLatest(client)) {
+        rolledBack.push(tag);
+      }
+      expect(rolledBack).toEqual(journal.entries.map((e) => e.tag).reverse());
       expect(await tables(client)).toEqual([]);
       const types = await client.query(
         "SELECT 1 FROM pg_type t JOIN pg_namespace n ON n.oid = t.typnamespace WHERE n.nspname = 'public' AND t.typtype = 'e'",
@@ -59,7 +68,7 @@ describe.skipIf(!connectionString)("schema v1 on Postgres (TEST_DATABASE_URL)", 
       expect(await rollbackLatest(client)).toBeNull();
 
       await migrateUp(client);
-      expect(await tables(client)).toHaveLength(18);
+      expect(await tables(client)).toHaveLength(20);
     });
   });
 
