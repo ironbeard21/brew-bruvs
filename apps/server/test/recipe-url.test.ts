@@ -127,6 +127,20 @@ it("fetches one HTML page with a pinned address and checks the linked origin's r
   ]);
 });
 
+it("keeps only the page excerpt, not a linked file's description", async () => {
+  const story = "The full write-up from the original author. ".repeat(200);
+  const xml = read("recipe-files/external.xml").replace(
+    "<VERSION>1</VERSION>",
+    `<VERSION>1</VERSION><NOTES>${story}</NOTES>`,
+  );
+  const linked = page(
+    '<html><head><meta name="description" content="A short blurb"></head><body><a href="/r.xml">BeerXML</a></body></html>',
+  );
+  const { recipe, excerpt } = await importRecipePage(linked, async () => xml);
+  expect(excerpt).toBe("A short blurb");
+  expect(recipe.content.notes).toBe("Source excerpt\nA short blurb");
+});
+
 it("honors a user-agent rule before fetching the page", async () => {
   const { readUrl, request } = fixtures({
     "https://recipes.example.test/robots.txt": {

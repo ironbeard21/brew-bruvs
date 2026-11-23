@@ -78,7 +78,7 @@ export function createApp(deps: AppDeps) {
   registerAdminRoutes(app, auth);
   registerCatalogRoutes(app, catalog);
   registerRecipeRoutes(app, { recipes, profiles });
-  registerRecipeFileRoutes(app, recipes, recipeFiles);
+  registerRecipeFileRoutes(app, recipes, recipeFiles, { trustProxy: auth.trustProxy });
   registerBatchRoutes(app, { batches, notes });
   app.doc31(OPENAPI_PATH, OPENAPI_INFO);
 
