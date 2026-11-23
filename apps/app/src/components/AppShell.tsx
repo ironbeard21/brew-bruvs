@@ -3,6 +3,7 @@ import { usePathname, useRouter } from "expo-router";
 import type { ReactNode } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useCurrentUser, useUpdateMe } from "../api/auth";
 import { useServer } from "../state/server";
 import { colors, DESKTOP_BREAKPOINT, radii, spacing } from "../theme";
 import { UnitToggle } from "./UnitToggle";
@@ -26,11 +27,15 @@ export function AppShell({ children, title, subtitle }: AppShellProps) {
   const isDesktop = width >= DESKTOP_BREAKPOINT;
   const pathname = usePathname();
   const router = useRouter();
-  const { serverUrl, offlineMode } = useServer();
+  const { serverUrl, authToken, offlineMode } = useServer();
+  const currentUser = useCurrentUser(serverUrl, authToken);
+  const updateMe = useUpdateMe(serverUrl, authToken);
 
   const onCalculators = pathname === "/calculators";
   const onRecipes = pathname === "/recipes" || pathname.startsWith("/recipes/");
   const onBatches = pathname === "/batches" || pathname.startsWith("/batches/");
+  const onSettings = pathname === "/settings" || pathname === "/admin";
+  const onAbout = pathname === "/about";
   const onServer = pathname === "/connect" || pathname === "/login";
 
   return (
@@ -109,6 +114,19 @@ export function AppShell({ children, title, subtitle }: AppShellProps) {
               </Pressable>
 
               <Pressable
+                onPress={() => router.push("/settings")}
+                accessibilityRole="tab"
+                accessibilityLabel="Settings"
+                accessibilityState={{ selected: onSettings }}
+                testID="nav-settings"
+                style={[styles.navLink, onSettings && styles.navLinkActive]}
+              >
+                <Text style={[styles.navLinkText, onSettings && styles.navLinkTextActive]}>
+                  Settings
+                </Text>
+              </Pressable>
+
+              <Pressable
                 onPress={() => router.push(serverUrl ? "/login" : "/connect")}
                 accessibilityRole="tab"
                 accessibilityLabel={serverUrl ? "Account and server" : "Connect to server"}
@@ -120,9 +138,26 @@ export function AppShell({ children, title, subtitle }: AppShellProps) {
                   {serverUrl ? "Account" : "Server"}
                 </Text>
               </Pressable>
+
+              <Pressable
+                onPress={() => router.push("/about")}
+                accessibilityRole="tab"
+                accessibilityLabel="About and licenses"
+                accessibilityState={{ selected: onAbout }}
+                testID="nav-about"
+                style={[styles.navLink, onAbout && styles.navLinkActive]}
+              >
+                <Text style={[styles.navLinkText, onAbout && styles.navLinkTextActive]}>About</Text>
+              </Pressable>
             </View>
 
-            <UnitToggle />
+            <UnitToggle
+              onUnitChange={(next) => {
+                if (serverUrl && currentUser.data && currentUser.data.units !== next) {
+                  updateMe.mutate({ units: next });
+                }
+              }}
+            />
           </View>
         </View>
       </View>
@@ -217,11 +252,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     flexWrap: "wrap",
+    flexShrink: 1,
+    maxWidth: "100%",
     gap: spacing.xs,
   },
   navLink: {
     minHeight: 38,
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: 10,
     paddingVertical: 8,
     borderRadius: radii.md,
     justifyContent: "center",

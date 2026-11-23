@@ -7,6 +7,17 @@ import { formatApiError, getApiClient } from "./client";
 export type AuthUser = components["schemas"]["User"];
 export type AuthStatus = components["schemas"]["AuthStatus"];
 export type SignedInResponse = components["schemas"]["SignedIn"];
+export type UserToken = components["schemas"]["Token"];
+export type NewUserToken = components["schemas"]["NewToken"];
+export type Invite = components["schemas"]["Invite"];
+export type AdminUser = components["schemas"]["AdminUser"];
+export type PasswordResetLink = components["schemas"]["PasswordResetLink"];
+export type TokenScope = "read" | "write";
+
+export interface UpdateMeInput {
+  displayName?: string;
+  units?: "us" | "metric";
+}
 
 export function getAuthClientKind(): "web" | "app" {
   return Platform.OS === "web" ? "web" : "app";
@@ -240,6 +251,367 @@ export function useLogout(
     onSuccess: async () => {
       await onSignedOut();
       queryClient.setQueryData(["auth-me", serverUrl], null);
+    },
+  });
+}
+
+// ── Profile, Password, Personal API Tokens ───────────────────────────
+
+export async function updateMyProfile(
+  serverUrl: string,
+  token: string | null,
+  input: UpdateMeInput,
+  customFetch?: typeof fetch,
+): Promise<AuthUser> {
+  const client = getApiClient(serverUrl, {
+    token,
+    ...(customFetch ? { customFetch } : {}),
+  });
+  const { data, error } = await client.PATCH("/api/me", {
+    credentials: "include",
+    body: {
+      ...(input.displayName !== undefined ? { displayName: input.displayName.trim() } : {}),
+      ...(input.units !== undefined ? { units: input.units } : {}),
+    },
+  });
+  if (error || !data) {
+    throw new Error(formatApiError(error, "Could not update profile settings."));
+  }
+  return data;
+}
+
+export async function changeMyPassword(
+  serverUrl: string,
+  token: string | null,
+  input: { currentPassword: string; newPassword: string },
+  customFetch?: typeof fetch,
+): Promise<void> {
+  const client = getApiClient(serverUrl, {
+    token,
+    ...(customFetch ? { customFetch } : {}),
+  });
+  const { error, response } = await client.POST("/api/me/password", {
+    credentials: "include",
+    body: input,
+  });
+  if (response.status === 204) return;
+  if (error) {
+    throw new Error(formatApiError(error, "Could not change password."));
+  }
+}
+
+export async function redeemPasswordReset(
+  serverUrl: string,
+  input: { token: string; password: string },
+  customFetch?: typeof fetch,
+): Promise<void> {
+  const client = getApiClient(serverUrl, customFetch ? { customFetch } : undefined);
+  const { error, response } = await client.POST("/api/auth/password-reset", {
+    credentials: "include",
+    body: input,
+  });
+  if (response.status === 204) return;
+  if (error) {
+    throw new Error(formatApiError(error, "Could not reset password."));
+  }
+}
+
+export async function fetchAuthTokens(
+  serverUrl: string,
+  token: string | null,
+  customFetch?: typeof fetch,
+): Promise<UserToken[]> {
+  const client = getApiClient(serverUrl, {
+    token,
+    ...(customFetch ? { customFetch } : {}),
+  });
+  const { data, error } = await client.GET("/api/auth/tokens", { credentials: "include" });
+  if (error || !data) {
+    throw new Error(formatApiError(error, "Could not load API tokens."));
+  }
+  return data;
+}
+
+export async function createPersonalToken(
+  serverUrl: string,
+  token: string | null,
+  input: { name: string; scopes: TokenScope[] },
+  customFetch?: typeof fetch,
+): Promise<NewUserToken> {
+  const client = getApiClient(serverUrl, {
+    token,
+    ...(customFetch ? { customFetch } : {}),
+  });
+  const { data, error } = await client.POST("/api/auth/tokens", {
+    credentials: "include",
+    body: {
+      name: input.name.trim(),
+      scopes: input.scopes,
+    },
+  });
+  if (error || !data) {
+    throw new Error(formatApiError(error, "Could not create personal API token."));
+  }
+  return data;
+}
+
+export async function revokeAuthToken(
+  serverUrl: string,
+  token: string | null,
+  tokenId: string,
+  customFetch?: typeof fetch,
+): Promise<void> {
+  const client = getApiClient(serverUrl, {
+    token,
+    ...(customFetch ? { customFetch } : {}),
+  });
+  const { error, response } = await client.DELETE("/api/auth/tokens/{id}", {
+    credentials: "include",
+    params: { path: { id: tokenId } },
+  });
+  if (response.status === 204) return;
+  if (error) {
+    throw new Error(formatApiError(error, "Could not revoke token."));
+  }
+}
+
+// ── Admin (Invites, Users, Reset Links) ──────────────────────────────
+
+export async function createInvite(
+  serverUrl: string,
+  token: string | null,
+  customFetch?: typeof fetch,
+): Promise<Invite> {
+  const client = getApiClient(serverUrl, {
+    token,
+    ...(customFetch ? { customFetch } : {}),
+  });
+  const { data, error } = await client.POST("/api/invites", { credentials: "include" });
+  if (error || !data) {
+    throw new Error(formatApiError(error, "Could not create invite code."));
+  }
+  return data;
+}
+
+export async function fetchAdminUsers(
+  serverUrl: string,
+  token: string | null,
+  customFetch?: typeof fetch,
+): Promise<AdminUser[]> {
+  const client = getApiClient(serverUrl, {
+    token,
+    ...(customFetch ? { customFetch } : {}),
+  });
+  const { data, error } = await client.GET("/api/admin/users", { credentials: "include" });
+  if (error || !data) {
+    throw new Error(formatApiError(error, "Could not load server users."));
+  }
+  return data;
+}
+
+export async function setAdminUserDisabled(
+  serverUrl: string,
+  token: string | null,
+  userId: string,
+  disabled: boolean,
+  customFetch?: typeof fetch,
+): Promise<AdminUser> {
+  const client = getApiClient(serverUrl, {
+    token,
+    ...(customFetch ? { customFetch } : {}),
+  });
+  const { data, error } = disabled
+    ? await client.POST("/api/admin/users/{id}/disable", {
+        credentials: "include",
+        params: { path: { id: userId } },
+      })
+    : await client.POST("/api/admin/users/{id}/enable", {
+        credentials: "include",
+        params: { path: { id: userId } },
+      });
+  if (error || !data) {
+    throw new Error(
+      formatApiError(
+        error,
+        disabled ? "Could not disable account." : "Could not re-enable account.",
+      ),
+    );
+  }
+  return data;
+}
+
+export async function createAdminPasswordReset(
+  serverUrl: string,
+  token: string | null,
+  userId: string,
+  customFetch?: typeof fetch,
+): Promise<PasswordResetLink> {
+  const client = getApiClient(serverUrl, {
+    token,
+    ...(customFetch ? { customFetch } : {}),
+  });
+  const { data, error } = await client.POST("/api/admin/users/{id}/password-reset", {
+    credentials: "include",
+    params: { path: { id: userId } },
+  });
+  if (error || !data) {
+    throw new Error(formatApiError(error, "Could not create password reset link."));
+  }
+  return data;
+}
+
+// ── React Query Hooks ────────────────────────────────────────────────
+
+export function useUpdateMe(
+  serverUrl: string | null,
+  token: string | null,
+  customFetch?: typeof fetch,
+) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: UpdateMeInput): Promise<AuthUser> => {
+      if (!serverUrl) throw new Error("Not connected to a server.");
+      return updateMyProfile(serverUrl, token, input, customFetch);
+    },
+    onSuccess: (user) => {
+      if (!serverUrl) return;
+      queryClient.setQueryData(["auth-me", serverUrl], user);
+    },
+  });
+}
+
+export function useChangePassword(
+  serverUrl: string | null,
+  token: string | null,
+  customFetch?: typeof fetch,
+) {
+  return useMutation({
+    mutationFn: async (input: { currentPassword: string; newPassword: string }): Promise<void> => {
+      if (!serverUrl) throw new Error("Not connected to a server.");
+      return changeMyPassword(serverUrl, token, input, customFetch);
+    },
+  });
+}
+
+export function useRedeemPasswordReset(serverUrl: string | null, customFetch?: typeof fetch) {
+  return useMutation({
+    mutationFn: async (input: { token: string; password: string }): Promise<void> => {
+      if (!serverUrl) throw new Error("Not connected to a server.");
+      return redeemPasswordReset(serverUrl, input, customFetch);
+    },
+  });
+}
+
+export function useAuthTokens(
+  serverUrl: string | null,
+  token: string | null,
+  enabled: boolean,
+  customFetch?: typeof fetch,
+) {
+  return useQuery({
+    queryKey: ["auth-tokens", serverUrl],
+    enabled: Boolean(serverUrl) && enabled,
+    retry: false,
+    queryFn: () => {
+      if (!serverUrl) throw new Error("No server configured");
+      return fetchAuthTokens(serverUrl, token, customFetch);
+    },
+  });
+}
+
+export function useCreateApiToken(
+  serverUrl: string | null,
+  token: string | null,
+  customFetch?: typeof fetch,
+) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { name: string; scopes: TokenScope[] }): Promise<NewUserToken> => {
+      if (!serverUrl) throw new Error("Not connected to a server.");
+      return createPersonalToken(serverUrl, token, input, customFetch);
+    },
+    onSuccess: async () => {
+      if (!serverUrl) return;
+      await queryClient.invalidateQueries({ queryKey: ["auth-tokens", serverUrl] });
+    },
+  });
+}
+
+export function useRevokeApiToken(
+  serverUrl: string | null,
+  token: string | null,
+  customFetch?: typeof fetch,
+) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (tokenId: string): Promise<void> => {
+      if (!serverUrl) throw new Error("Not connected to a server.");
+      return revokeAuthToken(serverUrl, token, tokenId, customFetch);
+    },
+    onSuccess: async () => {
+      if (!serverUrl) return;
+      await queryClient.invalidateQueries({ queryKey: ["auth-tokens", serverUrl] });
+    },
+  });
+}
+
+export function useCreateInvite(
+  serverUrl: string | null,
+  token: string | null,
+  customFetch?: typeof fetch,
+) {
+  return useMutation({
+    mutationFn: async (): Promise<Invite> => {
+      if (!serverUrl) throw new Error("Not connected to a server.");
+      return createInvite(serverUrl, token, customFetch);
+    },
+  });
+}
+
+export function useAdminUsers(
+  serverUrl: string | null,
+  token: string | null,
+  enabled: boolean,
+  customFetch?: typeof fetch,
+) {
+  return useQuery({
+    queryKey: ["admin-users", serverUrl],
+    enabled: Boolean(serverUrl) && enabled,
+    retry: false,
+    queryFn: () => {
+      if (!serverUrl) throw new Error("No server configured");
+      return fetchAdminUsers(serverUrl, token, customFetch);
+    },
+  });
+}
+
+export function useSetUserDisabled(
+  serverUrl: string | null,
+  token: string | null,
+  customFetch?: typeof fetch,
+) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { userId: string; disabled: boolean }): Promise<AdminUser> => {
+      if (!serverUrl) throw new Error("Not connected to a server.");
+      return setAdminUserDisabled(serverUrl, token, input.userId, input.disabled, customFetch);
+    },
+    onSuccess: async () => {
+      if (!serverUrl) return;
+      await queryClient.invalidateQueries({ queryKey: ["admin-users", serverUrl] });
+    },
+  });
+}
+
+export function useCreatePasswordResetLink(
+  serverUrl: string | null,
+  token: string | null,
+  customFetch?: typeof fetch,
+) {
+  return useMutation({
+    mutationFn: async (userId: string): Promise<PasswordResetLink> => {
+      if (!serverUrl) throw new Error("Not connected to a server.");
+      return createAdminPasswordReset(serverUrl, token, userId, customFetch);
     },
   });
 }
