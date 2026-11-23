@@ -193,6 +193,75 @@ test.describe("Brew-Bruvs app shell", () => {
     await page.getByTestId("nav-batches").click();
     await expect(page).toHaveURL(/\/batches$/);
     await expect(page.getByText(/Backyard Pale Ale/).first()).toBeVisible();
+
+    // P1-14: Import a BeerXML file, review & edit on the review screen, verify credit,
+    // save, export BeerXML + BeerJSON, and view the printable brew sheet.
+    await page.getByTestId("nav-recipes").click();
+    await expect(page).toHaveURL(/\/recipes$/);
+
+    await page.getByTestId("import-recipe-button").click();
+    await expect(page).toHaveURL(/\/recipes\/import$/);
+
+    const beerXmlSample = `<?xml version="1.0" encoding="UTF-8"?>
+<RECIPES>
+  <RECIPE>
+    <NAME>Harbor Pale Ale</NAME>
+    <VERSION>1</VERSION>
+    <TYPE>All Grain</TYPE>
+    <BREWER>Robin Brewer</BREWER>
+    <BATCH_SIZE>18.927</BATCH_SIZE>
+    <BOIL_SIZE>23</BOIL_SIZE>
+    <BOIL_TIME>60</BOIL_TIME>
+    <EFFICIENCY>72</EFFICIENCY>
+    <FERMENTABLES>
+      <FERMENTABLE><NAME>Pale Malt (2 Row) US</NAME><VERSION>1</VERSION><TYPE>Grain</TYPE><AMOUNT>4.5</AMOUNT><YIELD>79</YIELD><COLOR>2</COLOR></FERMENTABLE>
+    </FERMENTABLES>
+    <HOPS>
+      <HOP><NAME>Zeus</NAME><VERSION>1</VERSION><ALPHA>16</ALPHA><AMOUNT>0.02</AMOUNT><USE>Boil</USE><TIME>60</TIME><FORM>Pellet</FORM></HOP>
+    </HOPS>
+    <YEASTS>
+      <YEAST><NAME>Safale American Ale</NAME><VERSION>1</VERSION><TYPE>Ale</TYPE><FORM>Dry</FORM><AMOUNT>0.011</AMOUNT><ATTENUATION>81</ATTENUATION></YEAST>
+    </YEASTS>
+  </RECIPE>
+</RECIPES>`;
+
+    await page.getByTestId("import-file-input").setInputFiles({
+      name: "harbor-pale.xml",
+      mimeType: "application/xml",
+      buffer: Buffer.from(beerXmlSample, "utf8"),
+    });
+    await expect(page.getByTestId("import-selected-filename")).toContainText("harbor-pale.xml");
+
+    await page.getByTestId("import-file-submit-button").click();
+    await expect(page.getByTestId("import-review-screen")).toBeVisible();
+    await expect(page.getByTestId("import-credit-preview")).toContainText("Robin Brewer");
+
+    // Check and fix amount & title before saving
+    await page.getByTestId("recipe-name-input").fill("Harbor Pale Ale (Reviewed)");
+    await page.getByTestId("ferm-0-amount").fill("10.0");
+
+    await page.getByTestId("recipe-save-button").click();
+    await expect(page).toHaveURL(/\/recipes\/[0-9a-f-]+$/);
+    await expect(page.getByTestId("recipe-credit-box")).toContainText("Robin Brewer");
+
+    // Export to BeerXML and BeerJSON
+    const xmlDownloadPromise = page.waitForEvent("download");
+    await page.getByTestId("export-beerxml-button").click();
+    const xmlDownload = await xmlDownloadPromise;
+    expect(xmlDownload.suggestedFilename()).toMatch(/\.xml$/);
+    await expect(page.getByTestId("export-success-banner")).toContainText("BEERXML");
+
+    const jsonDownloadPromise = page.waitForEvent("download");
+    await page.getByTestId("export-beerjson-button").click();
+    const jsonDownload = await jsonDownloadPromise;
+    expect(jsonDownload.suggestedFilename()).toMatch(/\.json$/);
+
+    // Open printable brew sheet
+    await page.getByTestId("open-brew-sheet-button").click();
+    await expect(page).toHaveURL(/\/recipes\/brew-sheet\?id=/);
+    await expect(page.getByTestId("brew-sheet-title")).toHaveText("Harbor Pale Ale (Reviewed)");
+    await expect(page.getByTestId("brew-sheet-credit")).toContainText("Robin Brewer");
+    await expect(page.getByTestId("print-brew-sheet-button")).toBeVisible();
   });
 
   test("calculators work completely offline without a server", async ({ page, context }) => {

@@ -16,8 +16,22 @@ export type Share = components["schemas"]["Share"];
 export type ShareInput = components["schemas"]["ShareInput"];
 export type EquipmentProfile = components["schemas"]["EquipmentProfile"];
 export type EquipmentProfileInput = components["schemas"]["EquipmentProfileInput"];
+export type ImportedRecipeDraft = components["schemas"]["ImportedRecipeDraft"];
+export type CreditInput = components["schemas"]["CreditInput"];
+export type RecipeFileFormat = "beerxml" | "beerjson";
 export type Beverage = Recipe["beverage"];
 export type Visibility = Recipe["visibility"];
+
+export interface ImportUrlResult {
+  draft: ImportedRecipeDraft;
+  excerpt: string;
+}
+
+export interface ExportRecipeResult {
+  filename: string;
+  contentType: string;
+  contents: string;
+}
 
 export async function fetchRecipes(
   serverUrl: string,
@@ -519,6 +533,139 @@ export function useCreateEquipmentProfile(
     onSuccess: async () => {
       if (!serverUrl) return;
       await queryClient.invalidateQueries({ queryKey: ["equipment-profiles", serverUrl] });
+    },
+  });
+}
+
+function parseFilenameFromDisposition(header: string | null, fallback: string): string {
+  if (!header) return fallback;
+  const quoted = header.match(/filename="([^"]+)"/i);
+  if (quoted?.[1]) return quoted[1];
+  const bare = header.match(/filename=([^;\s]+)/i);
+  if (bare?.[1]) return bare[1];
+  return fallback;
+}
+
+export async function importRecipeFile(
+  serverUrl: string,
+  token: string | null,
+  input: { format: RecipeFileFormat; contents: string },
+  customFetch?: typeof fetch,
+): Promise<ImportedRecipeDraft> {
+  const client = getApiClient(serverUrl, {
+    token,
+    ...(customFetch ? { customFetch } : {}),
+  });
+  const { data, error } = await client.POST("/api/recipes/import", {
+    credentials: "include",
+    body: input,
+  });
+  if (error || !data) {
+    throw new Error(formatApiError(error, "Could not parse recipe file."));
+  }
+  return data;
+}
+
+export async function importRecipeUrl(
+  serverUrl: string,
+  token: string | null,
+  input: { url: string; batchSizeL?: number },
+  customFetch?: typeof fetch,
+): Promise<ImportUrlResult> {
+  const client = getApiClient(serverUrl, {
+    token,
+    ...(customFetch ? { customFetch } : {}),
+  });
+  const { data, error } = await client.POST("/api/recipes/import-url", {
+    credentials: "include",
+    body: input,
+  });
+  if (error || !data) {
+    throw new Error(formatApiError(error, "Could not import recipe from URL."));
+  }
+  return data;
+}
+
+export async function exportRecipeVersion(
+  serverUrl: string,
+  token: string | null,
+  input: { recipeId: string; version: number; format: RecipeFileFormat },
+  customFetch?: typeof fetch,
+): Promise<ExportRecipeResult> {
+  const client = getApiClient(serverUrl, {
+    token,
+    ...(customFetch ? { customFetch } : {}),
+  });
+  const { data, error, response } = await client.GET(
+    "/api/recipes/{id}/versions/{version}/export",
+    {
+      credentials: "include",
+      params: {
+        path: { id: input.recipeId, version: input.version },
+        query: { format: input.format },
+      },
+      parseAs: "text",
+    },
+  );
+  if (error || typeof data !== "string") {
+    throw new Error(formatApiError(error, "Could not export recipe."));
+  }
+  const ext = input.format === "beerxml" ? "xml" : "json";
+  const fallbackName = `recipe-${input.recipeId}-v${input.version}.${ext}`;
+  const filename = parseFilenameFromDisposition(
+    response.headers.get("content-disposition"),
+    fallbackName,
+  );
+  const contentType =
+    response.headers.get("content-type") ??
+    (input.format === "beerxml"
+      ? "application/xml; charset=utf-8"
+      : "application/json; charset=utf-8");
+  return { filename, contentType, contents: data };
+}
+
+export function useImportRecipeFile(
+  serverUrl: string | null,
+  token: string | null,
+  customFetch?: typeof fetch,
+) {
+  return useMutation({
+    mutationFn: async (input: {
+      format: RecipeFileFormat;
+      contents: string;
+    }): Promise<ImportedRecipeDraft> => {
+      if (!serverUrl) throw new Error("Not connected to a server.");
+      return importRecipeFile(serverUrl, token, input, customFetch);
+    },
+  });
+}
+
+export function useImportRecipeUrl(
+  serverUrl: string | null,
+  token: string | null,
+  customFetch?: typeof fetch,
+) {
+  return useMutation({
+    mutationFn: async (input: { url: string; batchSizeL?: number }): Promise<ImportUrlResult> => {
+      if (!serverUrl) throw new Error("Not connected to a server.");
+      return importRecipeUrl(serverUrl, token, input, customFetch);
+    },
+  });
+}
+
+export function useExportRecipeVersion(
+  serverUrl: string | null,
+  token: string | null,
+  customFetch?: typeof fetch,
+) {
+  return useMutation({
+    mutationFn: async (input: {
+      recipeId: string;
+      version: number;
+      format: RecipeFileFormat;
+    }): Promise<ExportRecipeResult> => {
+      if (!serverUrl) throw new Error("Not connected to a server.");
+      return exportRecipeVersion(serverUrl, token, input, customFetch);
     },
   });
 }

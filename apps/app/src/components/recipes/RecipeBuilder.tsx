@@ -8,6 +8,7 @@ import {
   type CreateRecipeInput,
   type EquipmentProfile,
   fetchRecipeVersion,
+  type ImportedRecipeDraft,
   type RecipeDetail,
   type RecipeVersionInput,
   useCreateEquipmentProfile,
@@ -145,12 +146,15 @@ export interface RecipeBuilderProps {
   serverUrl: string | null;
   authToken: string | null;
   recipe?: RecipeDetail | null;
+  initialImport?: ImportedRecipeDraft | null;
+  importExcerpt?: string | null;
   canManage?: boolean;
   onSaveNew?: (input: CreateRecipeInput) => Promise<void>;
   onSaveVersion?: (input: RecipeVersionInput) => Promise<void>;
   onFork?: () => Promise<void>;
   onDelete?: () => Promise<void>;
   onOpenRecipe?: (recipeId: string) => void;
+  onVersionChange?: (version: number) => void;
   saving?: boolean;
   customFetch?: typeof fetch;
 }
@@ -159,12 +163,15 @@ export function RecipeBuilder({
   serverUrl,
   authToken,
   recipe = null,
+  initialImport = null,
+  importExcerpt = null,
   canManage = true,
   onSaveNew,
   onSaveVersion,
   onFork,
   onDelete,
   onOpenRecipe,
+  onVersionChange,
   saving = false,
   customFetch,
 }: RecipeBuilderProps) {
@@ -172,9 +179,29 @@ export function RecipeBuilder({
   const { width } = useWindowDimensions();
   const isDesktop = width >= DESKTOP_BREAKPOINT;
 
-  const [draft, setDraft] = useState<RecipeDraft>(() =>
-    recipe ? draftFromVersion(recipe.version, unitSystem) : createBlankDraft(unitSystem),
-  );
+  const [draft, setDraft] = useState<RecipeDraft>(() => {
+    if (recipe) return draftFromVersion(recipe.version, unitSystem);
+    if (initialImport) {
+      return draftFromVersion(
+        {
+          id: "import-draft",
+          version: 1,
+          name: initialImport.name,
+          beverage: initialImport.beverage,
+          styleId: initialImport.styleId ?? null,
+          batchSizeL: initialImport.batchSizeL,
+          equipmentProfileId: null,
+          content: initialImport.content,
+          createdAt: "",
+          stats: null,
+          statsError: null,
+          styleFit: null,
+        },
+        unitSystem,
+      );
+    }
+    return createBlankDraft(unitSystem);
+  });
   const [selectedStyle, setSelectedStyle] = useState<CatalogStyle | null>(null);
   const [viewingVersion, setViewingVersion] = useState<number | null>(
     recipe ? recipe.version.version : null,
@@ -245,6 +272,7 @@ export function RecipeBuilder({
       );
       setDraft(draftFromVersion(loaded, unitSystem));
       setViewingVersion(loaded.version);
+      onVersionChange?.(loaded.version);
       if (loaded.styleId !== selectedStyle?.id) {
         setSelectedStyle(null);
       }
@@ -439,6 +467,7 @@ export function RecipeBuilder({
           ...built.input,
           beverage: draft.beverage,
           visibility: "private",
+          ...(initialImport?.credit ? { credit: initialImport.credit } : {}),
         });
       }
     } catch (err) {
@@ -455,6 +484,58 @@ export function RecipeBuilder({
           recipe={recipe}
           {...(onOpenRecipe ? { onOpenOriginal: onOpenRecipe } : {})}
         />
+      ) : initialImport ? (
+        <Card style={styles.importCreditCard}>
+          <Text style={styles.importCreditHeading}>Import Attribution (permanent once saved)</Text>
+          <View style={styles.importCreditBody} testID="import-credit-preview">
+            {initialImport.credit ? (
+              <>
+                {initialImport.credit.author ? (
+                  <Text style={styles.importCreditLine}>
+                    <Text style={styles.importCreditLabel}>Author: </Text>
+                    {initialImport.credit.author}
+                  </Text>
+                ) : null}
+                {initialImport.credit.site ? (
+                  <Text style={styles.importCreditLine}>
+                    <Text style={styles.importCreditLabel}>Site: </Text>
+                    {initialImport.credit.site}
+                  </Text>
+                ) : null}
+                {initialImport.credit.sourceUrl ? (
+                  <Text style={styles.importCreditLine}>
+                    <Text style={styles.importCreditLabel}>Source URL: </Text>
+                    {initialImport.credit.sourceUrl}
+                  </Text>
+                ) : null}
+                {initialImport.credit.license ? (
+                  <Text style={styles.importCreditLine}>
+                    <Text style={styles.importCreditLabel}>License: </Text>
+                    {initialImport.credit.license}
+                  </Text>
+                ) : null}
+                {initialImport.credit.publicSharingBlocked ? (
+                  <Text style={styles.importCreditWarning}>
+                    Source terms block public sharing; this recipe will remain private/unlisted.
+                  </Text>
+                ) : null}
+              </>
+            ) : (
+              <Text style={styles.muted}>
+                No author or source URL metadata was found in this file.
+              </Text>
+            )}
+            {importExcerpt ? (
+              <Text style={styles.importExcerptText} testID="import-excerpt-preview">
+                “{importExcerpt}”
+              </Text>
+            ) : null}
+            <Text style={styles.muted}>
+              Imported recipes always start private. Attribution is locked once saved and cannot be
+              removed.
+            </Text>
+          </View>
+        </Card>
       ) : null}
 
       {recipe ? (
@@ -1601,4 +1682,25 @@ const styles = StyleSheet.create({
   versionTitleActive: { color: colors.accentPressed },
   versionMeta: { fontSize: 12, color: colors.textMuted },
   actionRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
+  importCreditCard: {
+    backgroundColor: colors.surfaceSubtle,
+    borderColor: colors.borderStrong,
+  },
+  importCreditHeading: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: colors.accentPressed,
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+  },
+  importCreditBody: { gap: 6 },
+  importCreditLabel: { fontWeight: "700", color: colors.text },
+  importCreditLine: { fontSize: 14, lineHeight: 20, color: colors.text },
+  importCreditWarning: { fontSize: 13, fontWeight: "600", color: colors.error },
+  importExcerptText: {
+    fontSize: 13,
+    lineHeight: 19,
+    fontStyle: "italic",
+    color: colors.textMuted,
+  },
 });

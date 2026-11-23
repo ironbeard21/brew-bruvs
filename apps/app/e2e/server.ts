@@ -42,7 +42,13 @@ interface StoredRecipe {
   beverage: "beer" | "mead" | "wine" | "cider";
   visibility: "private" | "unlisted" | "server" | "public";
   owner: { type: "user"; id: string };
-  credit: null;
+  credit: {
+    sourceUrl: string | null;
+    site: string | null;
+    author: string | null;
+    importedAt: string | null;
+    license: string | null;
+  } | null;
   forkedFrom: { uri: string; recipeId: string | null } | null;
   publicSharingBlocked: boolean;
   createdAt: string;
@@ -549,6 +555,158 @@ const server = createServer(async (req, res) => {
     return sendJson(res, 201, profile);
   }
 
+  // Recipe file & URL import preview (P1-08 / P1-09)
+  if (pathname === "/api/recipes/import" && method === "POST") {
+    const user = getUserForRequest(req);
+    if (!user)
+      return sendJson(res, 401, { error: { code: "unauthorized", message: "Sign in first" } });
+    const data = JSON.parse(await readBody(req)) as {
+      format: "beerxml" | "beerjson";
+      contents: string;
+    };
+    const tagVal = (src: string, tag: string): string | null => {
+      const m = src.match(new RegExp(`<${tag}>([^<]*)</${tag}>`, "i"));
+      return m?.[1]?.trim() || null;
+    };
+    const blocks = (src: string, tag: string): string[] => {
+      const re = new RegExp(`<${tag}>([\\s\\S]*?)</${tag}>`, "gi");
+      const out: string[] = [];
+      for (const m of src.matchAll(re)) {
+        if (m[1]) out.push(m[1]);
+      }
+      return out;
+    };
+
+    if (data.format === "beerjson") {
+      const parsed = JSON.parse(data.contents) as {
+        beerjson?: { recipes?: Array<{ name?: string; author?: string }> };
+      };
+      const first = parsed.beerjson?.recipes?.[0];
+      if (!first) {
+        return sendJson(res, 400, {
+          error: { code: "validation_error", message: "Invalid BeerJSON" },
+        });
+      }
+      return sendJson(res, 200, {
+        name: first.name ?? "Imported BeerJSON Recipe",
+        beverage: "beer",
+        batchSizeL: 18.927,
+        styleId: null,
+        visibility: "private",
+        ...(first.author
+          ? { credit: { sourceUrl: null, author: first.author, publicSharingBlocked: false } }
+          : {}),
+        content: {
+          schemaVersion: 1,
+          efficiencyPct: 72,
+          boilTimeMin: 60,
+          fermentables: [],
+          hops: [],
+          yeasts: [],
+          miscs: [],
+          mash: [],
+          fermentation: [],
+        },
+      });
+    }
+
+    const recipeBlock = blocks(data.contents, "RECIPE")[0] ?? data.contents;
+    const name = tagVal(recipeBlock, "NAME") ?? "Imported Recipe";
+    const brewer = tagVal(recipeBlock, "BREWER");
+    const batchSizeL = Number(tagVal(recipeBlock, "BATCH_SIZE") ?? "18.927") || 18.927;
+    const boilTimeMin = Number(tagVal(recipeBlock, "BOIL_TIME") ?? "60") || 60;
+    const efficiencyPct = Number(tagVal(recipeBlock, "EFFICIENCY") ?? "72") || 72;
+
+    const fermentables = blocks(recipeBlock, "FERMENTABLE").map((b) => {
+      const fName = tagVal(b, "NAME") ?? "Malt";
+      const matched = (SEEDED_CATALOG.fermentables ?? []).find(
+        (c) => String(c.name ?? "").toLowerCase() === fName.toLowerCase(),
+      );
+      return {
+        name: fName,
+        ...(matched ? { catalogId: String(matched.id) } : {}),
+        kind: (tagVal(b, "TYPE") ?? "grain").toLowerCase().includes("extract")
+          ? "extract"
+          : "grain",
+        amountKg: Number(tagVal(b, "AMOUNT") ?? "1") || 1,
+        use: "mash",
+        ...(matched?.potentialSg ? { potentialSg: Number(matched.potentialSg) } : {}),
+        yieldPct: Number(tagVal(b, "YIELD") ?? "75") || 75,
+        colorEbc: (Number(tagVal(b, "COLOR") ?? "2") || 2) * 1.97,
+      };
+    });
+    const hops = blocks(recipeBlock, "HOP").map((b) => ({
+      name: tagVal(b, "NAME") ?? "Hop",
+      amountKg: Number(tagVal(b, "AMOUNT") ?? "0.02") || 0.02,
+      alphaAcidPct: Number(tagVal(b, "ALPHA") ?? "10") || 10,
+      use: (tagVal(b, "USE") ?? "boil").toLowerCase().includes("dry") ? "dry_hop" : "boil",
+      timeMin: Number(tagVal(b, "TIME") ?? "60") || 60,
+    }));
+    const yeasts = blocks(recipeBlock, "YEAST").map((b) => ({
+      name: tagVal(b, "NAME") ?? "Yeast",
+      form: (tagVal(b, "FORM") ?? "dry").toLowerCase() === "liquid" ? "liquid" : "dry",
+      packs: 1,
+      attenuationPct: Number(tagVal(b, "ATTENUATION") ?? "78") || 78,
+    }));
+
+    return sendJson(res, 200, {
+      name,
+      beverage: "beer",
+      batchSizeL,
+      styleId: null,
+      visibility: "private",
+      ...(brewer
+        ? { credit: { sourceUrl: null, author: brewer, publicSharingBlocked: false } }
+        : {}),
+      content: {
+        schemaVersion: 1,
+        efficiencyPct,
+        boilTimeMin,
+        fermentables,
+        hops,
+        yeasts,
+        miscs: [],
+        mash: [],
+        fermentation: [],
+      },
+    });
+  }
+
+  if (pathname === "/api/recipes/import-url" && method === "POST") {
+    const user = getUserForRequest(req);
+    if (!user)
+      return sendJson(res, 401, { error: { code: "unauthorized", message: "Sign in first" } });
+    const data = JSON.parse(await readBody(req)) as { url: string; batchSizeL?: number };
+    const parsedUrl = new URL(data.url);
+    return sendJson(res, 200, {
+      draft: {
+        name: "Imported Web Recipe",
+        beverage: "beer",
+        batchSizeL: data.batchSizeL ?? 18.927,
+        styleId: null,
+        visibility: "private",
+        credit: {
+          sourceUrl: data.url,
+          site: parsedUrl.hostname,
+          author: "Web Brewer",
+          publicSharingBlocked: false,
+        },
+        content: {
+          schemaVersion: 1,
+          efficiencyPct: 72,
+          boilTimeMin: 60,
+          fermentables: [{ name: "Pale Malt", kind: "grain", amountKg: 4.5, use: "mash" }],
+          hops: [{ name: "Columbus", amountKg: 0.02, alphaAcidPct: 16, use: "boil", timeMin: 60 }],
+          yeasts: [{ name: "Safale US-05", form: "dry", packs: 1, attenuationPct: 81 }],
+          miscs: [],
+          mash: [],
+          fermentation: [],
+        },
+      },
+      excerpt: "Imported from public web recipe page.",
+    });
+  }
+
   // Recipes CRUD, versions, fork, shares
   if (pathname === "/api/recipes" && method === "GET") {
     const q = (url.searchParams.get("q") ?? "").trim().toLowerCase();
@@ -568,6 +726,13 @@ const server = createServer(async (req, res) => {
       batchSizeL: number;
       equipmentProfileId?: string | null;
       visibility?: "private" | "unlisted" | "server" | "public";
+      credit?: {
+        sourceUrl: string | null;
+        site?: string;
+        author?: string;
+        license?: string;
+        publicSharingBlocked?: boolean;
+      };
       content: Record<string, unknown>;
     };
     const id = randomUUID();
@@ -593,9 +758,17 @@ const server = createServer(async (req, res) => {
       beverage: data.beverage,
       visibility: data.visibility ?? "private",
       owner: { type: "user", id: user.id },
-      credit: null,
+      credit: data.credit
+        ? {
+            sourceUrl: data.credit.sourceUrl ?? null,
+            site: data.credit.site ?? null,
+            author: data.credit.author ?? null,
+            importedAt: now,
+            license: data.credit.license ?? null,
+          }
+        : null,
       forkedFrom: null,
-      publicSharingBlocked: false,
+      publicSharingBlocked: Boolean(data.credit?.publicSharingBlocked),
       createdAt: now,
       updatedAt: now,
       versions: [version],
@@ -603,6 +776,44 @@ const server = createServer(async (req, res) => {
     };
     recipes.set(id, recipe);
     return sendJson(res, 201, recipeDetail(recipe));
+  }
+
+  const exportMatch = pathname.match(/^\/api\/recipes\/([^/]+)\/versions\/(\d+)\/export$/);
+  if (exportMatch && method === "GET") {
+    const recipeId = exportMatch[1] ?? "";
+    const verNum = Number(exportMatch[2]);
+    const format = url.searchParams.get("format") === "beerjson" ? "beerjson" : "beerxml";
+    const recipe = recipes.get(recipeId);
+    const v = recipe?.versions.find((x) => x.version === verNum);
+    if (!recipe || !v) {
+      return sendJson(res, 404, {
+        error: { code: "not_found", message: "Recipe version not found" },
+      });
+    }
+    const ext = format === "beerxml" ? "xml" : "json";
+    const body =
+      format === "beerxml"
+        ? `<?xml version="1.0" encoding="UTF-8"?><RECIPES><RECIPE><NAME>${v.name}</NAME><VERSION>1</VERSION><TYPE>All Grain</TYPE><BATCH_SIZE>${v.batchSizeL}</BATCH_SIZE></RECIPE></RECIPES>`
+        : JSON.stringify({
+            beerjson: {
+              version: 1,
+              recipes: [
+                {
+                  name: v.name,
+                  type: "all grain",
+                  author: recipe.credit?.author ?? "Brewer",
+                  batch_size: { value: v.batchSizeL, unit: "l" },
+                },
+              ],
+            },
+          });
+    res.writeHead(200, {
+      "content-type":
+        format === "beerxml" ? "application/xml; charset=utf-8" : "application/json; charset=utf-8",
+      "content-disposition": `attachment; filename="recipe-${recipe.id}-v${v.version}.${ext}"`,
+    });
+    res.end(body);
+    return;
   }
 
   const recipeSub = pathname.match(
