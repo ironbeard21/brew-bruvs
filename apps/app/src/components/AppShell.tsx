@@ -35,7 +35,7 @@ export function AppShell({ children, title, subtitle }: AppShellProps) {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
-      <View style={styles.headerOuter}>
+      <View nativeID="app-shell-header" style={styles.headerOuter}>
         <View style={[styles.headerInner, isDesktop && styles.headerInnerDesktop]}>
           <View style={styles.brandRow}>
             <Text accessibilityRole="header" style={styles.brandTitle}>

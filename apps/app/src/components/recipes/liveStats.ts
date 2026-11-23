@@ -37,6 +37,7 @@ export interface DraftFermentable {
   amountText: string;
   use: FermentableUse;
   potentialSgText: string;
+  yieldPct?: number;
   colorText: string; // °L in US, EBC in Metric
   dayOffsetText: string;
 }
@@ -190,6 +191,7 @@ export function draftFromVersion(version: RecipeVersion, unitSystem: UnitSystem)
       use: f.use ?? (f.kind === "grain" || f.kind === "adjunct" ? "mash" : "fermentation"),
       potentialSgText:
         f.potentialSg !== undefined ? formatFixed(f.potentialSg, 4).replace(/0$/, "") : "",
+      ...(f.yieldPct !== undefined ? { yieldPct: f.yieldPct } : {}),
       colorText: f.colorEbc !== undefined ? colorOut(f.colorEbc) : "",
       dayOffsetText: f.dayOffset !== undefined ? String(f.dayOffset) : "",
     })),
@@ -351,6 +353,7 @@ export function draftToVersionInput(
         : { amountKg: unitSystem === "us" ? units.lbToKg(amt) : amt }),
       use: f.use,
       ...(potentialSg !== null ? { potentialSg } : {}),
+      ...(f.yieldPct !== undefined ? { yieldPct: f.yieldPct } : {}),
       ...(colorEbc !== undefined ? { colorEbc } : {}),
       ...(dayOffset !== null ? { dayOffset } : {}),
     });

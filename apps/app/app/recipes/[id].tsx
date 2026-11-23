@@ -5,13 +5,16 @@ import { StyleSheet, View } from "react-native";
 import { useCurrentUser } from "../../src/api/auth";
 import { useCreateBatch } from "../../src/api/batches";
 import {
+  type RecipeFileFormat,
   type RecipeVersionInput,
   useDeleteRecipe,
+  useExportRecipeVersion,
   useForkRecipe,
   useRecipeDetail,
   useSaveRecipeVersion,
 } from "../../src/api/recipes";
 import { AppShell } from "../../src/components/AppShell";
+import { deliverExportedFile } from "../../src/components/recipes/fileIO";
 import { RecipeBuilder } from "../../src/components/recipes/RecipeBuilder";
 import { Banner, Button, Card } from "../../src/components/ui";
 import { useServer } from "../../src/state/server";
@@ -29,7 +32,11 @@ export default function RecipeDetailScreen() {
   const forkMutation = useForkRecipe(serverUrl, authToken);
   const deleteMutation = useDeleteRecipe(serverUrl, authToken);
   const createBatch = useCreateBatch(serverUrl, authToken);
+  const exportMutation = useExportRecipeVersion(serverUrl, authToken);
+  const [selectedVersion, setSelectedVersion] = useState<number | null>(null);
   const [batchError, setBatchError] = useState<string | null>(null);
+  const [exportNotice, setExportNotice] = useState<string | null>(null);
+  const [exportError, setExportError] = useState<string | null>(null);
 
   if (!serverUrl) {
     return (
@@ -93,16 +100,34 @@ export default function RecipeDetailScreen() {
     router.replace("/recipes");
   };
 
+  const activeVersion = selectedVersion ?? recipe.latestVersion;
+
   const handleStartBatch = async () => {
     setBatchError(null);
     try {
       const batch = await createBatch.mutateAsync({
         recipeId: recipe.id,
-        version: recipe.latestVersion,
+        version: activeVersion,
       });
       router.push(`/batches/${batch.id}`);
     } catch (err) {
       setBatchError(err instanceof Error ? err.message : "Could not start batch.");
+    }
+  };
+
+  const handleExport = async (format: RecipeFileFormat) => {
+    setExportError(null);
+    setExportNotice(null);
+    try {
+      const exported = await exportMutation.mutateAsync({
+        recipeId: recipe.id,
+        version: activeVersion,
+        format,
+      });
+      await deliverExportedFile(exported);
+      setExportNotice(`Exported ${exported.filename} (${format.toUpperCase()}).`);
+    } catch (err) {
+      setExportError(err instanceof Error ? err.message : "Could not export recipe.");
     }
   };
 
@@ -111,17 +136,45 @@ export default function RecipeDetailScreen() {
       title={recipe.name}
       subtitle={`${recipe.beverage.toUpperCase()} · v${recipe.latestVersion} · ${recipe.visibility}`}
     >
-      {currentUser.data ? (
+      <View style={styles.actionStack}>
         <View style={styles.batchBar}>
+          {currentUser.data ? (
+            <Button
+              label={createBatch.isPending ? "Starting batch..." : "Start batch from this recipe"}
+              disabled={createBatch.isPending}
+              onPress={() => void handleStartBatch()}
+              testID="start-batch-button"
+            />
+          ) : null}
           <Button
-            label={createBatch.isPending ? "Starting batch..." : "Start batch from this recipe"}
-            disabled={createBatch.isPending}
-            onPress={() => void handleStartBatch()}
-            testID="start-batch-button"
+            label="Brew sheet"
+            variant="secondary"
+            onPress={() =>
+              router.push(`/recipes/brew-sheet?id=${recipe.id}&version=${activeVersion}`)
+            }
+            testID="open-brew-sheet-button"
           />
-          {batchError ? <Banner tone="error" message={batchError} /> : null}
+          <Button
+            label={exportMutation.isPending ? "Exporting..." : "Export BeerXML"}
+            variant="secondary"
+            disabled={exportMutation.isPending}
+            onPress={() => void handleExport("beerxml")}
+            testID="export-beerxml-button"
+          />
+          <Button
+            label={exportMutation.isPending ? "Exporting..." : "Export BeerJSON"}
+            variant="secondary"
+            disabled={exportMutation.isPending}
+            onPress={() => void handleExport("beerjson")}
+            testID="export-beerjson-button"
+          />
         </View>
-      ) : null}
+        {batchError ? <Banner tone="error" message={batchError} /> : null}
+        {exportNotice ? (
+          <Banner tone="success" message={exportNotice} testID="export-success-banner" />
+        ) : null}
+        {exportError ? <Banner tone="error" message={exportError} /> : null}
+      </View>
       <RecipeBuilder
         key={`${recipe.id}-${recipe.latestVersion}`}
         serverUrl={serverUrl}
@@ -132,6 +185,7 @@ export default function RecipeDetailScreen() {
         {...(currentUser.data ? { onFork: handleFork } : {})}
         onDelete={handleDelete}
         onOpenRecipe={(id) => router.push(`/recipes/${id}`)}
+        onVersionChange={setSelectedVersion}
         saving={saveVersion.isPending || forkMutation.isPending || deleteMutation.isPending}
       />
     </AppShell>
@@ -139,6 +193,9 @@ export default function RecipeDetailScreen() {
 }
 
 const styles = StyleSheet.create({
+  actionStack: {
+    gap: spacing.xs,
+  },
   batchBar: {
     flexDirection: "row",
     alignItems: "center",

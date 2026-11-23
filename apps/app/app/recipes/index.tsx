@@ -103,11 +103,19 @@ export default function RecipeLibraryScreen() {
               />
             </View>
             {signedIn ? (
-              <Button
-                label="New recipe"
-                onPress={() => router.push("/recipes/new")}
-                testID="new-recipe-button"
-              />
+              <View style={styles.headerButtons}>
+                <Button
+                  label="Import recipe"
+                  variant="secondary"
+                  onPress={() => router.push("/recipes/import")}
+                  testID="import-recipe-button"
+                />
+                <Button
+                  label="New recipe"
+                  onPress={() => router.push("/recipes/new")}
+                  testID="new-recipe-button"
+                />
+              </View>
             ) : (
               <Button
                 label="Sign in to create"
@@ -251,6 +259,7 @@ export default function RecipeLibraryScreen() {
 const styles = StyleSheet.create({
   stack: { gap: spacing.lg },
   topActions: { flexDirection: "row", alignItems: "flex-end", gap: spacing.md, flexWrap: "wrap" },
+  headerButtons: { flexDirection: "row", gap: spacing.xs, flexWrap: "wrap" },
   searchFlex: { flex: 1, minWidth: 200 },
   filtersRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm, alignItems: "center" },
   filterGroup: { flexGrow: 1 },
