@@ -45,7 +45,7 @@ Each becomes one GitHub issue using the Task template. Every task ends with `pnp
 
 Lead Claude · Review Codex · Depends: P1-16 · Contract change
 
-- [ ] Brewery roles match the product plan: Owner, Brewer, Member, Viewer (see Decisions). Breweries get a description
+- [ ] Brewery roles become Owner, Brewer, Member, Viewer (Decision 1). Breweries get a description
 - [ ] Inventory items add lot, location, alpha acid (hops), purchased on, a low-stock threshold, and a tradeable flag and quantity (unused until swaps, Phase 4)
 - [ ] `inventory_reservations`: batch, inventory item, quantity, state (reserved, used, released)
 - [ ] Equipment items add type, condition, and held by (a user)
@@ -187,20 +187,20 @@ Lead Codex · Review Antigravity · Depends: screens as they land
 
 Owner: you · Depends: everything above for the gate
 
-- [ ] Decide the open questions below
+- [x] Decide the open questions (see Decisions below)
 - [ ] Open issues P2-01 to P2-16 from this file
 - [ ] Run the exit gate; submit the apps to the stores; tag `1.0.0`
 
-## Open questions
+## Decisions
 
-Each has a recommendation; nothing above is final until these are decided.
+Decided by the maintainer on 2026-11-22.
 
-1. **Brewery roles.** The product plan has Owner, Brewer, Member and Viewer. The code from Phase 0 has owner, admin, brewer and viewer, and no role between "edit" and "read". _Recommended:_ use the product plan's four roles, allow more than one Owner, and add a "contribute" action so a Member can log readings and notes. No breweries exist yet, so nothing needs migrating.
-2. **Large-brewery features** (sub-teams, a shared brew calendar, equipment booking, moderation). _Recommended:_ after the first release. Phase 2 covers lending ("held by") and the activity feed.
-3. **Which devices.** _Recommended:_ iSpindel and GravityMon, Tilt through TiltBridge and TiltPi, and RAPT in Phase 2; Fermentrack and BrewPi-style controllers later.
-4. **Ratings, comments and "I brewed this".** _Recommended:_ Phase 3, with linking, where they matter across servers.
-5. **When an ingredient runs short at batch start.** _Recommended:_ start anyway and add it to the shopping list, rather than refusing.
-6. **Brewfather API key.** _Recommended:_ used once for the import and never stored. Storing it would allow repeat syncs, but it holds the user's Brewfather account.
+1. **Brewery roles** are the product plan's: Owner, Brewer, Member and Viewer, replacing Phase 0's owner, admin, brewer and viewer. A brewery can have more than one Owner. A new "contribute" action lets a Member log readings and notes on brewery batches without editing recipes or batches. No breweries exist yet, so nothing needs migrating.
+2. **Large-brewery features** (sub-teams, a shared brew calendar, equipment booking, moderation) come after the first release. Phase 2 has lending ("held by") and the activity feed.
+3. **Devices** in Phase 2: iSpindel and GravityMon, Tilt through TiltBridge and TiltPi, and RAPT. Fermentrack and BrewPi-style controllers come later.
+4. **Ratings, comments and "I brewed this"** come in Phase 3, with linking, where they matter across servers.
+5. **Short ingredients at batch start:** the batch starts anyway, and what's missing goes on the shopping list.
+6. **Brewfather API key:** used once for the import and never stored or logged.
 
 ## After Phase 2
 
