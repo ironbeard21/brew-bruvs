@@ -2,10 +2,34 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Slot } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { ServerProvider } from "../src/state/server";
-import { UnitsProvider } from "../src/state/units";
+import { useCurrentUser } from "../src/api/auth";
+import { ServerProvider, useServer } from "../src/state/server";
+import { UnitsProvider, useUnits } from "../src/state/units";
+
+function ServerUnitSync() {
+  const { serverUrl, authToken } = useServer();
+  const { setUnitSystem } = useUnits();
+  const currentUser = useCurrentUser(serverUrl, authToken);
+  const lastSynced = useRef<string | null>(null);
+
+  useEffect(() => {
+    const user = currentUser.data;
+    if (!user) {
+      lastSynced.current = null;
+      return;
+    }
+    if (user.units !== "us" && user.units !== "metric") return;
+    const key = `${user.id}:${user.units}`;
+    if (lastSynced.current !== key) {
+      lastSynced.current = key;
+      setUnitSystem(user.units);
+    }
+  }, [currentUser.data, setUnitSystem]);
+
+  return null;
+}
 
 export default function RootLayout() {
   const [queryClient] = useState(
@@ -25,6 +49,7 @@ export default function RootLayout() {
       <QueryClientProvider client={queryClient}>
         <UnitsProvider>
           <ServerProvider>
+            <ServerUnitSync />
             <StatusBar style="dark" />
             <Slot />
           </ServerProvider>

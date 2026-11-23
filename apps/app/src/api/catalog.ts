@@ -19,6 +19,8 @@ export type CatalogYeast = components["schemas"]["CatalogYeast"];
 export type CatalogMisc = components["schemas"]["CatalogMisc"];
 export type CatalogStyle = components["schemas"]["CatalogStyle"];
 export type CatalogEquipment = components["schemas"]["CatalogEquipment"];
+export type CatalogSource = components["schemas"]["CatalogSource"];
+export type CatalogAttribution = components["schemas"]["CatalogAttribution"];
 
 export async function searchCatalog(
   serverUrl: string,
@@ -82,6 +84,42 @@ export function useCatalogSearch(
     queryFn: () => {
       if (!serverUrl) throw new Error("No server configured");
       return searchCatalog(serverUrl, catalog, query, token, customFetch);
+    },
+  });
+}
+
+export async function fetchCatalogSources(
+  serverUrl: string,
+  token: string | null = null,
+  customFetch?: typeof fetch,
+): Promise<CatalogAttribution> {
+  const client = getApiClient(serverUrl, {
+    token,
+    ...(customFetch ? { customFetch } : {}),
+  });
+  const { data, error } = await client.GET("/api/catalog/sources", {
+    credentials: "include",
+  });
+  if (error || !data) {
+    throw new Error(formatApiError(error, "Could not load catalog attribution."));
+  }
+  return data;
+}
+
+export function useCatalogSources(
+  serverUrl: string | null,
+  token: string | null,
+  enabled: boolean,
+  customFetch?: typeof fetch,
+) {
+  return useQuery({
+    queryKey: ["catalog-sources", serverUrl],
+    enabled: Boolean(serverUrl) && enabled,
+    retry: false,
+    staleTime: 600_000,
+    queryFn: () => {
+      if (!serverUrl) throw new Error("No server configured");
+      return fetchCatalogSources(serverUrl, token, customFetch);
     },
   });
 }

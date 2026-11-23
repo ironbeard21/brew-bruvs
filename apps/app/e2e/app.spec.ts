@@ -262,6 +262,51 @@ test.describe("Brew-Bruvs app shell", () => {
     await expect(page.getByTestId("brew-sheet-title")).toHaveText("Harbor Pale Ale (Reviewed)");
     await expect(page.getByTestId("brew-sheet-credit")).toContainText("Robin Brewer");
     await expect(page.getByTestId("print-brew-sheet-button")).toBeVisible();
+
+    // P1-15: Settings (display name, server-synced units, personal API tokens),
+    // Admin (sign-up mode, invite code, users & reset link), and About (AGPL + catalog attribution).
+    await page.getByTestId("nav-settings").click();
+    await expect(page).toHaveURL(/\/settings$/);
+    await expect(page.getByTestId("settings-panel")).toBeVisible();
+
+    // Update display name & units preference on server, then restore defaults for subsequent runs
+    await page.getByTestId("settings-display-name-input").fill("Master Brewer");
+    await page.getByRole("tab", { name: "Metric SI units" }).click();
+    await page.getByTestId("settings-save-profile-button").click();
+    await expect(page.getByTestId("settings-profile-saved")).toBeVisible();
+
+    await page.getByTestId("settings-display-name-input").fill("Head Brewer");
+    await page.getByRole("tab", { name: "US customary units" }).click();
+    await page.getByTestId("settings-save-profile-button").click();
+    await expect(page.getByTestId("settings-profile-saved")).toBeVisible();
+
+    // Create & revoke personal API token
+    await page.getByTestId("token-name-input").fill("E2E Bridge Token");
+    await page.getByTestId("token-create-button").click();
+    await expect(page.getByTestId("new-token-secret")).toBeVisible();
+    await expect(page.getByTestId("new-token-value")).not.toBeEmpty();
+
+    // Open Admin panel: verify sign-up mode, create invite, generate reset link
+    await page.getByTestId("subnav-admin").click();
+    await expect(page).toHaveURL(/\/admin$/);
+    await expect(page.getByTestId("admin-signup-mode")).toContainText(/Invite-only|Open/);
+
+    await page.getByTestId("admin-create-invite-button").click();
+    await expect(page.getByTestId("admin-invite-code")).toBeVisible();
+
+    await page.locator('[data-testid^="admin-reset-link-button-"]').first().click();
+    await expect(page.getByTestId("admin-reset-link-value")).toContainText(
+      "/reset-password#token=",
+    );
+
+    // Open About page: verify AGPL license, source link, and live catalog attribution
+    await page.getByTestId("nav-about").click();
+    await expect(page).toHaveURL(/\/about$/);
+    await expect(page.getByTestId("about-license-box")).toContainText("AGPL-3.0-or-later");
+    await expect(page.getByTestId("about-source-code-link")).toContainText(
+      "https://github.com/ironbeard21/brew-bruvs",
+    );
+    await expect(page.getByTestId("about-catalog-sources")).toContainText("MIT");
   });
 
   test("calculators work completely offline without a server", async ({ page, context }) => {

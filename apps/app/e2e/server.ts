@@ -17,7 +17,21 @@ interface StoredUser {
   email: string;
   displayName: string;
   isAdmin: boolean;
+  units: "us" | "metric";
+  disabled: boolean;
+  createdAt: string;
   password: string;
+}
+
+interface StoredToken {
+  id: string;
+  userId: string;
+  secret: string;
+  kind: "session" | "app" | "personal";
+  name: string | null;
+  scopes: string[];
+  createdAt: string;
+  lastUsedAt: string | null;
 }
 
 interface StoredVersion {
@@ -180,6 +194,7 @@ function batchDetail(b: StoredBatch) {
 
 const users = new Map<string, StoredUser>();
 const sessions = new Map<string, string>();
+const tokens = new Map<string, StoredToken>();
 const recipes = new Map<string, StoredRecipe>();
 const batches = new Map<string, StoredBatch>();
 const notes = new Map<string, StoredNote>();
@@ -330,6 +345,18 @@ function publicUser(user: StoredUser) {
     email: user.email,
     displayName: user.displayName,
     isAdmin: user.isAdmin,
+    units: user.units,
+  };
+}
+
+function adminUserView(user: StoredUser) {
+  return {
+    id: user.id,
+    email: user.email,
+    displayName: user.displayName,
+    isAdmin: user.isAdmin,
+    disabled: user.disabled,
+    createdAt: user.createdAt,
   };
 }
 
@@ -435,6 +462,144 @@ const server = createServer(async (req, res) => {
     return sendJson(res, 200, publicUser(user));
   }
 
+  if (pathname === "/api/me" && method === "PATCH") {
+    const user = getUserForRequest(req);
+    if (!user) {
+      return sendJson(res, 401, { error: { code: "unauthorized", message: "Sign in first" } });
+    }
+    const data = JSON.parse(await readBody(req)) as {
+      displayName?: string;
+      units?: "us" | "metric";
+    };
+    if (data.displayName !== undefined) {
+      const trimmed = data.displayName.trim();
+      if (!trimmed) {
+        return sendJson(res, 400, {
+          error: { code: "validation_error", message: "Display name required" },
+        });
+      }
+      user.displayName = trimmed;
+    }
+    if (data.units === "us" || data.units === "metric") {
+      user.units = data.units;
+    }
+    return sendJson(res, 200, publicUser(user));
+  }
+
+  if (pathname === "/api/me/password" && method === "POST") {
+    const user = getUserForRequest(req);
+    if (!user) {
+      return sendJson(res, 401, { error: { code: "unauthorized", message: "Sign in first" } });
+    }
+    const data = JSON.parse(await readBody(req)) as {
+      currentPassword?: string;
+      newPassword?: string;
+    };
+    if (data.currentPassword !== user.password) {
+      return sendJson(res, 401, {
+        error: { code: "invalid_credentials", message: "Current password is incorrect" },
+      });
+    }
+    if (!data.newPassword || data.newPassword.length < 8) {
+      return sendJson(res, 400, {
+        error: { code: "validation_error", message: "Password must be at least 8 characters" },
+      });
+    }
+    user.password = data.newPassword;
+    res.writeHead(204);
+    res.end();
+    return;
+  }
+
+  if (pathname === "/api/auth/tokens" && method === "GET") {
+    const user = getUserForRequest(req);
+    if (!user) {
+      return sendJson(res, 401, { error: { code: "unauthorized", message: "Sign in first" } });
+    }
+    const list = [...tokens.values()]
+      .filter((t) => t.userId === user.id)
+      .map(({ secret: _, userId: __, ...rest }) => rest);
+    return sendJson(res, 200, list);
+  }
+
+  if (pathname === "/api/auth/tokens" && method === "POST") {
+    const user = getUserForRequest(req);
+    if (!user) {
+      return sendJson(res, 401, { error: { code: "unauthorized", message: "Sign in first" } });
+    }
+    const data = JSON.parse(await readBody(req)) as { name?: string; scopes?: string[] };
+    const id = randomUUID();
+    const secret = `bb_${randomBytes(16).toString("hex")}`;
+    const tok: StoredToken = {
+      id,
+      userId: user.id,
+      secret,
+      kind: "personal",
+      name: (data.name ?? "API Token").trim(),
+      scopes: data.scopes && data.scopes.length > 0 ? data.scopes : ["read"],
+      createdAt: new Date().toISOString(),
+      lastUsedAt: null,
+    };
+    tokens.set(id, tok);
+    const { secret: rawSecret, userId: _, ...rest } = tok;
+    return sendJson(res, 201, { ...rest, token: rawSecret });
+  }
+
+  const tokenIdMatch = pathname.match(/^\/api\/auth\/tokens\/([^/]+)$/);
+  if (tokenIdMatch && method === "DELETE") {
+    const user = getUserForRequest(req);
+    if (!user) {
+      return sendJson(res, 401, { error: { code: "unauthorized", message: "Sign in first" } });
+    }
+    tokens.delete(tokenIdMatch[1] ?? "");
+    res.writeHead(204);
+    res.end();
+    return;
+  }
+
+  if (pathname === "/api/invites" && method === "POST") {
+    const user = getUserForRequest(req);
+    if (!user?.isAdmin) {
+      return sendJson(res, 403, { error: { code: "forbidden", message: "Admin required" } });
+    }
+    return sendJson(res, 201, {
+      code: randomBytes(12).toString("hex"),
+      expiresAt: new Date(Date.now() + 7 * 86_400_000).toISOString(),
+    });
+  }
+
+  if (pathname === "/api/admin/users" && method === "GET") {
+    const user = getUserForRequest(req);
+    if (!user?.isAdmin) {
+      return sendJson(res, 403, { error: { code: "forbidden", message: "Admin required" } });
+    }
+    return sendJson(res, 200, [...users.values()].map(adminUserView));
+  }
+
+  const adminUserAction = pathname.match(
+    /^\/api\/admin\/users\/([^/]+)\/(disable|enable|password-reset)$/,
+  );
+  if (adminUserAction && method === "POST") {
+    const admin = getUserForRequest(req);
+    if (!admin?.isAdmin) {
+      return sendJson(res, 403, { error: { code: "forbidden", message: "Admin required" } });
+    }
+    const target = users.get(adminUserAction[1] ?? "");
+    if (!target) {
+      return sendJson(res, 404, { error: { code: "not_found", message: "User not found" } });
+    }
+    const action = adminUserAction[2];
+    if (action === "disable" || action === "enable") {
+      target.disabled = action === "disable";
+      return sendJson(res, 200, adminUserView(target));
+    }
+    const resetToken = randomBytes(16).toString("hex");
+    return sendJson(res, 201, {
+      url: `http://127.0.0.1:${PORT}/reset-password#token=${resetToken}`,
+      expiresAt: new Date(Date.now() + 86_400_000).toISOString(),
+    });
+  }
+
   if (pathname === "/api/setup" && method === "POST") {
     if (users.size > 0) {
       return sendJson(res, 409, {
@@ -459,6 +624,9 @@ const server = createServer(async (req, res) => {
       email: data.email.trim(),
       displayName: data.displayName.trim(),
       isAdmin: true,
+      units: "us",
+      disabled: false,
+      createdAt: new Date().toISOString(),
       password: data.password,
     };
     users.set(id, user);
@@ -493,6 +661,37 @@ const server = createServer(async (req, res) => {
     res.writeHead(204, { "set-cookie": `${SESSION_COOKIE}=; Path=/; HttpOnly; Max-Age=0` });
     res.end();
     return;
+  }
+
+  // Catalog sources & attribution (P1-04)
+  if (pathname === "/api/catalog/sources" && method === "GET") {
+    const user = getUserForRequest(req);
+    if (!user) {
+      return sendJson(res, 401, { error: { code: "unauthorized", message: "Sign in first" } });
+    }
+    return sendJson(res, 200, {
+      sources: {
+        bt001: {
+          name: "Brewtarget default content",
+          url: "https://github.com/Brewtarget/brewtarget",
+          license: "GPL-3.0",
+          commit: "000000000000",
+        },
+        bjcpjson: {
+          name: "BeerJSON bjcp-json",
+          url: "https://github.com/beerjson/bjcp-json",
+          license: "MIT",
+          commit: "000000000000",
+        },
+        beerproto: {
+          name: "BeerProto dataset",
+          url: "https://github.com/beerproto/dataset",
+          license: "MIT",
+          commit: "000000000000",
+        },
+      },
+      attribution: "# Attribution\nOpen-licensed brewing catalog data.",
+    });
   }
 
   // Catalog search & get-by-id
