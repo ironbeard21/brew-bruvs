@@ -301,7 +301,9 @@ export async function importRecipePage(
       const uploaded = await attachment(link.href);
       const { recipe: linked } =
         link.format === "beerxml" ? importBeerXml(uploaded) : importBeerJson(uploaded);
-      recipe = linked;
+      // A file's top-level notes are its author's description; a URL import keeps only the
+      // page excerpt (plus steps, which schema.org pages carry in their own notes).
+      recipe = { ...linked, content: { ...linked.content, notes: undefined } };
     } catch (error) {
       if (!(error instanceof ApiError) || error.code !== "invalid_recipe_file" || !source)
         throw error;

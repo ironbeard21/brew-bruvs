@@ -3,8 +3,9 @@ import { createRoute, type OpenAPIHono, z } from "@hono/zod-openapi";
 import type { MiddlewareHandler } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { type AppEnv, requireSession } from "../auth/middleware.ts";
+import { clientIp, enforce, RateLimiter } from "../auth/rate-limit.ts";
 import { ImportedRecipeDraft, RecipeFileFormat } from "../contracts/recipe-file.ts";
-import { errorBody, errorResponses } from "../errors.ts";
+import { ApiError, errorBody, errorResponses } from "../errors.ts";
 import { exportBeerJson } from "../importers/beerjson.ts";
 import { exportBeerXml } from "../importers/beerxml.ts";
 import type { RecipeFileService } from "../services/recipe-files.ts";
@@ -15,6 +16,19 @@ import { parseDecimal } from "./recipes.ts";
 const tags = ["recipes"];
 const security = [{ bearerAuth: [] }, { sessionCookie: [] }];
 const maxFileLength = 8 * 1024 * 1024;
+
+/**
+ * Imports per hour, and URL fetches at once across the server. A URL import makes the server
+ * fetch other sites (up to 16 requests and ~10 MB each), so it must not become a way to
+ * hammer them or exhaust this server's memory.
+ */
+export const IMPORT_LIMITS = {
+  urlPerUser: 30,
+  urlPerIp: 60,
+  filePerUser: 60,
+  windowMs: 60 * 60_000,
+  concurrentUrlFetches: 4,
+} as const;
 const requireImportSession: MiddlewareHandler<AppEnv> = async (c, next) => {
   requireSession(c);
   await next();
@@ -43,7 +57,7 @@ const importRoute = createRoute({
   ),
   responses: {
     200: json(ImportedRecipeDraft, "Draft recipe"),
-    ...errorResponses(400, 401, 403, 413),
+    ...errorResponses(400, 401, 403, 413, 429),
   },
 });
 
@@ -75,7 +89,7 @@ const importUrlRoute = createRoute({
       z.object({ draft: ImportedRecipeDraft, excerpt: z.string().max(240) }),
       "Draft recipe",
     ),
-    ...errorResponses(400, 401, 403, 413),
+    ...errorResponses(400, 401, 403, 413, 429),
   },
 });
 
@@ -114,14 +128,42 @@ export function registerRecipeFileRoutes(
   app: OpenAPIHono<AppEnv>,
   recipes: RecipeService,
   files: RecipeFileService,
+  opts: { trustProxy: boolean },
 ) {
+  const { urlPerUser, urlPerIp, filePerUser, windowMs, concurrentUrlFetches } = IMPORT_LIMITS;
+  const urlByUser = new RateLimiter(urlPerUser, windowMs);
+  const urlByIp = new RateLimiter(urlPerIp, windowMs);
+  const fileByUser = new RateLimiter(filePerUser, windowMs);
+  let fetching = 0;
+
   app.openapi(importRoute, async (c) => {
+    const { user } = requireSession(c);
+    const key = `user:${user.id}`;
+    enforce(c, fileByUser, key);
+    fileByUser.hit(key);
     const { format, contents } = c.req.valid("json");
-    return c.json(await files.preview(c.get("session")?.user ?? null, format, contents), 200);
+    return c.json(await files.preview(user, format, contents), 200);
   });
   app.openapi(importUrlRoute, async (c) => {
-    const { url, batchSizeL } = c.req.valid("json");
-    return c.json(await files.previewUrl(c.get("session")?.user ?? null, url, batchSizeL), 200);
+    const { user } = requireSession(c);
+    const byUser = `user:${user.id}`;
+    const byIp = `ip:${clientIp(c, opts.trustProxy)}`;
+    enforce(c, urlByUser, byUser);
+    enforce(c, urlByIp, byIp);
+    // Checked before counting, so a busy server doesn't use up anyone's hourly allowance.
+    if (fetching >= concurrentUrlFetches) {
+      c.header("Retry-After", "10");
+      throw new ApiError(429, "import_busy", "The server is busy importing; try again shortly");
+    }
+    urlByUser.hit(byUser);
+    urlByIp.hit(byIp);
+    fetching++;
+    try {
+      const { url, batchSizeL } = c.req.valid("json");
+      return c.json(await files.previewUrl(user, url, batchSizeL), 200);
+    } finally {
+      fetching--;
+    }
   });
   app.openapi(exportRoute, async (c) => {
     const { id, version } = c.req.valid("param");
