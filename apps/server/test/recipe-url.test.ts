@@ -59,6 +59,26 @@ it("copies schema.org ingredients, measures, steps and targets with a bounded ex
   expect(excerpt.length).toBeLessThanOrEqual(240);
 });
 
+it("takes hop times and yeast from the steps when the ingredient lines leave them out", async () => {
+  const { recipe } = await importRecipePage(page(read("recipe-pages/hops-in-steps.html")), vi.fn());
+  expect(recipe.content).toMatchObject({
+    fermentables: [
+      { name: "Pale 2-Row", kind: "grain" },
+      { name: "Caramel / Crystal 40L", kind: "grain" },
+    ],
+    hops: [
+      { name: "Magnum", use: "boil", timeMin: 60 },
+      { name: "Cascade", use: "boil", timeMin: 10 },
+      { name: "Cascade", use: "boil", timeMin: 0 },
+      { name: "Cascade", use: "dry_hop" },
+    ],
+    yeasts: [{ name: "Fermentis Safale - American Ale Yeast US-05" }],
+  });
+  expect(recipe.content.hops[3]?.amountKg).toBeCloseTo(0.056699);
+  expect(recipe.content.notes).toContain("Ingredients to review\n5 g Gypsum");
+  expect(recipe.content.notes).not.toMatch(/Ingredients to review[\s\S]*(?:2-Row|Cascade)/);
+});
+
 it("uses linked BeerJSON before schema.org and takes credit from the page", async () => {
   const attachment = vi.fn(async () => read("recipe-files/external.json"));
   const { recipe } = await importRecipePage(page(read("recipe-pages/linked.html")), attachment);
