@@ -1,0 +1,3876 @@
+{
+  "id": "28cdc8a9-4716-4fb2-b83d-14fee57ba197",
+  "prevId": "417d2a6e-80e7-4172-b389-f588461db316",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.activity_events": {
+      "name": "activity_events",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "uuidv7()"
+        },
+        "brewery_id": {
+          "name": "brewery_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "actor_user_id": {
+          "name": "actor_user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "verb": {
+          "name": "verb",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "object_type": {
+          "name": "object_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "object_id": {
+          "name": "object_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "at": {
+          "name": "at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "activity_events_brewery_id_at_index": {
+          "name": "activity_events_brewery_id_at_index",
+          "columns": [
+            {
+              "expression": "brewery_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "at",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "activity_events_brewery_id_breweries_id_fk": {
+          "name": "activity_events_brewery_id_breweries_id_fk",
+          "tableFrom": "activity_events",
+          "tableTo": "breweries",
+          "columnsFrom": ["brewery_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "activity_events_actor_user_id_users_id_fk": {
+          "name": "activity_events_actor_user_id_users_id_fk",
+          "tableFrom": "activity_events",
+          "tableTo": "users",
+          "columnsFrom": ["actor_user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.auth_tokens": {
+      "name": "auth_tokens",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "uuidv7()"
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "kind": {
+          "name": "kind",
+          "type": "token_kind",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "token_hash": {
+          "name": "token_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "scopes": {
+          "name": "scopes",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "last_used_at": {
+          "name": "last_used_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "revoked_at": {
+          "name": "revoked_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "auth_tokens_user_id_index": {
+          "name": "auth_tokens_user_id_index",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "auth_tokens_user_id_users_id_fk": {
+          "name": "auth_tokens_user_id_users_id_fk",
+          "tableFrom": "auth_tokens",
+          "tableTo": "users",
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "auth_tokens_token_hash_unique": {
+          "name": "auth_tokens_token_hash_unique",
+          "nullsNotDistinct": false,
+          "columns": ["token_hash"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.batch_status_changes": {
+      "name": "batch_status_changes",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "uuidv7()"
+        },
+        "batch_id": {
+          "name": "batch_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "batch_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "changed_at": {
+          "name": "changed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "changed_by_user_id": {
+          "name": "changed_by_user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "batch_status_changes_batch_id_changed_at_index": {
+          "name": "batch_status_changes_batch_id_changed_at_index",
+          "columns": [
+            {
+              "expression": "batch_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "changed_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "batch_status_changes_batch_id_batches_id_fk": {
+          "name": "batch_status_changes_batch_id_batches_id_fk",
+          "tableFrom": "batch_status_changes",
+          "tableTo": "batches",
+          "columnsFrom": ["batch_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "batch_status_changes_changed_by_user_id_users_id_fk": {
+          "name": "batch_status_changes_changed_by_user_id_users_id_fk",
+          "tableFrom": "batch_status_changes",
+          "tableTo": "users",
+          "columnsFrom": ["changed_by_user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.batches": {
+      "name": "batches",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "uuidv7()"
+        },
+        "uri": {
+          "name": "uri",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "owner_user_id": {
+          "name": "owner_user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "owner_brewery_id": {
+          "name": "owner_brewery_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "visibility": {
+          "name": "visibility",
+          "type": "visibility",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'private'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "recipe_version_id": {
+          "name": "recipe_version_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "beverage": {
+          "name": "beverage",
+          "type": "beverage",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "batch_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'planned'"
+        },
+        "equipment_profile_id": {
+          "name": "equipment_profile_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "batch_size_l": {
+          "name": "batch_size_l",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "brewed_at": {
+          "name": "brewed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "completed_at": {
+          "name": "completed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "batches_owner_user_idx": {
+          "name": "batches_owner_user_idx",
+          "columns": [
+            {
+              "expression": "owner_user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "batches_owner_brewery_idx": {
+          "name": "batches_owner_brewery_idx",
+          "columns": [
+            {
+              "expression": "owner_brewery_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "batches_recipe_version_id_index": {
+          "name": "batches_recipe_version_id_index",
+          "columns": [
+            {
+              "expression": "recipe_version_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "batches_owner_user_id_users_id_fk": {
+          "name": "batches_owner_user_id_users_id_fk",
+          "tableFrom": "batches",
+          "tableTo": "users",
+          "columnsFrom": ["owner_user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "batches_owner_brewery_id_breweries_id_fk": {
+          "name": "batches_owner_brewery_id_breweries_id_fk",
+          "tableFrom": "batches",
+          "tableTo": "breweries",
+          "columnsFrom": ["owner_brewery_id"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "batches_recipe_version_id_recipe_versions_id_fk": {
+          "name": "batches_recipe_version_id_recipe_versions_id_fk",
+          "tableFrom": "batches",
+          "tableTo": "recipe_versions",
+          "columnsFrom": ["recipe_version_id"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "batches_equipment_profile_id_equipment_profiles_id_fk": {
+          "name": "batches_equipment_profile_id_equipment_profiles_id_fk",
+          "tableFrom": "batches",
+          "tableTo": "equipment_profiles",
+          "columnsFrom": ["equipment_profile_id"],
+          "columnsTo": ["id"],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "batches_uri_unique": {
+          "name": "batches_uri_unique",
+          "nullsNotDistinct": false,
+          "columns": ["uri"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "batches_one_owner": {
+          "name": "batches_one_owner",
+          "value": "num_nonnulls(\"batches\".\"owner_user_id\", \"batches\".\"owner_brewery_id\") = 1"
+        },
+        "batches_status_fits_beverage": {
+          "name": "batches_status_fits_beverage",
+          "value": "(\"beverage\" = 'beer' AND \"status\" IN ('planned', 'brewing', 'fermenting', 'conditioning', 'packaged', 'finished')) OR (\"beverage\" <> 'beer' AND \"status\" IN ('planned', 'primary', 'secondary', 'bulk_aging', 'stabilized', 'bottled', 'bottle_aging', 'finished'))"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.breweries": {
+      "name": "breweries",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "uuidv7()"
+        },
+        "uri": {
+          "name": "uri",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "city": {
+          "name": "city",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "state": {
+          "name": "state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "breweries_uri_unique": {
+          "name": "breweries_uri_unique",
+          "nullsNotDistinct": false,
+          "columns": ["uri"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.equipment": {
+      "name": "equipment",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "aliases": {
+          "name": "aliases",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'"
+        },
+        "sources": {
+          "name": "sources",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "licenses": {
+          "name": "licenses",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "category": {
+          "name": "category",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "batch_size_l": {
+          "name": "batch_size_l",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "boil_size_l": {
+          "name": "boil_size_l",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "kettle_volume_l": {
+          "name": "kettle_volume_l",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "kettle_loss_l": {
+          "name": "kettle_loss_l",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "boil_rate_l_per_hr": {
+          "name": "boil_rate_l_per_hr",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "mash_tun_volume_l": {
+          "name": "mash_tun_volume_l",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "grain_absorption_l_per_kg": {
+          "name": "grain_absorption_l_per_kg",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "equipment_aliases_idx": {
+          "name": "equipment_aliases_idx",
+          "columns": [
+            {
+              "expression": "aliases",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "gin",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.equipment_items": {
+      "name": "equipment_items",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "uuidv7()"
+        },
+        "uri": {
+          "name": "uri",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "owner_user_id": {
+          "name": "owner_user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "owner_brewery_id": {
+          "name": "owner_brewery_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "visibility": {
+          "name": "visibility",
+          "type": "visibility",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'private'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "catalog_id": {
+          "name": "catalog_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "type": {
+          "name": "type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "condition": {
+          "name": "condition",
+          "type": "equipment_condition",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "held_by_user_id": {
+          "name": "held_by_user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "batch_size_l": {
+          "name": "batch_size_l",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "boil_size_l": {
+          "name": "boil_size_l",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "kettle_volume_l": {
+          "name": "kettle_volume_l",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "kettle_loss_l": {
+          "name": "kettle_loss_l",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "boil_rate_l_per_hr": {
+          "name": "boil_rate_l_per_hr",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "mash_tun_volume_l": {
+          "name": "mash_tun_volume_l",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "grain_absorption_l_per_kg": {
+          "name": "grain_absorption_l_per_kg",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "equipment_items_owner_user_idx": {
+          "name": "equipment_items_owner_user_idx",
+          "columns": [
+            {
+              "expression": "owner_user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "equipment_items_owner_brewery_idx": {
+          "name": "equipment_items_owner_brewery_idx",
+          "columns": [
+            {
+              "expression": "owner_brewery_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "equipment_items_held_by_user_id_index": {
+          "name": "equipment_items_held_by_user_id_index",
+          "columns": [
+            {
+              "expression": "held_by_user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "equipment_items_owner_user_id_users_id_fk": {
+          "name": "equipment_items_owner_user_id_users_id_fk",
+          "tableFrom": "equipment_items",
+          "tableTo": "users",
+          "columnsFrom": ["owner_user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "equipment_items_owner_brewery_id_breweries_id_fk": {
+          "name": "equipment_items_owner_brewery_id_breweries_id_fk",
+          "tableFrom": "equipment_items",
+          "tableTo": "breweries",
+          "columnsFrom": ["owner_brewery_id"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "equipment_items_catalog_id_equipment_id_fk": {
+          "name": "equipment_items_catalog_id_equipment_id_fk",
+          "tableFrom": "equipment_items",
+          "tableTo": "equipment",
+          "columnsFrom": ["catalog_id"],
+          "columnsTo": ["id"],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "equipment_items_held_by_user_id_users_id_fk": {
+          "name": "equipment_items_held_by_user_id_users_id_fk",
+          "tableFrom": "equipment_items",
+          "tableTo": "users",
+          "columnsFrom": ["held_by_user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "equipment_items_uri_unique": {
+          "name": "equipment_items_uri_unique",
+          "nullsNotDistinct": false,
+          "columns": ["uri"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "equipment_items_one_owner": {
+          "name": "equipment_items_one_owner",
+          "value": "num_nonnulls(\"equipment_items\".\"owner_user_id\", \"equipment_items\".\"owner_brewery_id\") = 1"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.equipment_profiles": {
+      "name": "equipment_profiles",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "uuidv7()"
+        },
+        "uri": {
+          "name": "uri",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "owner_user_id": {
+          "name": "owner_user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "owner_brewery_id": {
+          "name": "owner_brewery_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "visibility": {
+          "name": "visibility",
+          "type": "visibility",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'private'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "catalog_id": {
+          "name": "catalog_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "batch_size_l": {
+          "name": "batch_size_l",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "boil_size_l": {
+          "name": "boil_size_l",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "kettle_volume_l": {
+          "name": "kettle_volume_l",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "kettle_loss_l": {
+          "name": "kettle_loss_l",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "boil_rate_l_per_hr": {
+          "name": "boil_rate_l_per_hr",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "mash_tun_volume_l": {
+          "name": "mash_tun_volume_l",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "grain_absorption_l_per_kg": {
+          "name": "grain_absorption_l_per_kg",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "efficiency_pct": {
+          "name": "efficiency_pct",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "fermenter_loss_l": {
+          "name": "fermenter_loss_l",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "equipment_profiles_owner_user_idx": {
+          "name": "equipment_profiles_owner_user_idx",
+          "columns": [
+            {
+              "expression": "owner_user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "equipment_profiles_owner_brewery_idx": {
+          "name": "equipment_profiles_owner_brewery_idx",
+          "columns": [
+            {
+              "expression": "owner_brewery_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "equipment_profiles_owner_user_id_users_id_fk": {
+          "name": "equipment_profiles_owner_user_id_users_id_fk",
+          "tableFrom": "equipment_profiles",
+          "tableTo": "users",
+          "columnsFrom": ["owner_user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "equipment_profiles_owner_brewery_id_breweries_id_fk": {
+          "name": "equipment_profiles_owner_brewery_id_breweries_id_fk",
+          "tableFrom": "equipment_profiles",
+          "tableTo": "breweries",
+          "columnsFrom": ["owner_brewery_id"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "equipment_profiles_catalog_id_equipment_id_fk": {
+          "name": "equipment_profiles_catalog_id_equipment_id_fk",
+          "tableFrom": "equipment_profiles",
+          "tableTo": "equipment",
+          "columnsFrom": ["catalog_id"],
+          "columnsTo": ["id"],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "equipment_profiles_uri_unique": {
+          "name": "equipment_profiles_uri_unique",
+          "nullsNotDistinct": false,
+          "columns": ["uri"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "equipment_profiles_one_owner": {
+          "name": "equipment_profiles_one_owner",
+          "value": "num_nonnulls(\"equipment_profiles\".\"owner_user_id\", \"equipment_profiles\".\"owner_brewery_id\") = 1"
+        },
+        "equipment_profiles_efficiency_range": {
+          "name": "equipment_profiles_efficiency_range",
+          "value": "\"equipment_profiles\".\"efficiency_pct\" > 0 AND \"equipment_profiles\".\"efficiency_pct\" <= 100"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.fermentables": {
+      "name": "fermentables",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "aliases": {
+          "name": "aliases",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'"
+        },
+        "sources": {
+          "name": "sources",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "licenses": {
+          "name": "licenses",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "fermentable_type": {
+          "name": "fermentable_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "producer": {
+          "name": "producer",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "product_id": {
+          "name": "product_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "origin": {
+          "name": "origin",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "category": {
+          "name": "category",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "color_ebc": {
+          "name": "color_ebc",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "yield_pct": {
+          "name": "yield_pct",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "potential_sg": {
+          "name": "potential_sg",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "max_in_batch_pct": {
+          "name": "max_in_batch_pct",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "diastatic_power_lintner": {
+          "name": "diastatic_power_lintner",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "protein_pct": {
+          "name": "protein_pct",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "moisture_pct": {
+          "name": "moisture_pct",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "beverages": {
+          "name": "beverages",
+          "type": "beverage[]",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'"
+        }
+      },
+      "indexes": {
+        "fermentables_aliases_idx": {
+          "name": "fermentables_aliases_idx",
+          "columns": [
+            {
+              "expression": "aliases",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "gin",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.hops": {
+      "name": "hops",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "aliases": {
+          "name": "aliases",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'"
+        },
+        "sources": {
+          "name": "sources",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "licenses": {
+          "name": "licenses",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "origin": {
+          "name": "origin",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "hop_type": {
+          "name": "hop_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "alpha_acid_pct": {
+          "name": "alpha_acid_pct",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "alpha_acid_min_pct": {
+          "name": "alpha_acid_min_pct",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "alpha_acid_max_pct": {
+          "name": "alpha_acid_max_pct",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "beta_acid_pct": {
+          "name": "beta_acid_pct",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cohumulone_pct": {
+          "name": "cohumulone_pct",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "total_oil_ml_per_100g": {
+          "name": "total_oil_ml_per_100g",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "myrcene_pct": {
+          "name": "myrcene_pct",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "humulene_pct": {
+          "name": "humulene_pct",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "caryophyllene_pct": {
+          "name": "caryophyllene_pct",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "farnesene_pct": {
+          "name": "farnesene_pct",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "hsi": {
+          "name": "hsi",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "substitutes": {
+          "name": "substitutes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "beverages": {
+          "name": "beverages",
+          "type": "beverage[]",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'"
+        }
+      },
+      "indexes": {
+        "hops_aliases_idx": {
+          "name": "hops_aliases_idx",
+          "columns": [
+            {
+              "expression": "aliases",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "gin",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.integrations": {
+      "name": "integrations",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "uuidv7()"
+        },
+        "owner_user_id": {
+          "name": "owner_user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "owner_brewery_id": {
+          "name": "owner_brewery_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "kind": {
+          "name": "kind",
+          "type": "integration_kind",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "config": {
+          "name": "config",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "token_hash": {
+          "name": "token_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "batch_id": {
+          "name": "batch_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_seen_at": {
+          "name": "last_seen_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "integrations_owner_user_idx": {
+          "name": "integrations_owner_user_idx",
+          "columns": [
+            {
+              "expression": "owner_user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "integrations_owner_brewery_idx": {
+          "name": "integrations_owner_brewery_idx",
+          "columns": [
+            {
+              "expression": "owner_brewery_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "integrations_batch_id_index": {
+          "name": "integrations_batch_id_index",
+          "columns": [
+            {
+              "expression": "batch_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "integrations_owner_user_id_users_id_fk": {
+          "name": "integrations_owner_user_id_users_id_fk",
+          "tableFrom": "integrations",
+          "tableTo": "users",
+          "columnsFrom": ["owner_user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "integrations_owner_brewery_id_breweries_id_fk": {
+          "name": "integrations_owner_brewery_id_breweries_id_fk",
+          "tableFrom": "integrations",
+          "tableTo": "breweries",
+          "columnsFrom": ["owner_brewery_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "integrations_batch_id_batches_id_fk": {
+          "name": "integrations_batch_id_batches_id_fk",
+          "tableFrom": "integrations",
+          "tableTo": "batches",
+          "columnsFrom": ["batch_id"],
+          "columnsTo": ["id"],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "integrations_token_hash_unique": {
+          "name": "integrations_token_hash_unique",
+          "nullsNotDistinct": false,
+          "columns": ["token_hash"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "integrations_one_owner": {
+          "name": "integrations_one_owner",
+          "value": "num_nonnulls(\"integrations\".\"owner_user_id\", \"integrations\".\"owner_brewery_id\") = 1"
+        },
+        "integrations_device_token": {
+          "name": "integrations_device_token",
+          "value": "\"integrations\".\"kind\" = 'webhook_out' OR \"integrations\".\"token_hash\" IS NOT NULL"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.inventory_items": {
+      "name": "inventory_items",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "uuidv7()"
+        },
+        "uri": {
+          "name": "uri",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "owner_user_id": {
+          "name": "owner_user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "owner_brewery_id": {
+          "name": "owner_brewery_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "visibility": {
+          "name": "visibility",
+          "type": "visibility",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'private'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "catalog_id": {
+          "name": "catalog_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "quantity": {
+          "name": "quantity",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "quantity_unit": {
+          "name": "quantity_unit",
+          "type": "quantity_unit",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "lot": {
+          "name": "lot",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "location": {
+          "name": "location",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "alpha_acid_pct": {
+          "name": "alpha_acid_pct",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "purchased_on": {
+          "name": "purchased_on",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "best_before": {
+          "name": "best_before",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "low_stock_threshold": {
+          "name": "low_stock_threshold",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tradeable": {
+          "name": "tradeable",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "tradeable_quantity": {
+          "name": "tradeable_quantity",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "inventory_items_owner_user_idx": {
+          "name": "inventory_items_owner_user_idx",
+          "columns": [
+            {
+              "expression": "owner_user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "inventory_items_owner_brewery_idx": {
+          "name": "inventory_items_owner_brewery_idx",
+          "columns": [
+            {
+              "expression": "owner_brewery_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "inventory_items_owner_user_id_users_id_fk": {
+          "name": "inventory_items_owner_user_id_users_id_fk",
+          "tableFrom": "inventory_items",
+          "tableTo": "users",
+          "columnsFrom": ["owner_user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "inventory_items_owner_brewery_id_breweries_id_fk": {
+          "name": "inventory_items_owner_brewery_id_breweries_id_fk",
+          "tableFrom": "inventory_items",
+          "tableTo": "breweries",
+          "columnsFrom": ["owner_brewery_id"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "inventory_items_uri_unique": {
+          "name": "inventory_items_uri_unique",
+          "nullsNotDistinct": false,
+          "columns": ["uri"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "inventory_items_one_owner": {
+          "name": "inventory_items_one_owner",
+          "value": "num_nonnulls(\"inventory_items\".\"owner_user_id\", \"inventory_items\".\"owner_brewery_id\") = 1"
+        },
+        "inventory_items_quantity_nonneg": {
+          "name": "inventory_items_quantity_nonneg",
+          "value": "\"inventory_items\".\"quantity\" >= 0"
+        },
+        "inventory_items_alpha_acid_range": {
+          "name": "inventory_items_alpha_acid_range",
+          "value": "\"inventory_items\".\"alpha_acid_pct\" >= 0 AND \"inventory_items\".\"alpha_acid_pct\" <= 100"
+        },
+        "inventory_items_low_stock_nonneg": {
+          "name": "inventory_items_low_stock_nonneg",
+          "value": "\"inventory_items\".\"low_stock_threshold\" >= 0"
+        },
+        "inventory_items_tradeable_quantity_range": {
+          "name": "inventory_items_tradeable_quantity_range",
+          "value": "\"inventory_items\".\"tradeable_quantity\" >= 0 AND \"inventory_items\".\"tradeable_quantity\" <= \"inventory_items\".\"quantity\""
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.inventory_reservations": {
+      "name": "inventory_reservations",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "uuidv7()"
+        },
+        "batch_id": {
+          "name": "batch_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "inventory_item_id": {
+          "name": "inventory_item_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "quantity": {
+          "name": "quantity",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "state": {
+          "name": "state",
+          "type": "reservation_state",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'reserved'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "inventory_reservations_batch_id_index": {
+          "name": "inventory_reservations_batch_id_index",
+          "columns": [
+            {
+              "expression": "batch_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "inventory_reservations_inventory_item_id_state_index": {
+          "name": "inventory_reservations_inventory_item_id_state_index",
+          "columns": [
+            {
+              "expression": "inventory_item_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "state",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "inventory_reservations_batch_id_batches_id_fk": {
+          "name": "inventory_reservations_batch_id_batches_id_fk",
+          "tableFrom": "inventory_reservations",
+          "tableTo": "batches",
+          "columnsFrom": ["batch_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "inventory_reservations_inventory_item_id_inventory_items_id_fk": {
+          "name": "inventory_reservations_inventory_item_id_inventory_items_id_fk",
+          "tableFrom": "inventory_reservations",
+          "tableTo": "inventory_items",
+          "columnsFrom": ["inventory_item_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "inventory_reservations_quantity_positive": {
+          "name": "inventory_reservations_quantity_positive",
+          "value": "\"inventory_reservations\".\"quantity\" > 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.invites": {
+      "name": "invites",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "uuidv7()"
+        },
+        "code_hash": {
+          "name": "code_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_by_user_id": {
+          "name": "created_by_user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "used_at": {
+          "name": "used_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "used_by_user_id": {
+          "name": "used_by_user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "invites_created_by_user_id_users_id_fk": {
+          "name": "invites_created_by_user_id_users_id_fk",
+          "tableFrom": "invites",
+          "tableTo": "users",
+          "columnsFrom": ["created_by_user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "invites_used_by_user_id_users_id_fk": {
+          "name": "invites_used_by_user_id_users_id_fk",
+          "tableFrom": "invites",
+          "tableTo": "users",
+          "columnsFrom": ["used_by_user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "invites_code_hash_unique": {
+          "name": "invites_code_hash_unique",
+          "nullsNotDistinct": false,
+          "columns": ["code_hash"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.memberships": {
+      "name": "memberships",
+      "schema": "",
+      "columns": {
+        "brewery_id": {
+          "name": "brewery_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "role": {
+          "name": "role",
+          "type": "brewery_role",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "memberships_user_id_index": {
+          "name": "memberships_user_id_index",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "memberships_brewery_id_breweries_id_fk": {
+          "name": "memberships_brewery_id_breweries_id_fk",
+          "tableFrom": "memberships",
+          "tableTo": "breweries",
+          "columnsFrom": ["brewery_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "memberships_user_id_users_id_fk": {
+          "name": "memberships_user_id_users_id_fk",
+          "tableFrom": "memberships",
+          "tableTo": "users",
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "memberships_brewery_id_user_id_pk": {
+          "name": "memberships_brewery_id_user_id_pk",
+          "columns": ["brewery_id", "user_id"]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.miscs": {
+      "name": "miscs",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "aliases": {
+          "name": "aliases",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'"
+        },
+        "sources": {
+          "name": "sources",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "licenses": {
+          "name": "licenses",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "misc_type": {
+          "name": "misc_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "water_agent_type": {
+          "name": "water_agent_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "use": {
+          "name": "use",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "use_for": {
+          "name": "use_for",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "category": {
+          "name": "category",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "beverages": {
+          "name": "beverages",
+          "type": "beverage[]",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'"
+        }
+      },
+      "indexes": {
+        "miscs_aliases_idx": {
+          "name": "miscs_aliases_idx",
+          "columns": [
+            {
+              "expression": "aliases",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "gin",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.notes": {
+      "name": "notes",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "uuidv7()"
+        },
+        "uri": {
+          "name": "uri",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "owner_user_id": {
+          "name": "owner_user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "owner_brewery_id": {
+          "name": "owner_brewery_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "visibility": {
+          "name": "visibility",
+          "type": "visibility",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'private'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "recipe_id": {
+          "name": "recipe_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "batch_id": {
+          "name": "batch_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "kind": {
+          "name": "kind",
+          "type": "note_kind",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'general'"
+        },
+        "body": {
+          "name": "body",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "score_aroma": {
+          "name": "score_aroma",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "score_appearance": {
+          "name": "score_appearance",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "score_flavor": {
+          "name": "score_flavor",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "score_mouthfeel": {
+          "name": "score_mouthfeel",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "score_overall": {
+          "name": "score_overall",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "notes_owner_user_idx": {
+          "name": "notes_owner_user_idx",
+          "columns": [
+            {
+              "expression": "owner_user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "notes_owner_brewery_idx": {
+          "name": "notes_owner_brewery_idx",
+          "columns": [
+            {
+              "expression": "owner_brewery_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "notes_recipe_id_index": {
+          "name": "notes_recipe_id_index",
+          "columns": [
+            {
+              "expression": "recipe_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "notes_batch_id_index": {
+          "name": "notes_batch_id_index",
+          "columns": [
+            {
+              "expression": "batch_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "notes_owner_user_id_users_id_fk": {
+          "name": "notes_owner_user_id_users_id_fk",
+          "tableFrom": "notes",
+          "tableTo": "users",
+          "columnsFrom": ["owner_user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "notes_owner_brewery_id_breweries_id_fk": {
+          "name": "notes_owner_brewery_id_breweries_id_fk",
+          "tableFrom": "notes",
+          "tableTo": "breweries",
+          "columnsFrom": ["owner_brewery_id"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "notes_recipe_id_recipes_id_fk": {
+          "name": "notes_recipe_id_recipes_id_fk",
+          "tableFrom": "notes",
+          "tableTo": "recipes",
+          "columnsFrom": ["recipe_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "notes_batch_id_batches_id_fk": {
+          "name": "notes_batch_id_batches_id_fk",
+          "tableFrom": "notes",
+          "tableTo": "batches",
+          "columnsFrom": ["batch_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "notes_uri_unique": {
+          "name": "notes_uri_unique",
+          "nullsNotDistinct": false,
+          "columns": ["uri"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "notes_one_owner": {
+          "name": "notes_one_owner",
+          "value": "num_nonnulls(\"notes\".\"owner_user_id\", \"notes\".\"owner_brewery_id\") = 1"
+        },
+        "notes_one_subject": {
+          "name": "notes_one_subject",
+          "value": "num_nonnulls(\"notes\".\"recipe_id\", \"notes\".\"batch_id\") <= 1"
+        },
+        "notes_scores_only_tasting": {
+          "name": "notes_scores_only_tasting",
+          "value": "\"notes\".\"kind\" = 'tasting' OR num_nonnulls(\"notes\".\"score_aroma\", \"notes\".\"score_appearance\", \"notes\".\"score_flavor\", \"notes\".\"score_mouthfeel\", \"notes\".\"score_overall\") = 0"
+        },
+        "notes_scores_range": {
+          "name": "notes_scores_range",
+          "value": "(\"score_aroma\" BETWEEN 0 AND 12) AND (\"score_appearance\" BETWEEN 0 AND 3) AND (\"score_flavor\" BETWEEN 0 AND 20) AND (\"score_mouthfeel\" BETWEEN 0 AND 5) AND (\"score_overall\" BETWEEN 0 AND 10)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.password_resets": {
+      "name": "password_resets",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "uuidv7()"
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "token_hash": {
+          "name": "token_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_by_user_id": {
+          "name": "created_by_user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "used_at": {
+          "name": "used_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "password_resets_user_id_index": {
+          "name": "password_resets_user_id_index",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "password_resets_user_id_users_id_fk": {
+          "name": "password_resets_user_id_users_id_fk",
+          "tableFrom": "password_resets",
+          "tableTo": "users",
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "password_resets_created_by_user_id_users_id_fk": {
+          "name": "password_resets_created_by_user_id_users_id_fk",
+          "tableFrom": "password_resets",
+          "tableTo": "users",
+          "columnsFrom": ["created_by_user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "password_resets_token_hash_unique": {
+          "name": "password_resets_token_hash_unique",
+          "nullsNotDistinct": false,
+          "columns": ["token_hash"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.readings": {
+      "name": "readings",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "uuidv7()"
+        },
+        "batch_id": {
+          "name": "batch_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "taken_at": {
+          "name": "taken_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "gravity_sg": {
+          "name": "gravity_sg",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "temperature_c": {
+          "name": "temperature_c",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ph": {
+          "name": "ph",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "brix": {
+          "name": "brix",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "titratable_acidity_g_per_l": {
+          "name": "titratable_acidity_g_per_l",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "free_so2_mg_per_l": {
+          "name": "free_so2_mg_per_l",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "source": {
+          "name": "source",
+          "type": "reading_source",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'manual'"
+        },
+        "note": {
+          "name": "note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_by_user_id": {
+          "name": "created_by_user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "readings_batch_id_taken_at_index": {
+          "name": "readings_batch_id_taken_at_index",
+          "columns": [
+            {
+              "expression": "batch_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "taken_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "readings_batch_id_batches_id_fk": {
+          "name": "readings_batch_id_batches_id_fk",
+          "tableFrom": "readings",
+          "tableTo": "batches",
+          "columnsFrom": ["batch_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "readings_created_by_user_id_users_id_fk": {
+          "name": "readings_created_by_user_id_users_id_fk",
+          "tableFrom": "readings",
+          "tableTo": "users",
+          "columnsFrom": ["created_by_user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.recipe_versions": {
+      "name": "recipe_versions",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "uuidv7()"
+        },
+        "recipe_id": {
+          "name": "recipe_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "beverage": {
+          "name": "beverage",
+          "type": "beverage",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "style_id": {
+          "name": "style_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "batch_size_l": {
+          "name": "batch_size_l",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "equipment_profile_id": {
+          "name": "equipment_profile_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "content": {
+          "name": "content",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_by_user_id": {
+          "name": "created_by_user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "recipe_versions_recipe_id_recipes_id_fk": {
+          "name": "recipe_versions_recipe_id_recipes_id_fk",
+          "tableFrom": "recipe_versions",
+          "tableTo": "recipes",
+          "columnsFrom": ["recipe_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "recipe_versions_style_id_styles_id_fk": {
+          "name": "recipe_versions_style_id_styles_id_fk",
+          "tableFrom": "recipe_versions",
+          "tableTo": "styles",
+          "columnsFrom": ["style_id"],
+          "columnsTo": ["id"],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "recipe_versions_equipment_profile_id_equipment_profiles_id_fk": {
+          "name": "recipe_versions_equipment_profile_id_equipment_profiles_id_fk",
+          "tableFrom": "recipe_versions",
+          "tableTo": "equipment_profiles",
+          "columnsFrom": ["equipment_profile_id"],
+          "columnsTo": ["id"],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "recipe_versions_created_by_user_id_users_id_fk": {
+          "name": "recipe_versions_created_by_user_id_users_id_fk",
+          "tableFrom": "recipe_versions",
+          "tableTo": "users",
+          "columnsFrom": ["created_by_user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "recipe_versions_recipe_id_version_unique": {
+          "name": "recipe_versions_recipe_id_version_unique",
+          "nullsNotDistinct": false,
+          "columns": ["recipe_id", "version"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "recipe_versions_version_positive": {
+          "name": "recipe_versions_version_positive",
+          "value": "\"recipe_versions\".\"version\" > 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.recipes": {
+      "name": "recipes",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "uuidv7()"
+        },
+        "uri": {
+          "name": "uri",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "owner_user_id": {
+          "name": "owner_user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "owner_brewery_id": {
+          "name": "owner_brewery_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "visibility": {
+          "name": "visibility",
+          "type": "visibility",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'private'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "beverage": {
+          "name": "beverage",
+          "type": "beverage",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "credit_source_url": {
+          "name": "credit_source_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "credit_site": {
+          "name": "credit_site",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "credit_author": {
+          "name": "credit_author",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "credit_imported_at": {
+          "name": "credit_imported_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "credit_license": {
+          "name": "credit_license",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "forked_from_uri": {
+          "name": "forked_from_uri",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "forked_from_recipe_id": {
+          "name": "forked_from_recipe_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "public_sharing_blocked": {
+          "name": "public_sharing_blocked",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        }
+      },
+      "indexes": {
+        "recipes_owner_user_idx": {
+          "name": "recipes_owner_user_idx",
+          "columns": [
+            {
+              "expression": "owner_user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "recipes_owner_brewery_idx": {
+          "name": "recipes_owner_brewery_idx",
+          "columns": [
+            {
+              "expression": "owner_brewery_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "recipes_forked_from_recipe_id_index": {
+          "name": "recipes_forked_from_recipe_id_index",
+          "columns": [
+            {
+              "expression": "forked_from_recipe_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "recipes_owner_user_id_users_id_fk": {
+          "name": "recipes_owner_user_id_users_id_fk",
+          "tableFrom": "recipes",
+          "tableTo": "users",
+          "columnsFrom": ["owner_user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "recipes_owner_brewery_id_breweries_id_fk": {
+          "name": "recipes_owner_brewery_id_breweries_id_fk",
+          "tableFrom": "recipes",
+          "tableTo": "breweries",
+          "columnsFrom": ["owner_brewery_id"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "recipes_forked_from_recipe_id_recipes_id_fk": {
+          "name": "recipes_forked_from_recipe_id_recipes_id_fk",
+          "tableFrom": "recipes",
+          "tableTo": "recipes",
+          "columnsFrom": ["forked_from_recipe_id"],
+          "columnsTo": ["id"],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "recipes_uri_unique": {
+          "name": "recipes_uri_unique",
+          "nullsNotDistinct": false,
+          "columns": ["uri"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "recipes_one_owner": {
+          "name": "recipes_one_owner",
+          "value": "num_nonnulls(\"recipes\".\"owner_user_id\", \"recipes\".\"owner_brewery_id\") = 1"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.reminders": {
+      "name": "reminders",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "uuidv7()"
+        },
+        "batch_id": {
+          "name": "batch_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "kind": {
+          "name": "kind",
+          "type": "reminder_kind",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "due_at": {
+          "name": "due_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "note": {
+          "name": "note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "done_at": {
+          "name": "done_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_by_user_id": {
+          "name": "created_by_user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "reminders_batch_id_due_at_index": {
+          "name": "reminders_batch_id_due_at_index",
+          "columns": [
+            {
+              "expression": "batch_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "due_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "reminders_batch_id_batches_id_fk": {
+          "name": "reminders_batch_id_batches_id_fk",
+          "tableFrom": "reminders",
+          "tableTo": "batches",
+          "columnsFrom": ["batch_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "reminders_created_by_user_id_users_id_fk": {
+          "name": "reminders_created_by_user_id_users_id_fk",
+          "tableFrom": "reminders",
+          "tableTo": "users",
+          "columnsFrom": ["created_by_user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.shares": {
+      "name": "shares",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "uuidv7()"
+        },
+        "resource_type": {
+          "name": "resource_type",
+          "type": "shareable_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "resource_id": {
+          "name": "resource_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "to_user_id": {
+          "name": "to_user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "to_brewery_id": {
+          "name": "to_brewery_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "level": {
+          "name": "level",
+          "type": "share_level",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "shares_to_user_id_index": {
+          "name": "shares_to_user_id_index",
+          "columns": [
+            {
+              "expression": "to_user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "shares_to_brewery_id_index": {
+          "name": "shares_to_brewery_id_index",
+          "columns": [
+            {
+              "expression": "to_brewery_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "shares_to_user_id_users_id_fk": {
+          "name": "shares_to_user_id_users_id_fk",
+          "tableFrom": "shares",
+          "tableTo": "users",
+          "columnsFrom": ["to_user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "shares_to_brewery_id_breweries_id_fk": {
+          "name": "shares_to_brewery_id_breweries_id_fk",
+          "tableFrom": "shares",
+          "tableTo": "breweries",
+          "columnsFrom": ["to_brewery_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "shares_target_key": {
+          "name": "shares_target_key",
+          "nullsNotDistinct": true,
+          "columns": ["resource_type", "resource_id", "to_user_id", "to_brewery_id"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "shares_one_target": {
+          "name": "shares_one_target",
+          "value": "num_nonnulls(\"shares\".\"to_user_id\", \"shares\".\"to_brewery_id\") = 1"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.styles": {
+      "name": "styles",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "aliases": {
+          "name": "aliases",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'"
+        },
+        "sources": {
+          "name": "sources",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "licenses": {
+          "name": "licenses",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "style_guide": {
+          "name": "style_guide",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "style_id": {
+          "name": "style_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "category": {
+          "name": "category",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "beverage": {
+          "name": "beverage",
+          "type": "beverage",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "og_min": {
+          "name": "og_min",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "og_max": {
+          "name": "og_max",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "fg_min": {
+          "name": "fg_min",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "fg_max": {
+          "name": "fg_max",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ibu_min": {
+          "name": "ibu_min",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ibu_max": {
+          "name": "ibu_max",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "color_ebc_min": {
+          "name": "color_ebc_min",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "color_ebc_max": {
+          "name": "color_ebc_max",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "abv_min_pct": {
+          "name": "abv_min_pct",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "abv_max_pct": {
+          "name": "abv_max_pct",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "carb_vols_min": {
+          "name": "carb_vols_min",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "carb_vols_max": {
+          "name": "carb_vols_max",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "styles_aliases_idx": {
+          "name": "styles_aliases_idx",
+          "columns": [
+            {
+              "expression": "aliases",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "gin",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.users": {
+      "name": "users",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "uuidv7()"
+        },
+        "uri": {
+          "name": "uri",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "display_name": {
+          "name": "display_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "city": {
+          "name": "city",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "state": {
+          "name": "state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_admin": {
+          "name": "is_admin",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "units": {
+          "name": "units",
+          "type": "unit_system",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'us'"
+        },
+        "password_hash": {
+          "name": "password_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "oidc_issuer": {
+          "name": "oidc_issuer",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "oidc_subject": {
+          "name": "oidc_subject",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "disabled_at": {
+          "name": "disabled_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "users_email_lower_key": {
+          "name": "users_email_lower_key",
+          "columns": [
+            {
+              "expression": "lower(\"email\")",
+              "asc": true,
+              "isExpression": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "users_uri_unique": {
+          "name": "users_uri_unique",
+          "nullsNotDistinct": false,
+          "columns": ["uri"]
+        },
+        "users_oidc_key": {
+          "name": "users_oidc_key",
+          "nullsNotDistinct": false,
+          "columns": ["oidc_issuer", "oidc_subject"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.water_profiles": {
+      "name": "water_profiles",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "aliases": {
+          "name": "aliases",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'"
+        },
+        "sources": {
+          "name": "sources",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "licenses": {
+          "name": "licenses",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "calcium_ppm": {
+          "name": "calcium_ppm",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "magnesium_ppm": {
+          "name": "magnesium_ppm",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sodium_ppm": {
+          "name": "sodium_ppm",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sulfate_ppm": {
+          "name": "sulfate_ppm",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "chloride_ppm": {
+          "name": "chloride_ppm",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "bicarbonate_ppm": {
+          "name": "bicarbonate_ppm",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "water_profiles_aliases_idx": {
+          "name": "water_profiles_aliases_idx",
+          "columns": [
+            {
+              "expression": "aliases",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "gin",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.yeasts": {
+      "name": "yeasts",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "aliases": {
+          "name": "aliases",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'"
+        },
+        "sources": {
+          "name": "sources",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "licenses": {
+          "name": "licenses",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "producer": {
+          "name": "producer",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "product_id": {
+          "name": "product_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "yeast_type": {
+          "name": "yeast_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "form": {
+          "name": "form",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "temp_min_c": {
+          "name": "temp_min_c",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "temp_max_c": {
+          "name": "temp_max_c",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "attenuation_min_pct": {
+          "name": "attenuation_min_pct",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "attenuation_max_pct": {
+          "name": "attenuation_max_pct",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "flocculation": {
+          "name": "flocculation",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "alcohol_tolerance_pct": {
+          "name": "alcohol_tolerance_pct",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "best_for": {
+          "name": "best_for",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "beverages": {
+          "name": "beverages",
+          "type": "beverage[]",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'"
+        }
+      },
+      "indexes": {
+        "yeasts_aliases_idx": {
+          "name": "yeasts_aliases_idx",
+          "columns": [
+            {
+              "expression": "aliases",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "gin",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {
+    "public.batch_status": {
+      "name": "batch_status",
+      "schema": "public",
+      "values": [
+        "planned",
+        "brewing",
+        "fermenting",
+        "conditioning",
+        "packaged",
+        "primary",
+        "secondary",
+        "bulk_aging",
+        "stabilized",
+        "bottled",
+        "bottle_aging",
+        "finished"
+      ]
+    },
+    "public.beverage": {
+      "name": "beverage",
+      "schema": "public",
+      "values": ["beer", "mead", "wine", "cider"]
+    },
+    "public.brewery_role": {
+      "name": "brewery_role",
+      "schema": "public",
+      "values": ["owner", "brewer", "member", "viewer"]
+    },
+    "public.equipment_condition": {
+      "name": "equipment_condition",
+      "schema": "public",
+      "values": ["new", "good", "worn", "needs_repair", "retired"]
+    },
+    "public.integration_kind": {
+      "name": "integration_kind",
+      "schema": "public",
+      "values": ["ispindel", "gravitymon", "tilt", "rapt", "webhook_out"]
+    },
+    "public.note_kind": {
+      "name": "note_kind",
+      "schema": "public",
+      "values": ["general", "tasting"]
+    },
+    "public.quantity_unit": {
+      "name": "quantity_unit",
+      "schema": "public",
+      "values": ["kg", "l", "each"]
+    },
+    "public.reading_source": {
+      "name": "reading_source",
+      "schema": "public",
+      "values": ["manual", "device"]
+    },
+    "public.reminder_kind": {
+      "name": "reminder_kind",
+      "schema": "public",
+      "values": ["nutrient", "rack", "sulfite", "taste", "ready", "custom"]
+    },
+    "public.reservation_state": {
+      "name": "reservation_state",
+      "schema": "public",
+      "values": ["reserved", "used", "released"]
+    },
+    "public.share_level": {
+      "name": "share_level",
+      "schema": "public",
+      "values": ["read", "edit"]
+    },
+    "public.shareable_type": {
+      "name": "shareable_type",
+      "schema": "public",
+      "values": ["recipe", "batch", "inventory_item", "equipment_item", "note", "equipment_profile"]
+    },
+    "public.token_kind": {
+      "name": "token_kind",
+      "schema": "public",
+      "values": ["session", "app", "personal"]
+    },
+    "public.unit_system": {
+      "name": "unit_system",
+      "schema": "public",
+      "values": ["us", "metric"]
+    },
+    "public.visibility": {
+      "name": "visibility",
+      "schema": "public",
+      "values": ["private", "unlisted", "server", "public"]
+    }
+  },
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}
