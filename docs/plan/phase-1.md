@@ -184,7 +184,7 @@ Owner: you · Depends: everything above for the gate
 
 - [x] Decide the open questions (see Decisions below)
 - [x] Open issues P1-01 to P1-15 from this file
-- [ ] Run the exit gate on a clean machine and on a phone; tag a pre-release image
+- [x] Run the exit gate on a clean machine and on a phone; tag a pre-release image (2026-11-24, `v0.1.0-rc.1`)
 
 ## Decisions
 
