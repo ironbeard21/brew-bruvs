@@ -141,6 +141,19 @@ function schemaRecipe(source: RecordValue, suppliedBatchSize: number | undefined
     fermentation: [],
   };
   const review: string[] = [];
+  const steps = instructions(source.recipeInstructions);
+  // Some pages give hop times only in the steps: "Magnum (Boil 60 min)", "Dry hop with Cascade".
+  const hopSchedule = steps
+    .flatMap((step) => [
+      ...step.matchAll(
+        /([^:;,.()]+?)\s*\(\s*boil\s+(\d+(?:\.\d+)?)\s*min(?:utes?)?\s*\)|dry[ -]hop\s+with\s+([^:;,.()]+?)(?=\s+(?:after|during|for|in|on|at)\b|[.;,]|$)/gi,
+      ),
+    ])
+    .map((match) =>
+      match[3]
+        ? { name: match[3].trim(), use: "dry_hop" as const }
+        : { name: (match[1] ?? "").trim(), use: "boil" as const, timeMin: Number(match[2]) },
+    );
   for (const value of list(source.recipeIngredient)) {
     const line = clean(value);
     if (!line) continue;
@@ -150,18 +163,25 @@ function schemaRecipe(source: RecordValue, suppliedBatchSize: number | undefined
       review.push(line);
       continue;
     }
-    const kind = /\b(?:grain|malt|barley|wheat|oats?|rye)\b/i.test(name)
-      ? "grain"
-      : /\b(?:extract|dme|lme)\b/i.test(name)
-        ? "extract"
-        : /\bhoney\b/i.test(name)
-          ? "honey"
-          : /\b(?:sugar|dextrose)\b/i.test(name)
-            ? "sugar"
-            : /\b(?:juice|must)\b/i.test(name)
-              ? "juice"
-              : undefined;
+    const kind =
+      /\b(?:grain|malt|barley|wheat|oats?|rye|[26]-row|pils(?:ner)?|munich|vienna|caramel|crystal|chocolate|roasted|biscuit|victory|aromatic|melanoidin|flaked)\b/i.test(
+        name,
+      )
+        ? "grain"
+        : /\b(?:extract|dme|lme)\b/i.test(name)
+          ? "extract"
+          : /\bhoney\b/i.test(name)
+            ? "honey"
+            : /\b(?:sugar|dextrose)\b/i.test(name)
+              ? "sugar"
+              : /\b(?:juice|must)\b/i.test(name)
+                ? "juice"
+                : undefined;
     const boil = /\b(\d+(?:\.\d+)?)\s*(?:min(?:utes?)?)\s*(?:boil)?\)?$/i.exec(name);
+    const hopName = name.split(/\s+hops?\b/i)[0] ?? name;
+    const planned = amountKg
+      ? hopSchedule.findIndex((hop) => hop.name.toLowerCase() === hopName.toLowerCase())
+      : -1;
     if (/\byeast\b/i.test(name)) {
       content.yeasts.push({ name: name.replace(/\s+yeast$/i, ""), amountKg, amountL, packs });
     } else if (amountKg && /\bhops?\b/i.test(name) && /\bdry[ -]hop\b/i.test(name)) {
@@ -179,13 +199,21 @@ function schemaRecipe(source: RecordValue, suppliedBatchSize: number | undefined
         timeMin: Number(boil[1]),
         note: line,
       });
+    } else if (amountKg && planned >= 0) {
+      const [hop] = hopSchedule.splice(planned, 1) as [(typeof hopSchedule)[number]];
+      content.hops.push({ ...hop, name: hopName, amountKg, note: line });
     } else if (kind && (amountKg || amountL)) {
       content.fermentables.push({ name, kind, amountKg, amountL });
     } else {
       review.push(line);
     }
   }
-  const steps = instructions(source.recipeInstructions);
+  if (!content.yeasts.length) {
+    const pitched = steps
+      .map((step) => /\bferment\s+with\s+([^.;]+)/i.exec(step)?.[1]?.trim())
+      .find((name) => name && /\byeast\b|\b(?:US|S|WLP|WY)-?\d{2,}\b/i.test(name));
+    if (pitched) content.yeasts.push({ name: pitched });
+  }
   if (steps.length || review.length) {
     content.notes = [
       ...steps.map((step, index) => `${index + 1}. ${step}`),
