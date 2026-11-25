@@ -2,7 +2,7 @@
 // The one permission check every route uses: owner → brewery role → explicit share → visibility.
 
 export type Action = "read" | "edit" | "delete" | "share";
-export type BreweryRole = "owner" | "admin" | "brewer" | "viewer";
+export type BreweryRole = "owner" | "brewer" | "member" | "viewer";
 // unlisted: anyone with the link can read it; lists and search leave it out.
 export type Visibility = "private" | "unlisted" | "server" | "public";
 export type ShareLevel = "read" | "edit";
@@ -22,8 +22,9 @@ export interface Resource {
 
 const ROLE_ACTIONS: Record<BreweryRole, readonly Action[]> = {
   owner: ["read", "edit", "delete", "share"],
-  admin: ["read", "edit", "delete", "share"],
   brewer: ["read", "edit"],
+  // Members log readings and notes on brewery batches: the "contribute" action, P2-03.
+  member: ["read"],
   viewer: ["read"],
 };
 
@@ -52,8 +53,8 @@ export function can(user: User | null, action: Action, resource: Resource): bool
       if (share.to.type === "user" && share.to.id === user.id) return true;
       if (share.to.type === "brewery") {
         const role = roleOf(share.to.id);
-        // A brewery's viewers stay read-only even when the share grants edit.
-        if (role && (action === "read" || role !== "viewer")) return true;
+        // A brewery's members and viewers stay read-only even when the share grants edit.
+        if (role && (action === "read" || role === "owner" || role === "brewer")) return true;
       }
     }
   }

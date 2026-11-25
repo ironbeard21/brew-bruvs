@@ -41,8 +41,8 @@ describe("can: brewery role", () => {
 
   it.each<[BreweryRole, Action[]]>([
     ["owner", ["read", "edit", "delete", "share"]],
-    ["admin", ["read", "edit", "delete", "share"]],
     ["brewer", ["read", "edit"]],
+    ["member", ["read"]],
     ["viewer", ["read"]],
   ])("%s gets %j", (role, expected) => {
     expect(allowed(member(role), breweryRecipe)).toEqual(expected);
@@ -76,10 +76,13 @@ describe("can: explicit share", () => {
     expect(allowed(member("brewer"), r)).toEqual(["read", "edit"]);
   });
 
-  it("an edit share to a brewery leaves its viewers read-only", () => {
-    const r = privateRecipe(owner, [{ to: { type: "brewery", id: "hops-co" }, level: "edit" }]);
-    expect(allowed(member("viewer"), r)).toEqual(["read"]);
-  });
+  it.each<BreweryRole>(["member", "viewer"])(
+    "an edit share to a brewery leaves its %ss read-only",
+    (role) => {
+      const r = privateRecipe(owner, [{ to: { type: "brewery", id: "hops-co" }, level: "edit" }]);
+      expect(allowed(member(role), r)).toEqual(["read"]);
+    },
+  );
 
   it("a share to a brewery grants nothing to non-members", () => {
     const r = privateRecipe(owner, [{ to: { type: "brewery", id: "hops-co" }, level: "edit" }]);

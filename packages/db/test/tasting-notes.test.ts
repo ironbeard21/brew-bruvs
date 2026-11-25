@@ -42,6 +42,7 @@ describe.skipIf(!connectionString)("tasting notes on Postgres (TEST_DATABASE_URL
           code: "23514",
         });
 
+        expect(await rollbackLatest(client)).toBe("0006_schema_v3");
         expect(await rollbackLatest(client)).toBe("0005_tasting_notes");
         expect((await client.query("SELECT body FROM notes")).rowCount).toBe(4);
         await migrateUp(client);

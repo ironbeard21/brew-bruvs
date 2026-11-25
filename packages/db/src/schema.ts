@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Database schema v2. Units are SI (kg, L, °C) and specific gravity; colour is EBC.
+// Database schema v3. Units are SI (kg, L, °C) and specific gravity; colour is EBC.
 // User data uses UUIDv7 ids (Postgres 18 `uuidv7()`); catalog rows keep their seed ids.
 import { sql } from "drizzle-orm";
 import {
@@ -24,7 +24,9 @@ import {
 export const beverage = pgEnum("beverage", ["beer", "mead", "wine", "cider"]);
 // unlisted: anyone with the link can view; never in search or feeds.
 export const visibility = pgEnum("visibility", ["private", "unlisted", "server", "public"]);
-export const breweryRole = pgEnum("brewery_role", ["owner", "admin", "brewer", "viewer"]);
+// owner: everything, and there can be several · brewer: edits brewery recipes and batches ·
+// member: logs readings and notes on brewery batches · viewer: reads.
+export const breweryRole = pgEnum("brewery_role", ["owner", "brewer", "member", "viewer"]);
 export const shareLevel = pgEnum("share_level", ["read", "edit"]);
 export const shareableType = pgEnum("shareable_type", [
   "recipe",
@@ -32,6 +34,7 @@ export const shareableType = pgEnum("shareable_type", [
   "inventory_item",
   "equipment_item",
   "note",
+  "equipment_profile",
 ]);
 export const quantityUnit = pgEnum("quantity_unit", ["kg", "l", "each"]);
 // session: web cookie · app: phone sign-in · personal: scoped API token
@@ -81,6 +84,22 @@ export const TASTING_SCORE_MAX = {
   overall: 10,
 } as const;
 export const readingSource = pgEnum("reading_source", ["manual", "device"]);
+export const reservationState = pgEnum("reservation_state", ["reserved", "used", "released"]);
+export const equipmentCondition = pgEnum("equipment_condition", [
+  "new",
+  "good",
+  "worn",
+  "needs_repair",
+  "retired",
+]);
+// Devices post readings to a URL with a secret token; webhook_out sends batch events out.
+export const integrationKind = pgEnum("integration_kind", [
+  "ispindel",
+  "gravitymon",
+  "tilt",
+  "rapt",
+  "webhook_out",
+]);
 export const reminderKind = pgEnum("reminder_kind", [
   "nutrient",
   "rack",
@@ -183,6 +202,7 @@ export const breweries = pgTable("breweries", {
   id: id(),
   uri: text("uri").notNull().unique(),
   name: text("name").notNull(),
+  description: text("description"),
   city: text("city"),
   state: text("state"),
   createdAt: createdAt(),
@@ -552,12 +572,55 @@ export const inventoryItems = pgTable(
     name: text("name").notNull(),
     quantity: doublePrecision("quantity").notNull(),
     quantityUnit: quantityUnit("quantity_unit").notNull(),
+    lot: text("lot"),
+    location: text("location"),
+    // Hops: the alpha acid on this lot's label, which can override the recipe's.
+    alphaAcidPct: doublePrecision("alpha_acid_pct"),
+    purchasedOn: date("purchased_on"),
     bestBefore: date("best_before"),
+    // In quantity_unit; the item is low on stock below it.
+    lowStockThreshold: doublePrecision("low_stock_threshold"),
+    // Swaps (Phase 4): how much of this item is offered. Unused until then.
+    tradeable: boolean("tradeable").notNull().default(false),
+    tradeableQuantity: doublePrecision("tradeable_quantity"),
     notes: text("notes"),
   },
   (t) => [
     ...ownerChecks("inventory_items", t),
     check("inventory_items_quantity_nonneg", sql`${t.quantity} >= 0`),
+    check(
+      "inventory_items_alpha_acid_range",
+      sql`${t.alphaAcidPct} >= 0 AND ${t.alphaAcidPct} <= 100`,
+    ),
+    check("inventory_items_low_stock_nonneg", sql`${t.lowStockThreshold} >= 0`),
+    check(
+      "inventory_items_tradeable_quantity_range",
+      sql`${t.tradeableQuantity} >= 0 AND ${t.tradeableQuantity} <= ${t.quantity}`,
+    ),
+  ],
+);
+
+// Ingredients a batch holds from an inventory item, in the item's unit.
+// reserved when the batch starts · used when it is packaged or bottled · released otherwise.
+export const inventoryReservations = pgTable(
+  "inventory_reservations",
+  {
+    id: id(),
+    batchId: uuid("batch_id")
+      .notNull()
+      .references(() => batches.id, { onDelete: "cascade" }),
+    inventoryItemId: uuid("inventory_item_id")
+      .notNull()
+      .references(() => inventoryItems.id, { onDelete: "cascade" }),
+    quantity: doublePrecision("quantity").notNull(),
+    state: reservationState("state").notNull().default("reserved"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    check("inventory_reservations_quantity_positive", sql`${t.quantity} > 0`),
+    index().on(t.batchId),
+    index().on(t.inventoryItemId, t.state),
   ],
 );
 
@@ -567,10 +630,15 @@ export const equipmentItems = pgTable(
     ...shareableColumns(),
     catalogId: text("catalog_id").references(() => equipment.id, { onDelete: "set null" }),
     name: text("name").notNull(),
+    // Free text such as "fermenter" or "kettle"; the catalog's categories are a guide.
+    type: text("type"),
+    condition: equipmentCondition("condition"),
+    // Lending inside a brewery: who has it now.
+    heldByUserId: uuid("held_by_user_id").references(() => users.id, { onDelete: "set null" }),
     ...equipmentColumns(),
     notes: text("notes"),
   },
-  (t) => ownerChecks("equipment_items", t),
+  (t) => [...ownerChecks("equipment_items", t), index().on(t.heldByUserId)],
 );
 
 export const notes = pgTable(
@@ -629,4 +697,53 @@ export const shares = pgTable(
     index().on(t.toUserId),
     index().on(t.toBreweryId),
   ],
+);
+
+// ── Integrations and activity ─────────────────────────────────────────
+
+// Owned by a user or a brewery, not shared. Device tokens are stored as SHA-256 hashes only.
+export const integrations = pgTable(
+  "integrations",
+  {
+    id: id(),
+    ownerUserId: uuid("owner_user_id").references(() => users.id, { onDelete: "cascade" }),
+    ownerBreweryId: uuid("owner_brewery_id").references(() => breweries.id, {
+      onDelete: "cascade",
+    }),
+    kind: integrationKind("kind").notNull(),
+    name: text("name").notNull(),
+    config: jsonb("config").notNull().default(sql`'{}'::jsonb`),
+    tokenHash: text("token_hash").unique(),
+    batchId: uuid("batch_id").references(() => batches.id, { onDelete: "set null" }),
+    lastSeenAt: timestamp("last_seen_at", { withTimezone: true }),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    check("integrations_one_owner", sql`num_nonnulls(${t.ownerUserId}, ${t.ownerBreweryId}) = 1`),
+    check(
+      "integrations_device_token",
+      sql`${t.kind} = 'webhook_out' OR ${t.tokenHash} IS NOT NULL`,
+    ),
+    index("integrations_owner_user_idx").on(t.ownerUserId),
+    index("integrations_owner_brewery_idx").on(t.ownerBreweryId),
+    index().on(t.batchId),
+  ],
+);
+
+// A brewery's feed: "Ann moved Pale Ale to fermenting". Verbs are free text so tasks can add them.
+export const activityEvents = pgTable(
+  "activity_events",
+  {
+    id: id(),
+    breweryId: uuid("brewery_id")
+      .notNull()
+      .references(() => breweries.id, { onDelete: "cascade" }),
+    actorUserId: uuid("actor_user_id").references(() => users.id, { onDelete: "set null" }),
+    verb: text("verb").notNull(),
+    objectType: text("object_type").notNull(),
+    objectId: uuid("object_id").notNull(),
+    at: timestamp("at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index().on(t.breweryId, t.at.desc())],
 );
