@@ -19,6 +19,11 @@ import {
 import { InventoryEditorCard } from "../src/components/inventory/InventoryEditorCard";
 import { InventoryPanel } from "../src/components/inventory/InventoryPanel";
 import {
+  buildBatchInventoryHref,
+  canAccessOwnerInventory,
+  resolveInventoryBrewery,
+} from "../src/components/inventory/inventoryScope";
+import {
   convertDisplayUnitForSystem,
   displayUnitToSi,
   formatInventoryAmount,
@@ -40,21 +45,6 @@ const noopStorage: KeyValueStorage = {
   async setItem() {},
   async removeItem() {},
 };
-
-function makeMemoryStorage(): KeyValueStorage {
-  const map = new Map<string, string>();
-  return {
-    async getItem(k) {
-      return map.get(k) ?? null;
-    },
-    async setItem(k, v) {
-      map.set(k, v);
-    },
-    async removeItem(k) {
-      map.delete(k);
-    },
-  };
-}
 
 function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -184,45 +174,119 @@ describe("inventoryUnits and local low-stock alerts", () => {
     expect(text).toContain("Columbus: 1.00 oz available (threshold 4.00 oz)");
   });
 
-  it("deduplicates local low-stock alerts and re-alerts after restocking and dropping again", async () => {
-    const storage = makeMemoryStorage();
+  it("keeps alerts pending until delivery succeeds, deduplicates once delivered, and uses stable keys", async () => {
+    const map = new Map<string, string>();
+    const storage: KeyValueStorage = {
+      async getItem(k) {
+        return map.get(k) ?? null;
+      },
+      async setItem(k, v) {
+        map.set(k, v);
+      },
+      async removeItem(k) {
+        map.delete(k);
+      },
+    };
 
-    // First drop -> newly alerted
-    const first = await notifyLowStockItems([HOP_LOW_ITEM], "us", {
-      scopeKey: "test::me",
-      storage,
-    });
-    expect(first.newlyAlerted).toHaveLength(1);
-    expect(first.newlyAlerted[0]?.id).toBe(HOP_LOW_ITEM.id);
+    const deliveredLog: { title: string; body?: string }[] = [];
+    const OriginalNotification = globalThis.Notification;
+    let mockPermission: NotificationPermission = "default";
 
-    // Same level -> deduplicated (no duplicate alert)
-    const second = await notifyLowStockItems([HOP_LOW_ITEM], "us", {
-      scopeKey: "test::me",
-      storage,
-    });
-    expect(second.newlyAlerted).toHaveLength(0);
+    class MockNotification {
+      static get permission() {
+        return mockPermission;
+      }
+      static async requestPermission() {
+        return mockPermission;
+      }
+      constructor(title: string, opts?: NotificationOptions) {
+        deliveredLog.push({ title, ...(opts?.body ? { body: opts.body } : {}) });
+      }
+    }
 
-    // Drops even further -> alerts again
-    const droppedFurther = { ...HOP_LOW_ITEM, available: 0.01 };
-    const third = await notifyLowStockItems([droppedFurther], "us", {
-      scopeKey: "test::me",
-      storage,
+    Object.defineProperty(globalThis, "Notification", {
+      value: MockNotification,
+      configurable: true,
+      writable: true,
     });
-    expect(third.newlyAlerted).toHaveLength(1);
 
-    // Restocked above threshold -> clears tracked entry
-    const cleared = await notifyLowStockItems([], "us", {
-      scopeKey: "test::me",
-      storage,
-    });
-    expect(cleared.newlyAlerted).toHaveLength(0);
+    try {
+      // 1. Permission not granted yet -> stays pending (NOT marked delivered in storage)
+      const beforeGrant = await notifyLowStockItems([HOP_LOW_ITEM], "us", {
+        scopeKey: "test::me",
+        storage,
+      });
+      expect(beforeGrant.newlyAlerted).toHaveLength(1);
+      expect(beforeGrant.delivered).toBe(false);
+      expect(deliveredLog).toHaveLength(0);
+      expect(map.size).toBe(0);
 
-    // Drops below threshold again later -> alerts again
-    const fourth = await notifyLowStockItems([HOP_LOW_ITEM], "us", {
-      scopeKey: "test::me",
-      storage,
-    });
-    expect(fourth.newlyAlerted).toHaveLength(1);
+      // 2. Permission granted -> same low item now delivers and records under stable key
+      mockPermission = "granted";
+      const afterGrant = await notifyLowStockItems([HOP_LOW_ITEM], "us", {
+        scopeKey: "test::me",
+        storage,
+      });
+      expect(afterGrant.delivered).toBe(true);
+      expect(afterGrant.permissionGranted).toBe(true);
+      expect(deliveredLog).toHaveLength(1);
+
+      // 3. Same level again -> deduplicated (no duplicate notification)
+      const duplicate = await notifyLowStockItems([HOP_LOW_ITEM], "us", {
+        scopeKey: "test::me",
+        storage,
+      });
+      expect(duplicate.newlyAlerted).toHaveLength(0);
+      expect(duplicate.delivered).toBe(false);
+      expect(deliveredLog).toHaveLength(1);
+
+      // 4. Manual forced alert reuses the same stable scope key (no timestamped leak)
+      const manual = await notifyLowStockItems([HOP_LOW_ITEM], "us", {
+        scopeKey: "test::me",
+        requestPermission: true,
+        force: true,
+        storage,
+      });
+      expect(manual.delivered).toBe(true);
+      expect(deliveredLog).toHaveLength(2);
+      const storedAfterManual = JSON.parse(
+        map.get("brewbruvs.notifications.lowStock") ?? "{}",
+      ) as Record<string, number>;
+      expect(Object.keys(storedAfterManual)).toEqual([`test::me::${HOP_LOW_ITEM.id}`]);
+
+      // 5. Drops even further -> alerts again
+      const droppedFurther = { ...HOP_LOW_ITEM, available: 0.01 };
+      const third = await notifyLowStockItems([droppedFurther], "us", {
+        scopeKey: "test::me",
+        storage,
+      });
+      expect(third.delivered).toBe(true);
+      expect(deliveredLog).toHaveLength(3);
+
+      // 6. Restocked above threshold -> prunes tracked entry so a future drop alerts again
+      const cleared = await notifyLowStockItems([], "us", {
+        scopeKey: "test::me",
+        storage,
+      });
+      expect(cleared.newlyAlerted).toHaveLength(0);
+      const storedAfterRestock = JSON.parse(
+        map.get("brewbruvs.notifications.lowStock") ?? "{}",
+      ) as Record<string, number>;
+      expect(Object.keys(storedAfterRestock)).toEqual([]);
+
+      const redropped = await notifyLowStockItems([HOP_LOW_ITEM], "us", {
+        scopeKey: "test::me",
+        storage,
+      });
+      expect(redropped.delivered).toBe(true);
+      expect(deliveredLog).toHaveLength(4);
+    } finally {
+      Object.defineProperty(globalThis, "Notification", {
+        value: OriginalNotification,
+        configurable: true,
+        writable: true,
+      });
+    }
   });
 });
 
@@ -317,9 +381,9 @@ describe("InventoryEditorCard", () => {
     expect(payload?.lot).toBe("LOT-Z1");
   });
 
-  it("sends only changed fields on edit and avoids empty PATCH requests", async () => {
+  it("preserves exact SI quantities on US metadata-only edits and converts quantity when catalog selection changes unit", async () => {
     const onUpdate = vi.fn(async () => {});
-    renderWithProviders(
+    const { unmount } = renderWithProviders(
       <InventoryEditorCard
         serverUrl={SERVER_URL}
         authToken="tok"
@@ -328,17 +392,17 @@ describe("InventoryEditorCard", () => {
         item={MALT_ITEM}
         onUpdate={onUpdate}
       />,
-      "metric",
+      "us",
     );
 
-    // Unchanged submit -> no API call, shows info notice
+    // Unchanged submit in US units -> no rounding drift PATCH
     fireEvent.click(screen.getByTestId("inventory-editor-submit"));
     await waitFor(() => {
       expect(screen.getByTestId("inventory-editor-notice").textContent).toContain("No changes");
     });
     expect(onUpdate).not.toHaveBeenCalled();
 
-    // Update location only -> minimal patch
+    // Update location only in US units -> sends ONLY location, preserving exact 10 kg / 2 kg SI amounts
     fireEvent.change(screen.getByTestId("inventory-location-input"), {
       target: { value: "Shed A" },
     });
@@ -346,6 +410,80 @@ describe("InventoryEditorCard", () => {
     await waitFor(() => {
       expect(onUpdate).toHaveBeenCalledWith(MALT_ITEM.id, { location: "Shed A" });
     });
+
+    unmount();
+
+    // Enter 1 lb first, then pick a hop from catalog -> converts 1 lb to 16 oz instead of 1 oz
+    const onCreate = vi.fn(async (_input: CreateInventoryItemInput) => {});
+    const customFetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const req = input instanceof Request ? input : new Request(input, init);
+      const url = new URL(req.url);
+      if (url.pathname === "/api/catalog/hops") {
+        return jsonResponse({
+          items: [
+            {
+              id: "hop-columbus",
+              catalog: "hops",
+              name: "Columbus",
+              aliases: ["Zeus"],
+              sources: ["bt003"],
+              licenses: ["GPL-3.0"],
+              notes: null,
+              origin: "US",
+              hopType: "bittering",
+              alphaAcidPct: 16,
+              alphaAcidMinPct: 14,
+              alphaAcidMaxPct: 17,
+              betaAcidPct: null,
+              cohumulonePct: null,
+              totalOilMlPer100g: null,
+              myrcenePct: null,
+              humulenePct: null,
+              caryophyllenePct: null,
+              farnesenePct: null,
+              hsi: null,
+              substitutes: null,
+              beverages: ["beer"],
+            },
+          ],
+          nextOffset: null,
+        });
+      }
+      return jsonResponse({ items: [], nextOffset: null });
+    }) as unknown as typeof fetch;
+
+    renderWithProviders(
+      <InventoryEditorCard
+        serverUrl={SERVER_URL}
+        authToken="tok"
+        breweryId={BREWERY_ID}
+        workspaceLabel="Northside Brew Club"
+        onCreate={onCreate}
+        customFetch={customFetch}
+      />,
+      "us",
+    );
+
+    // Default US unit is lb; enter 1 lb
+    fireEvent.change(screen.getByTestId("inventory-quantity-input"), { target: { value: "1" } });
+    fireEvent.click(screen.getByTestId("inventory-toggle-catalog-picker"));
+    fireEvent.click(screen.getByText("Hops"));
+    fireEvent.change(screen.getByTestId("inv-catalog-search-input"), {
+      target: { value: "Columbus" },
+    });
+    await waitFor(() => {
+      expect(screen.getByTestId("inv-catalog-option-hop-columbus")).toBeTruthy();
+    });
+    fireEvent.click(screen.getByTestId("inv-catalog-option-hop-columbus"));
+
+    expect((screen.getByTestId("inventory-quantity-input") as HTMLInputElement).value).toBe("16");
+    fireEvent.click(screen.getByTestId("inventory-editor-submit"));
+    await waitFor(() => {
+      expect(onCreate).toHaveBeenCalledTimes(1);
+    });
+    const created = onCreate.mock.calls[0]?.[0];
+    expect(created?.quantityUnit).toBe("kg");
+    expect(created?.quantity).toBeCloseTo(0.45359237, 5);
   });
 });
 
@@ -433,6 +571,100 @@ describe("InventoryPanel and ShoppingListPanel", () => {
     expect(screen.queryByTestId("inventory-add-button")).toBeNull();
     expect(screen.queryByTestId(`inventory-edit-${MALT_ITEM.id}`)).toBeNull();
     expect(screen.queryByTestId(`inventory-delete-${MALT_ITEM.id}`)).toBeNull();
+  });
+
+  it("follows nextOffset pagination so later inventory pages appear in list and location filters", async () => {
+    const page2Item: InventoryItem = {
+      ...HOP_LOW_ITEM,
+      id: "cccccccc-cccc-7ccc-8ccc-cccccccccccc",
+      name: "Citra Cryo",
+      location: "Cold Room",
+    };
+    const offsetsSeen: string[] = [];
+    const customFetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const req = input instanceof Request ? input : new Request(input, init);
+      const url = new URL(req.url);
+      if (url.pathname === "/api/inventory") {
+        const offset = url.searchParams.get("offset") ?? "0";
+        offsetsSeen.push(offset);
+        if (offset === "0") {
+          return jsonResponse({ items: [MALT_ITEM], nextOffset: 1 });
+        }
+        return jsonResponse({ items: [page2Item], nextOffset: null });
+      }
+      if (url.pathname === "/api/inventory/low-stock") {
+        return jsonResponse({ items: [page2Item] });
+      }
+      return jsonResponse({ error: { code: "not_found", message: "Not found" } }, 404);
+    }) as unknown as typeof fetch;
+
+    renderWithProviders(
+      <InventoryPanel
+        serverUrl={SERVER_URL}
+        authToken="tok"
+        currentUserId={USER_ID}
+        activeBrewery={BREWERY_OWNER}
+        breweries={[BREWERY_OWNER]}
+        customFetch={customFetch}
+      />,
+      "us",
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId(`inventory-item-${MALT_ITEM.id}`)).toBeTruthy();
+      expect(screen.getByTestId(`inventory-item-${page2Item.id}`)).toBeTruthy();
+    });
+    expect(offsetsSeen).toEqual(["0", "1"]);
+    fireEvent.click(screen.getByTestId("inventory-location-chip-Cold Room"));
+    expect(screen.queryByTestId(`inventory-item-${MALT_ITEM.id}`)).toBeNull();
+    expect(screen.getByTestId(`inventory-item-${page2Item.id}`)).toBeTruthy();
+  });
+
+  it("scopes batch inventory navigation links to the batch owner across workspaces", () => {
+    expect(buildBatchInventoryHref({ type: "brewery", id: BREWERY_ID }, "shopping")).toBe(
+      `/inventory?tab=shopping&breweryId=${BREWERY_ID}`,
+    );
+    expect(buildBatchInventoryHref({ type: "user", id: USER_ID }, "stock")).toBe(
+      "/inventory?tab=stock&scope=me",
+    );
+    expect(
+      canAccessOwnerInventory({ type: "brewery", id: BREWERY_ID }, USER_ID, [BREWERY_OWNER]),
+    ).toBe(true);
+    expect(canAccessOwnerInventory({ type: "user", id: USER_ID }, USER_ID, [])).toBe(true);
+    expect(canAccessOwnerInventory({ type: "user", id: "other-user" }, USER_ID, [])).toBe(false);
+
+    // Opening a brewery batch while workspace is "Me" resolves to the brewery immediately
+    expect(
+      resolveInventoryBrewery({
+        activeBrewery: null,
+        breweries: [BREWERY_OWNER],
+        paramBreweryId: BREWERY_ID,
+        paramScope: undefined,
+        routeOverrideActive: true,
+      }),
+    ).toEqual(BREWERY_OWNER);
+
+    // Opening a personal batch while workspace is a brewery resolves to "Me" (null)
+    expect(
+      resolveInventoryBrewery({
+        activeBrewery: BREWERY_OWNER,
+        breweries: [BREWERY_OWNER],
+        paramBreweryId: undefined,
+        paramScope: "me",
+        routeOverrideActive: true,
+      }),
+    ).toBeNull();
+
+    // Once user switches manually (routeOverrideActive=false), activeBrewery wins
+    expect(
+      resolveInventoryBrewery({
+        activeBrewery: null,
+        breweries: [BREWERY_OWNER],
+        paramBreweryId: BREWERY_ID,
+        paramScope: undefined,
+        routeOverrideActive: false,
+      }),
+    ).toBeNull();
   });
 
   it("renders shopping list shortfalls with planned batch links and low-stock restock controls", async () => {

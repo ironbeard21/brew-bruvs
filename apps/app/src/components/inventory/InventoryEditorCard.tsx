@@ -71,11 +71,13 @@ export function InventoryEditorCard({
   const [quantityText, setQuantityText] = useState(
     item ? formatNumberInput(siToDisplayValue(item.quantity, initialUnit), initialUnit) : "",
   );
+  const [quantityDirty, setQuantityDirty] = useState(!item);
   const [thresholdText, setThresholdText] = useState(
     item && item.lowStockThreshold != null
       ? formatNumberInput(siToDisplayValue(item.lowStockThreshold, initialUnit), initialUnit)
       : "",
   );
+  const [thresholdDirty, setThresholdDirty] = useState(!item);
   const [lot, setLot] = useState(item?.lot ?? "");
   const [location, setLocation] = useState(item?.location ?? "");
   const [alphaAcidText, setAlphaAcidText] = useState(
@@ -90,54 +92,66 @@ export function InventoryEditorCard({
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
+  const convertFieldsToUnit = (fromUnit: DisplayUnit, toUnit: DisplayUnit) => {
+    if (toUnit === fromUnit) return;
+    if (siUnitOf(toUnit) === siUnitOf(fromUnit)) {
+      if (item && !quantityDirty && siUnitOf(toUnit) === item.quantityUnit) {
+        setQuantityText(formatNumberInput(siToDisplayValue(item.quantity, toUnit), toUnit));
+      } else {
+        const qty = parseNumber(quantityText);
+        if (qty !== null) {
+          const si = displayUnitToSi(qty, fromUnit).amount;
+          setQuantityText(formatNumberInput(siToDisplayValue(si, toUnit), toUnit));
+        }
+      }
+      if (item && !thresholdDirty && siUnitOf(toUnit) === item.quantityUnit) {
+        setThresholdText(
+          item.lowStockThreshold != null
+            ? formatNumberInput(siToDisplayValue(item.lowStockThreshold, toUnit), toUnit)
+            : "",
+        );
+      } else {
+        const thresh = parseNumber(thresholdText);
+        if (thresh !== null) {
+          const si = displayUnitToSi(thresh, fromUnit).amount;
+          setThresholdText(formatNumberInput(siToDisplayValue(si, toUnit), toUnit));
+        }
+      }
+    } else if (item) {
+      // Switching to a different physical dimension means quantity/threshold will be reinterpreted in the new SI unit.
+      setQuantityDirty(true);
+      setThresholdDirty(true);
+    }
+    setDisplayUnit(toUnit);
+  };
+
   useOnUnitSystemChange(unitSystem, (nextSystem) => {
     const nextUnit = convertDisplayUnitForSystem(displayUnit, nextSystem);
-    if (nextUnit === displayUnit) return;
-    const qty = parseNumber(quantityText);
-    if (qty !== null) {
-      const si = displayUnitToSi(qty, displayUnit).amount;
-      setQuantityText(formatNumberInput(siToDisplayValue(si, nextUnit), nextUnit));
-    }
-    const thresh = parseNumber(thresholdText);
-    if (thresh !== null) {
-      const si = displayUnitToSi(thresh, displayUnit).amount;
-      setThresholdText(formatNumberInput(siToDisplayValue(si, nextUnit), nextUnit));
-    }
-    setDisplayUnit(nextUnit);
+    convertFieldsToUnit(displayUnit, nextUnit);
   });
 
   const handleSelectUnit = (nextUnit: DisplayUnit) => {
-    if (nextUnit === displayUnit) return;
-    // Convert existing numeric text cleanly when switching within the same physical dimension
-    if (siUnitOf(nextUnit) === siUnitOf(displayUnit)) {
-      const qty = parseNumber(quantityText);
-      if (qty !== null) {
-        const si = displayUnitToSi(qty, displayUnit).amount;
-        setQuantityText(formatNumberInput(siToDisplayValue(si, nextUnit), nextUnit));
-      }
-      const thresh = parseNumber(thresholdText);
-      if (thresh !== null) {
-        const si = displayUnitToSi(thresh, displayUnit).amount;
-        setThresholdText(formatNumberInput(siToDisplayValue(si, nextUnit), nextUnit));
-      }
-    }
-    setDisplayUnit(nextUnit);
+    convertFieldsToUnit(displayUnit, nextUnit);
   };
 
   const handleCatalogSelect = (picked: CatalogItem) => {
     setName(picked.name);
     setCatalogId(picked.id);
+    let targetUnit: DisplayUnit | null = null;
     if (picked.catalog === "hops") {
-      setDisplayUnit(unitSystem === "us" ? "oz" : "g");
+      targetUnit = unitSystem === "us" ? "oz" : "g";
       if (picked.alphaAcidPct != null && !alphaAcidText.trim()) {
         setAlphaAcidText(String(picked.alphaAcidPct));
       }
     } else if (picked.catalog === "yeasts") {
-      setDisplayUnit("each");
+      targetUnit = "each";
     } else if (picked.catalog === "fermentables") {
-      setDisplayUnit(unitSystem === "us" ? "lb" : "kg");
+      targetUnit = unitSystem === "us" ? "lb" : "kg";
     } else if (picked.catalog === "miscs") {
-      setDisplayUnit(unitSystem === "us" ? "oz" : "g");
+      targetUnit = unitSystem === "us" ? "oz" : "g";
+    }
+    if (targetUnit) {
+      handleSelectUnit(targetUnit);
     }
     setShowCatalogPicker(false);
     setError(null);
@@ -200,13 +214,17 @@ export function InventoryEditorCard({
 
     try {
       if (item && onUpdate) {
+        const unitChanged = convertedQty.unit !== item.quantityUnit;
         const patch: InventoryItemPatch = {};
         if (trimmedName !== item.name) patch.name = trimmedName;
         if (nextCatalogId !== item.catalogId) patch.catalogId = nextCatalogId;
-        if (Math.abs(convertedQty.amount - item.quantity) > 1e-9) {
+        if (
+          (quantityDirty || unitChanged) &&
+          Math.abs(convertedQty.amount - item.quantity) > 1e-9
+        ) {
           patch.quantity = convertedQty.amount;
         }
-        if (convertedQty.unit !== item.quantityUnit) patch.quantityUnit = convertedQty.unit;
+        if (unitChanged) patch.quantityUnit = convertedQty.unit;
         if (nextLot !== item.lot) patch.lot = nextLot;
         if (nextLocation !== item.location) patch.location = nextLocation;
         if (alphaAcidPct !== item.alphaAcidPct) patch.alphaAcidPct = alphaAcidPct;
@@ -214,10 +232,11 @@ export function InventoryEditorCard({
         if (nextBest !== item.bestBefore) patch.bestBefore = nextBest;
         const prevThresh = item.lowStockThreshold;
         const threshChanged =
-          (thresholdSi === null) !== (prevThresh === null) ||
-          (thresholdSi !== null &&
-            prevThresh !== null &&
-            Math.abs(thresholdSi - prevThresh) > 1e-9);
+          (thresholdDirty || unitChanged) &&
+          ((thresholdSi === null) !== (prevThresh === null) ||
+            (thresholdSi !== null &&
+              prevThresh !== null &&
+              Math.abs(thresholdSi - prevThresh) > 1e-9));
         if (threshChanged) patch.lowStockThreshold = thresholdSi;
         if (nextNotes !== item.notes) patch.notes = nextNotes;
 
@@ -356,7 +375,10 @@ export function InventoryEditorCard({
             <TextField
               label="Quantity on hand"
               value={quantityText}
-              onChangeText={setQuantityText}
+              onChangeText={(next) => {
+                setQuantityText(next);
+                setQuantityDirty(true);
+              }}
               placeholder={displayUnit === "each" ? "2" : "10"}
               unit={activeUnitLabel}
               keyboardType="decimal-pad"
@@ -367,7 +389,10 @@ export function InventoryEditorCard({
             <TextField
               label="Low-stock threshold (optional)"
               value={thresholdText}
-              onChangeText={setThresholdText}
+              onChangeText={(next) => {
+                setThresholdText(next);
+                setThresholdDirty(true);
+              }}
               placeholder={displayUnit === "each" ? "1" : "2"}
               unit={activeUnitLabel}
               keyboardType="decimal-pad"

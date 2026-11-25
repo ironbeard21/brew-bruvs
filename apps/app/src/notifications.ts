@@ -56,14 +56,16 @@ export async function requestNotificationPermission(): Promise<boolean> {
   return asked.granted;
 }
 
-export function fireWebNotification(title: string, body: string): void {
-  if (Platform.OS !== "web") return;
-  if (typeof window === "undefined" || typeof Notification === "undefined") return;
-  if (Notification.permission !== "granted") return;
+export function fireWebNotification(title: string, body: string): boolean {
+  if (Platform.OS !== "web") return false;
+  if (typeof window === "undefined" || typeof Notification === "undefined") return false;
+  if (Notification.permission !== "granted") return false;
   try {
     new Notification(title, { body });
+    return true;
   } catch {
     // Ignore browser notification restrictions.
+    return false;
   }
 }
 
@@ -218,8 +220,9 @@ export interface LowStockNotificationResult {
 
 /**
  * Fires a local device notification (no push service) whenever one or more inventory items
- * newly drop below their low-stock threshold or drop further since the last alert.
- * Items that are restocked above threshold are automatically cleared so future drops alert again.
+ * newly drop below their low-stock threshold or drop further since the last delivered alert.
+ * Deduplication state is only written after OS/browser notification delivery succeeds, so
+ * pending alerts fire once notification permission is granted. Restocked items are pruned.
  */
 export async function notifyLowStockItems(
   lowStockItems: readonly InventoryItem[],
@@ -228,18 +231,28 @@ export async function notifyLowStockItems(
     scopeKey?: string;
     workspaceLabel?: string;
     requestPermission?: boolean;
+    force?: boolean;
     storage?: KeyValueStorage;
   } = {},
 ): Promise<LowStockNotificationResult> {
   const storage = opts.storage ?? appStorage;
   const scopePrefix = `${opts.scopeKey ?? "me"}::`;
   const previous = await readLowStockMap(storage);
-  const next: Record<string, number> = {};
+  const currentIds = new Set(lowStockItems.map((i) => i.id));
+  const pruned: Record<string, number> = {};
+  let prunedAny = false;
 
-  // Keep entries from other scopes intact
+  // Keep entries from other scopes and still-low items in this scope; prune restocked items.
   for (const [k, v] of Object.entries(previous)) {
     if (!k.startsWith(scopePrefix)) {
-      next[k] = v;
+      pruned[k] = v;
+      continue;
+    }
+    const itemId = k.slice(scopePrefix.length);
+    if (currentIds.has(itemId)) {
+      pruned[k] = v;
+    } else {
+      prunedAny = true;
     }
   }
 
@@ -247,16 +260,16 @@ export async function notifyLowStockItems(
   for (const item of lowStockItems) {
     const key = `${scopePrefix}${item.id}`;
     const prevAvail = previous[key];
-    // Alert when first crossing below threshold or dropping further below the last alerted level
-    if (prevAvail === undefined || item.available < prevAvail - 1e-6) {
+    // Alert when forced (manual check), first crossing below threshold, or dropping further.
+    if (opts.force || prevAvail === undefined || item.available < prevAvail - 1e-6) {
       newlyAlerted.push(item);
     }
-    next[key] = item.available;
   }
 
-  await storage.setItem(LOW_STOCK_ALERT_KEY, JSON.stringify(next));
-
   if (newlyAlerted.length === 0) {
+    if (prunedAny) {
+      await storage.setItem(LOW_STOCK_ALERT_KEY, JSON.stringify(pruned));
+    }
     return { newlyAlerted: [], permissionGranted: false, delivered: false };
   }
 
@@ -279,32 +292,42 @@ export async function notifyLowStockItems(
           )
           .join(", ");
 
+  let permissionGranted = false;
+  let delivered = false;
+
   if (Platform.OS === "web") {
-    const granted = opts.requestPermission
+    permissionGranted = opts.requestPermission
       ? await requestNotificationPermission()
       : typeof window !== "undefined" &&
         typeof Notification !== "undefined" &&
         Notification.permission === "granted";
-    if (granted) {
-      fireWebNotification(title, body);
-      return { newlyAlerted, permissionGranted: true, delivered: true };
+    if (permissionGranted) {
+      delivered = fireWebNotification(title, body);
     }
-    return { newlyAlerted, permissionGranted: false, delivered: false };
+  } else {
+    const Notifications = await getNativeNotifications();
+    if (Notifications) {
+      permissionGranted = opts.requestPermission
+        ? await requestNotificationPermission()
+        : (await Notifications.getPermissionsAsync()).granted;
+      if (permissionGranted) {
+        await Notifications.scheduleNotificationAsync({
+          content: { title, body, sound: true },
+          trigger: null,
+        });
+        delivered = true;
+      }
+    }
   }
 
-  const Notifications = await getNativeNotifications();
-  if (!Notifications) {
-    return { newlyAlerted, permissionGranted: false, delivered: false };
+  if (delivered) {
+    for (const item of newlyAlerted) {
+      pruned[`${scopePrefix}${item.id}`] = item.available;
+    }
+    await storage.setItem(LOW_STOCK_ALERT_KEY, JSON.stringify(pruned));
+  } else if (prunedAny) {
+    await storage.setItem(LOW_STOCK_ALERT_KEY, JSON.stringify(pruned));
   }
-  const granted = opts.requestPermission
-    ? await requestNotificationPermission()
-    : (await Notifications.getPermissionsAsync()).granted;
-  if (!granted) {
-    return { newlyAlerted, permissionGranted: false, delivered: false };
-  }
-  await Notifications.scheduleNotificationAsync({
-    content: { title, body, sound: true },
-    trigger: null,
-  });
-  return { newlyAlerted, permissionGranted: true, delivered: true };
+
+  return { newlyAlerted, permissionGranted, delivered };
 }

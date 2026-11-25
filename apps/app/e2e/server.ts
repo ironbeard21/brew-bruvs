@@ -1661,7 +1661,9 @@ const server = createServer(async (req, res) => {
       return sendJson(res, 401, { error: { code: "unauthorized", message: "Sign in first" } });
     const owner = scopeOwner(user, url.searchParams.get("breweryId"));
     const q = (url.searchParams.get("q") ?? "").trim().toLowerCase();
-    const items = [...inventoryItems.values()]
+    const limit = Math.min(100, Math.max(1, Number(url.searchParams.get("limit") ?? "50") || 50));
+    const offset = Math.max(0, Number(url.searchParams.get("offset") ?? "0") || 0);
+    const matching = [...inventoryItems.values()]
       .filter((i) => sameOwner(i.owner, owner))
       .filter((i) => {
         if (!q) return true;
@@ -1670,8 +1672,11 @@ const server = createServer(async (req, res) => {
           .toLowerCase()
           .includes(q);
       })
+      .sort((a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id))
       .map(inventoryView);
-    return sendJson(res, 200, { items, nextOffset: null });
+    const slice = matching.slice(offset, offset + limit);
+    const nextOffset = matching.length > offset + limit ? offset + limit : null;
+    return sendJson(res, 200, { items: slice, nextOffset });
   }
 
   if (pathname === "/api/inventory" && method === "POST") {

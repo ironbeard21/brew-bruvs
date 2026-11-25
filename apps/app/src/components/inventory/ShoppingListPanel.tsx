@@ -94,9 +94,10 @@ export function ShoppingListPanel({
       return;
     }
     const res = await notifyLowStockItems(shopping.lowStock, unitSystem, {
-      scopeKey: `${serverUrl}::${breweryId ?? "me"}::shopping-${Date.now()}`,
+      scopeKey: `${serverUrl}::${breweryId ?? "me"}`,
       workspaceLabel,
       requestPermission: true,
+      force: true,
     });
     setNotice(
       res.delivered

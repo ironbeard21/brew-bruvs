@@ -12,6 +12,8 @@ export type Reservation = components["schemas"]["Reservation"];
 export type ShoppingList = components["schemas"]["ShoppingList"];
 export type BatchStats = components["schemas"]["BatchStats"];
 
+const MAX_INVENTORY_PAGES = 100;
+
 export async function fetchInventory(
   serverUrl: string,
   token: string | null,
@@ -23,20 +25,33 @@ export async function fetchInventory(
     ...(customFetch ? { customFetch } : {}),
   });
   const trimmed = opts.q?.trim();
-  const { data, error } = await client.GET("/api/inventory", {
-    credentials: "include",
-    params: {
-      query: {
-        ...(opts.breweryId ? { breweryId: opts.breweryId } : {}),
-        ...(trimmed ? { q: trimmed } : {}),
-        limit: opts.limit ?? 100,
+  const pageSize = opts.limit ?? 100;
+  const allItems: InventoryItem[] = [];
+  let offset = 0;
+
+  for (let page = 0; page < MAX_INVENTORY_PAGES; page += 1) {
+    const { data, error } = await client.GET("/api/inventory", {
+      credentials: "include",
+      params: {
+        query: {
+          ...(opts.breweryId ? { breweryId: opts.breweryId } : {}),
+          ...(trimmed ? { q: trimmed } : {}),
+          limit: pageSize,
+          offset,
+        },
       },
-    },
-  });
-  if (error || !data) {
-    throw new Error(formatApiError(error, "Could not load inventory."));
+    });
+    if (error || !data) {
+      throw new Error(formatApiError(error, "Could not load inventory."));
+    }
+    allItems.push(...data.items);
+    if (data.nextOffset == null || data.nextOffset <= offset || data.items.length === 0) {
+      break;
+    }
+    offset = data.nextOffset;
   }
-  return data.items;
+
+  return allItems;
 }
 
 export async function fetchLowStock(

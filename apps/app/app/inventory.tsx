@@ -1,26 +1,39 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useCurrentUser } from "../src/api/auth";
 import { type InventoryItem, useShoppingList } from "../src/api/inventory";
 import { AppShell } from "../src/components/AppShell";
 import { InventoryPanel } from "../src/components/inventory/InventoryPanel";
+import {
+  type InventoryTab,
+  resolveInventoryBrewery,
+} from "../src/components/inventory/inventoryScope";
 import { ShoppingListPanel } from "../src/components/inventory/ShoppingListPanel";
 import { Banner, Button, Card, SegmentedControl } from "../src/components/ui";
 import { useOptionalBrewery } from "../src/state/brewery";
 import { useServer } from "../src/state/server";
 
-type InventoryTab = "stock" | "shopping";
-
 export default function InventoryScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ tab?: string }>();
+  const params = useLocalSearchParams<{ tab?: string; breweryId?: string; scope?: string }>();
   const { serverUrl, authToken } = useServer();
   const currentUser = useCurrentUser(serverUrl, authToken);
-  const { activeBrewery, breweries } = useOptionalBrewery();
+  const { activeBrewery, activeBreweryId, breweries, setActiveBreweryId } = useOptionalBrewery();
+
+  const paramBreweryId = typeof params.breweryId === "string" ? params.breweryId : undefined;
+  const paramScope = typeof params.scope === "string" ? params.scope : undefined;
+  const routeScopeKey = paramBreweryId
+    ? `brewery:${paramBreweryId}`
+    : paramScope === "me"
+      ? "me"
+      : "";
 
   const [tab, setTab] = useState<InventoryTab>(params.tab === "shopping" ? "shopping" : "stock");
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
+  const [routeOverrideKey, setRouteOverrideKey] = useState<string>(routeScopeKey);
+  const appliedScopeRef = useRef<string>("");
+  const prevActiveIdRef = useRef<string | null>(activeBreweryId);
 
   useEffect(() => {
     if (params.tab === "shopping") {
@@ -30,8 +43,44 @@ export default function InventoryScreen() {
     }
   }, [params.tab]);
 
+  // Apply explicit batch-owner scope param once on navigation arrival so the workspace switcher and
+  // inventory queries stay in sync with the batch's owner without fighting later manual switches.
+  useEffect(() => {
+    if (!routeScopeKey || appliedScopeRef.current === routeScopeKey) return;
+    if (paramScope === "me") {
+      appliedScopeRef.current = routeScopeKey;
+      setRouteOverrideKey(routeScopeKey);
+      if (activeBreweryId !== null) setActiveBreweryId(null);
+      return;
+    }
+    if (paramBreweryId && breweries.some((b) => b.id === paramBreweryId)) {
+      appliedScopeRef.current = routeScopeKey;
+      setRouteOverrideKey(routeScopeKey);
+      if (activeBreweryId !== paramBreweryId) setActiveBreweryId(paramBreweryId);
+    }
+  }, [routeScopeKey, paramScope, paramBreweryId, breweries, activeBreweryId, setActiveBreweryId]);
+
+  // Once the user switches workspaces manually in WorkspaceSwitcher, stop applying the arrived param override.
+  useEffect(() => {
+    if (prevActiveIdRef.current !== activeBreweryId) {
+      prevActiveIdRef.current = activeBreweryId;
+      const expectedId = paramScope === "me" ? null : (paramBreweryId ?? null);
+      if (routeOverrideKey && activeBreweryId !== expectedId) {
+        setRouteOverrideKey("");
+      }
+    }
+  }, [activeBreweryId, paramScope, paramBreweryId, routeOverrideKey]);
+
+  const effectiveBrewery = resolveInventoryBrewery({
+    activeBrewery,
+    breweries,
+    paramBreweryId,
+    paramScope,
+    routeOverrideActive: Boolean(routeOverrideKey && routeOverrideKey === routeScopeKey),
+  });
+
   const shoppingQuery = useShoppingList(serverUrl, authToken, {
-    breweryId: activeBrewery?.id ?? null,
+    breweryId: effectiveBrewery?.id ?? null,
     enabled: Boolean(serverUrl && currentUser.data),
   });
   const shoppingCount =
@@ -95,8 +144,8 @@ export default function InventoryScreen() {
     <AppShell
       title="Inventory"
       subtitle={
-        activeBrewery
-          ? `Managing ${activeBrewery.name} inventory, reservations, and shopping list.`
+        effectiveBrewery
+          ? `Managing ${effectiveBrewery.name} inventory, reservations, and shopping list.`
           : "Track ingredients in your units, reserve stock for batches, and watch low-stock alerts."
       }
     >
@@ -112,7 +161,7 @@ export default function InventoryScreen() {
           serverUrl={serverUrl}
           authToken={authToken}
           currentUserId={currentUser.data.id}
-          activeBrewery={activeBrewery}
+          activeBrewery={effectiveBrewery}
           breweries={breweries}
           editingItem={editingItem}
           onEditingItemChange={setEditingItem}
@@ -123,7 +172,7 @@ export default function InventoryScreen() {
           serverUrl={serverUrl}
           authToken={authToken}
           currentUserId={currentUser.data.id}
-          activeBrewery={activeBrewery}
+          activeBrewery={effectiveBrewery}
           breweries={breweries}
           onOpenBatch={(batchId) => router.push(`/batches/${batchId}`)}
           onRestockItem={(item) => {

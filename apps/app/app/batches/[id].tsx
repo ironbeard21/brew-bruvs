@@ -45,6 +45,10 @@ import { PackagingStepCard } from "../../src/components/batches/PackagingStepCar
 import { ReadingsSection } from "../../src/components/batches/ReadingsSection";
 import { RemindersSection } from "../../src/components/batches/RemindersSection";
 import { MoveToBreweryBar } from "../../src/components/breweries/OwnerPickerCard";
+import {
+  buildBatchInventoryHref,
+  canAccessOwnerInventory,
+} from "../../src/components/inventory/inventoryScope";
 import { OwnerBadge } from "../../src/components/OwnerBadge";
 import { Banner, Button, Card, SegmentedControl } from "../../src/components/ui";
 import { notifyLowStockItems } from "../../src/notifications";
@@ -96,9 +100,14 @@ export default function BatchDetailScreen() {
 
   const batch = detailQuery.data;
   const ownerBreweryId = batch?.owner.type === "brewery" ? batch.owner.id : null;
+  const canInspectBatchInventory = Boolean(
+    batch && canAccessOwnerInventory(batch.owner, currentUser.data?.id, breweries),
+  );
   const shoppingQuery = useShoppingList(serverUrl, authToken, {
     breweryId: ownerBreweryId,
-    enabled: Boolean(serverUrl && currentUser.data && batch?.status === "planned"),
+    enabled: Boolean(
+      serverUrl && currentUser.data && batch?.status === "planned" && canInspectBatchInventory,
+    ),
   });
   const recipeVersionQuery = useRecipeVersion(
     serverUrl,
@@ -337,7 +346,12 @@ export default function BatchDetailScreen() {
           <BatchInventoryChangeBanner
             change={lastInventoryChange}
             lowStockMessage={lowStockAlert}
-            onOpenShoppingList={() => router.push("/inventory?tab=shopping")}
+            {...(canInspectBatchInventory
+              ? {
+                  onOpenShoppingList: () =>
+                    router.push(buildBatchInventoryHref(batch.owner, "shopping")),
+                }
+              : {})}
             onDismiss={() => {
               setLastInventoryChange(null);
               setLowStockAlert(null);
@@ -406,8 +420,13 @@ export default function BatchDetailScreen() {
           stats={statsQuery.data ?? null}
           loadingStats={statsQuery.isPending}
           shoppingList={shoppingQuery.data ?? null}
-          onOpenInventory={() => router.push("/inventory")}
-          onOpenShoppingList={() => router.push("/inventory?tab=shopping")}
+          {...(canInspectBatchInventory
+            ? {
+                onOpenInventory: () => router.push(buildBatchInventoryHref(batch.owner, "stock")),
+                onOpenShoppingList: () =>
+                  router.push(buildBatchInventoryHref(batch.owner, "shopping")),
+              }
+            : {})}
         />
       ) : null}
 

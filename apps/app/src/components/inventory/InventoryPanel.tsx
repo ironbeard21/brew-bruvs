@@ -156,11 +156,12 @@ export function InventoryPanel({
       setAlertNotice("No items are currently below their low-stock threshold.");
       return;
     }
-    // Pass a one-time scope key so an explicit button press always tests/requests local notification permission.
+    // Reuse the stable workspace scope key with force=true so manual checks don't leak keys in storage.
     const res = await notifyLowStockItems(current, unitSystem, {
-      scopeKey: `${serverUrl}::${breweryId ?? "me"}::manual-${Date.now()}`,
+      scopeKey: `${serverUrl}::${breweryId ?? "me"}`,
       workspaceLabel,
       requestPermission: true,
+      force: true,
     });
     setAlertNotice(
       res.delivered
