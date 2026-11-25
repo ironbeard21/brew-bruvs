@@ -36,6 +36,12 @@ const {
 type Status = z.infer<typeof BatchStatus>;
 type BatchRow = typeof batches.$inferSelect;
 type ReadingRow = typeof readings.$inferSelect;
+type BatchHistory = {
+  status: Status;
+  brewedAt: Date | null;
+  completedAt: Date | null;
+  readings: z.infer<typeof ReadingInput>[];
+};
 
 const HOUR = 3_600_000;
 const iso = (d: Date | null) => d?.toISOString() ?? null;
@@ -242,10 +248,14 @@ export function createBatchService(
     },
 
     /** Brew any recipe you can read; the batch is yours and starts private and planned. */
-    async create(viewer: User | null, input: z.infer<typeof CreateBatch>) {
+    async create(
+      viewer: User | null,
+      input: z.infer<typeof CreateBatch>,
+      imported?: { tx: Tx; history: BatchHistory },
+    ) {
       const user = signedIn(viewer);
       const owner = newOwner(user, input.breweryId);
-      return db.transaction(async (tx) => {
+      return (imported?.tx ?? db).transaction(async (tx) => {
         const [recipe] = await tx.select().from(recipes).where(eq(recipes.id, input.recipeId));
         if (!recipe) throw new ApiError(404, "not_found", "Recipe not found");
         await authorizeRow(tx, user, "read", "recipe", recipe, "Recipe");
@@ -280,6 +290,10 @@ export function createBatchService(
           profileId = readable ? version.equipmentProfileId : null;
         }
 
+        const history = imported?.history;
+        if (history && !flowOf(recipe.beverage).includes(history.status)) {
+          throw new ApiError(400, "invalid_status", "Imported status is invalid for this beverage");
+        }
         const id = await newId(tx);
         const [batch] = await tx
           .insert(batches)
@@ -292,10 +306,34 @@ export function createBatchService(
             beverage: recipe.beverage,
             batchSizeL: input.batchSizeL ?? version.batchSizeL,
             equipmentProfileId: profileId,
+            ...(history && {
+              status: history.status,
+              brewedAt: history.brewedAt,
+              completedAt: history.completedAt,
+            }),
           })
           .returning();
         const row = batch as BatchRow;
-        await recordStatus(tx, id, "planned", user.id, row.createdAt);
+        await recordStatus(
+          tx,
+          id,
+          row.status,
+          user.id,
+          row.completedAt ?? row.brewedAt ?? row.createdAt,
+        );
+        // Imported readings and status describe previous activity. They do not take stock,
+        // schedule reminders, or emit new events.
+        const importedReadings = history?.readings ?? [];
+        for (let offset = 0; offset < importedReadings.length; offset += 1_000) {
+          await tx.insert(readings).values(
+            importedReadings.slice(offset, offset + 1_000).map((reading) => ({
+              ...reading,
+              takenAt: new Date(reading.takenAt),
+              batchId: id,
+              createdByUserId: user.id,
+            })),
+          );
+        }
         return detail(tx, { batch: row, recipeId: recipe.id, version: version.version });
       });
     },

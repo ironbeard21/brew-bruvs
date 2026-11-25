@@ -12,6 +12,7 @@ import { registerAdminRoutes } from "./routes/admin.ts";
 import { type AuthRouteDeps, registerAuthRoutes } from "./routes/auth.ts";
 import { registerBatchRoutes } from "./routes/batches.ts";
 import { registerBreweryRoutes } from "./routes/breweries.ts";
+import { registerBrewfatherRoutes } from "./routes/brewfather.ts";
 import { registerCatalogRoutes } from "./routes/catalog.ts";
 import { registerEquipmentItemRoutes } from "./routes/equipment-items.ts";
 import { registerHealthRoutes } from "./routes/health.ts";
@@ -22,6 +23,7 @@ import { registerSharingRoutes } from "./routes/sharing.ts";
 import type { ActivityService } from "./services/activity.ts";
 import type { BatchService } from "./services/batches.ts";
 import type { BreweryService } from "./services/breweries.ts";
+import type { BrewfatherService } from "./services/brewfather.ts";
 import type { CatalogService } from "./services/catalog.ts";
 import type { EquipmentItemService } from "./services/equipment-items.ts";
 import type { EquipmentProfileService } from "./services/equipment-profiles.ts";
@@ -57,6 +59,7 @@ export interface AppDeps {
   notes: NoteService;
   breweries: BreweryService;
   inventory: InventoryService;
+  brewfather: BrewfatherService;
   sharing: SharingService;
   activity: ActivityService;
 }
@@ -120,6 +123,7 @@ export function createApp(deps: AppDeps) {
   registerEquipmentItemRoutes(app, deps.equipmentItems);
   registerBreweryRoutes(app, breweries);
   registerInventoryRoutes(app, inventory);
+  registerBrewfatherRoutes(app, deps);
   registerSharingRoutes(app, { sharing, activity });
   app.doc31(OPENAPI_PATH, OPENAPI_INFO);
 

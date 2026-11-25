@@ -11,6 +11,7 @@ import { createActivityService } from "../src/services/activity.ts";
 import { createAuthService } from "../src/services/auth.ts";
 import { createBatchService } from "../src/services/batches.ts";
 import { createBreweryService } from "../src/services/breweries.ts";
+import { createBrewfatherService } from "../src/services/brewfather.ts";
 import { createCatalogService } from "../src/services/catalog.ts";
 import { createEquipmentItemService } from "../src/services/equipment-items.ts";
 import { createEquipmentProfileService } from "../src/services/equipment-profiles.ts";
@@ -28,6 +29,7 @@ function deps(
   signupMode: "open" | "invite",
   oidc?: Oidc,
   readRecipeUrl?: Parameters<typeof createRecipeFileService>[1],
+  fetchBrewfather?: Parameters<typeof createBrewfatherService>[1],
 ): AppDeps {
   const profiles = createEquipmentProfileService(db, { baseUrl: BASE_URL });
   return {
@@ -41,6 +43,7 @@ function deps(
     batches: createBatchService(db, { baseUrl: BASE_URL, profiles }),
     notes: createNoteService(db, { baseUrl: BASE_URL }),
     breweries: createBreweryService(db, { baseUrl: BASE_URL }),
+    brewfather: createBrewfatherService(db, fetchBrewfather),
     inventory: createInventoryService(db, { baseUrl: BASE_URL }),
     sharing: createSharingService(db),
     activity: createActivityService(db),
@@ -68,6 +71,7 @@ export async function withApp(
     signupMode?: "open" | "invite";
     oidc?: Oidc;
     readRecipeUrl?: Parameters<typeof createRecipeFileService>[1];
+    fetchBrewfather?: Parameters<typeof createBrewfatherService>[1];
   },
   run: (app: TestApp, sql: Client) => Promise<void>,
 ): Promise<void> {
@@ -79,7 +83,15 @@ export async function withApp(
       await sql.connect();
       await migrateUp(sql);
       await run(
-        createApp(deps(db, opts.signupMode ?? "invite", opts.oidc, opts.readRecipeUrl)),
+        createApp(
+          deps(
+            db,
+            opts.signupMode ?? "invite",
+            opts.oidc,
+            opts.readRecipeUrl,
+            opts.fetchBrewfather,
+          ),
+        ),
         sql,
       );
     } finally {
