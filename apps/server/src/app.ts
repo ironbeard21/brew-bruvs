@@ -10,11 +10,13 @@ import type { Logger } from "./logger.ts";
 import { registerAdminRoutes } from "./routes/admin.ts";
 import { type AuthRouteDeps, registerAuthRoutes } from "./routes/auth.ts";
 import { registerBatchRoutes } from "./routes/batches.ts";
+import { registerBreweryRoutes } from "./routes/breweries.ts";
 import { registerCatalogRoutes } from "./routes/catalog.ts";
 import { registerHealthRoutes } from "./routes/health.ts";
 import { registerRecipeFileRoutes } from "./routes/recipe-files.ts";
 import { registerRecipeRoutes } from "./routes/recipes.ts";
 import type { BatchService } from "./services/batches.ts";
+import type { BreweryService } from "./services/breweries.ts";
 import type { CatalogService } from "./services/catalog.ts";
 import type { EquipmentProfileService } from "./services/equipment-profiles.ts";
 import type { NoteService } from "./services/notes.ts";
@@ -43,10 +45,22 @@ export interface AppDeps {
   profiles: EquipmentProfileService;
   batches: BatchService;
   notes: NoteService;
+  breweries: BreweryService;
 }
 
 export function createApp(deps: AppDeps) {
-  const { logger, webDir, auth, catalog, recipes, recipeFiles, profiles, batches, notes } = deps;
+  const {
+    logger,
+    webDir,
+    auth,
+    catalog,
+    recipes,
+    recipeFiles,
+    profiles,
+    batches,
+    notes,
+    breweries,
+  } = deps;
   const app = new OpenAPIHono<AppEnv>({
     defaultHook: (result, c) => {
       if (!result.success) {
@@ -80,6 +94,7 @@ export function createApp(deps: AppDeps) {
   registerRecipeRoutes(app, { recipes, profiles });
   registerRecipeFileRoutes(app, recipes, recipeFiles, { trustProxy: auth.trustProxy });
   registerBatchRoutes(app, { batches, notes });
+  registerBreweryRoutes(app, breweries);
   app.doc31(OPENAPI_PATH, OPENAPI_INFO);
 
   if (webDir) {

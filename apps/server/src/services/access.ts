@@ -107,3 +107,72 @@ export function readableBy(
     opts.visibility ? inArray(table.visibility, ["server", "public"]) : undefined,
   );
 }
+
+const forbidden = (message: string) => new ApiError(403, "forbidden", message);
+
+/** The owner columns for a new object: the user, or a brewery where they are an owner or brewer. */
+export function newOwner(user: User, breweryId: string | null | undefined) {
+  if (!breweryId) return { ownerUserId: user.id, ownerBreweryId: null };
+  if (!user.memberships.some((m) => m.breweryId === breweryId)) {
+    throw new ApiError(404, "not_found", "Brewery not found");
+  }
+  const brewery: Resource = {
+    owner: { type: "brewery", id: breweryId },
+    visibility: "private",
+    shares: [],
+  };
+  if (!can(user, "edit", brewery)) {
+    throw forbidden("Only the brewery's owners and brewers can add to it");
+  }
+  return { ownerUserId: null, ownerBreweryId: breweryId };
+}
+
+const MOVABLE = {
+  recipe: { table: "recipes", what: "Recipe" },
+  batch: { table: "batches", what: "Batch" },
+  note: { table: "notes", what: "Note" },
+  equipment_profile: { table: "equipment_profiles", what: "Equipment profile" },
+} as const;
+
+/** Moves something the user owns into a brewery where they are an owner or brewer. */
+export async function moveToBrewery(
+  tx: Tx,
+  viewer: User | null,
+  type: keyof typeof MOVABLE,
+  id: string,
+  breweryId: string,
+) {
+  const user = signedIn(viewer);
+  const { table, what } = MOVABLE[type];
+  const { rows } = await tx.execute<{
+    id: string;
+    owner_user_id: string | null;
+    owner_brewery_id: string | null;
+    visibility: Resource["visibility"];
+  }>(
+    sql`SELECT id, owner_user_id, owner_brewery_id, visibility FROM ${sql.identifier(table)} WHERE id = ${id} FOR UPDATE`,
+  );
+  const row = rows[0];
+  if (!row) throw new ApiError(404, "not_found", `${what} not found`);
+  await authorizeRow(
+    tx,
+    user,
+    "read",
+    type,
+    {
+      id: row.id,
+      ownerUserId: row.owner_user_id,
+      ownerBreweryId: row.owner_brewery_id,
+      visibility: row.visibility,
+    },
+    what,
+  );
+  if (row.owner_user_id !== user.id) {
+    throw forbidden(`Only its owner can move this ${what.toLowerCase()}`);
+  }
+  newOwner(user, breweryId);
+  await tx.execute(
+    sql`UPDATE ${sql.identifier(table)} SET owner_user_id = NULL, owner_brewery_id = ${breweryId}, updated_at = now() WHERE id = ${id}`,
+  );
+  return { type: "brewery" as const, id: breweryId };
+}

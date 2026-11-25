@@ -2,8 +2,8 @@
 // Schema v3 (Phase 2): brewery roles, inventory and reservations, equipment, integrations, activity.
 import { Client } from "pg";
 import { describe, expect, it } from "vitest";
-import { migrateUp, rollbackLatest } from "../src/migrations.ts";
-import { withTestDatabase } from "./test-database.ts";
+import { migrateUp } from "../src/migrations.ts";
+import { rollbackThrough, withTestDatabase } from "./test-database.ts";
 
 const connectionString = process.env.TEST_DATABASE_URL;
 const violates = (code: string) => expect.objectContaining({ code });
@@ -36,7 +36,7 @@ describe.skipIf(!connectionString)("schema v3 on Postgres (TEST_DATABASE_URL)", 
   it("turns Phase 1 admins into owners, and members back into viewers on rollback", async () => {
     await withClient(async (client) => {
       await migrateUp(client);
-      expect(await rollbackLatest(client)).toBe("0006_schema_v3");
+      await rollbackThrough(client, "0006_schema_v3");
       const ann = await user(client, 1);
       const brewery = await one(
         client,
@@ -53,7 +53,7 @@ describe.skipIf(!connectionString)("schema v3 on Postgres (TEST_DATABASE_URL)", 
       ]);
       await client.query("UPDATE memberships SET role = 'member'");
 
-      expect(await rollbackLatest(client)).toBe("0006_schema_v3");
+      await rollbackThrough(client, "0006_schema_v3");
       expect((await client.query("SELECT role FROM memberships")).rows).toEqual([
         { role: "viewer" },
       ]);
@@ -164,7 +164,7 @@ describe.skipIf(!connectionString)("schema v3 on Postgres (TEST_DATABASE_URL)", 
         { batch_id: null },
       ]);
 
-      expect(await rollbackLatest(client)).toBe("0006_schema_v3");
+      await rollbackThrough(client, "0006_schema_v3");
       expect((await client.query("SELECT 1 FROM shares")).rowCount).toBe(0);
       expect((await client.query("SELECT quantity FROM inventory_items")).rows).toEqual([
         { quantity: 1 },

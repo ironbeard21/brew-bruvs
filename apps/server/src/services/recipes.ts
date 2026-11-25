@@ -16,7 +16,7 @@ import type {
 } from "../contracts/recipes.ts";
 import { ApiError, pgCode } from "../errors.ts";
 import type { Action, User } from "../permissions.ts";
-import { authorizeRow, newId, ownerOf, readableBy, signedIn, type Tx } from "./access.ts";
+import { authorizeRow, newId, newOwner, ownerOf, readableBy, signedIn, type Tx } from "./access.ts";
 import type { EquipmentProfileService } from "./equipment-profiles.ts";
 import {
   catalogValues,
@@ -165,14 +165,16 @@ export function createRecipeService(
   async function insertRecipe(
     tx: Tx,
     user: User,
-    values: Omit<typeof recipes.$inferInsert, "id" | "uri" | "ownerUserId">,
+    values: Omit<typeof recipes.$inferInsert, "id" | "uri" | "ownerUserId" | "ownerBreweryId">,
     version: z.infer<typeof RecipeVersionInput>,
+    breweryId?: string,
   ) {
+    const owner = newOwner(user, breweryId);
     await checkRefs(tx, user, version);
     const id = await newId(tx);
     const [recipe] = await tx
       .insert(recipes)
-      .values({ ...values, id, uri: `${opts.baseUrl}/recipes/${id}`, ownerUserId: user.id })
+      .values({ ...values, id, uri: `${opts.baseUrl}/recipes/${id}`, ...owner })
       .returning();
     const row = { ...(recipe as RecipeRow), latestVersion: 1 };
     await insertVersion(tx, row, 1, version, user.id);
@@ -230,6 +232,7 @@ export function createRecipeService(
             }),
           },
           input,
+          input.breweryId,
         ),
       );
     },

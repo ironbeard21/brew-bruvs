@@ -9,6 +9,7 @@ import { recipeContentJsonSchema } from "./contracts/recipe-content.ts";
 import { createLogger } from "./logger.ts";
 import { createAuthService } from "./services/auth.ts";
 import { createBatchService } from "./services/batches.ts";
+import { createBreweryService } from "./services/breweries.ts";
 import { createCatalogService } from "./services/catalog.ts";
 import { createEquipmentProfileService } from "./services/equipment-profiles.ts";
 import { createNoteService } from "./services/notes.ts";
@@ -31,6 +32,7 @@ const app = createApp({
   recipeFiles: createRecipeFileService(db),
   batches: createBatchService(db, { baseUrl, profiles }),
   notes: createNoteService(db, { baseUrl }),
+  breweries: createBreweryService(db, { baseUrl }),
   auth: {
     auth: createAuthService(db, { baseUrl, signupMode: "invite" }),
     oidc: undefined,

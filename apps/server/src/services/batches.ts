@@ -15,7 +15,7 @@ import type {
 import { MEASUREMENTS } from "../contracts/batches.ts";
 import { ApiError } from "../errors.ts";
 import type { Action, User } from "../permissions.ts";
-import { authorizeRow, newId, ownerOf, readableBy, signedIn, type Tx } from "./access.ts";
+import { authorizeRow, newId, newOwner, ownerOf, readableBy, signedIn, type Tx } from "./access.ts";
 import type { EquipmentProfileService } from "./equipment-profiles.ts";
 import { versionStats } from "./recipe-stats.ts";
 
@@ -205,6 +205,14 @@ export function createBatchService(
     return row;
   }
 
+  /** Contributors change their own readings; changing anyone else's needs edit. */
+  async function ownReadingOrEdit(tx: Tx, viewer: User | null, id: string, readingId: string) {
+    await authorize(tx, viewer, "contribute", id);
+    const current = await readingOf(tx, id, readingId);
+    if (!viewer || current.createdByUserId !== viewer.id) await authorize(tx, viewer, "edit", id);
+    return current;
+  }
+
   return {
     async list(
       viewer: User | null,
@@ -232,6 +240,7 @@ export function createBatchService(
     /** Brew any recipe you can read; the batch is yours and starts private and planned. */
     async create(viewer: User | null, input: z.infer<typeof CreateBatch>) {
       const user = signedIn(viewer);
+      const owner = newOwner(user, input.breweryId);
       return db.transaction(async (tx) => {
         const [recipe] = await tx.select().from(recipes).where(eq(recipes.id, input.recipeId));
         if (!recipe) throw new ApiError(404, "not_found", "Recipe not found");
@@ -273,7 +282,7 @@ export function createBatchService(
           .values({
             id,
             uri: `${opts.baseUrl}/batches/${id}`,
-            ownerUserId: user.id,
+            ...owner,
             recipeVersionId: version.id,
             name: input.name ?? version.name,
             beverage: recipe.beverage,
@@ -362,7 +371,7 @@ export function createBatchService(
     async addReading(viewer: User | null, id: string, input: z.infer<typeof ReadingInput>) {
       const user = signedIn(viewer);
       return db.transaction(async (tx) => {
-        await authorize(tx, user, "edit", id);
+        await authorize(tx, user, "contribute", id);
         const [row] = await tx
           .insert(readings)
           .values({
@@ -383,8 +392,7 @@ export function createBatchService(
       patch: z.infer<typeof ReadingPatch>,
     ) {
       return db.transaction(async (tx) => {
-        await authorize(tx, viewer, "edit", id);
-        const current = await readingOf(tx, id, readingId);
+        const current = await ownReadingOrEdit(tx, viewer, id, readingId);
         if (Object.keys(patch).length === 0) return viewReading(current);
         const merged = { ...current, ...patch };
         if (!MEASUREMENTS.some((k) => merged[k] != null)) {
@@ -402,8 +410,7 @@ export function createBatchService(
 
     async removeReading(viewer: User | null, id: string, readingId: string) {
       await db.transaction(async (tx) => {
-        await authorize(tx, viewer, "edit", id);
-        await readingOf(tx, id, readingId);
+        await ownReadingOrEdit(tx, viewer, id, readingId);
         await tx.delete(readings).where(eq(readings.id, readingId));
       });
     },
