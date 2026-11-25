@@ -119,6 +119,15 @@ type Stock = ItemRow & { available: number };
 
 /** The owner's items, soonest best-before first, with what's still free. */
 async function stockOf(tx: Tx, owner: Owner, lock: boolean): Promise<Stock[]> {
+  // Lock first, then read what's reserved in a new statement: a statement that waited for the
+  // locks still sees its old snapshot, without reservations another start just committed.
+  if (lock) {
+    await tx
+      .select({ id: inventoryItems.id })
+      .from(inventoryItems)
+      .where(ownerIs(owner))
+      .for("update");
+  }
   const query = tx
     .select({ item: inventoryItems, reserved: reservedSum })
     .from(inventoryItems)
@@ -128,7 +137,7 @@ async function stockOf(tx: Tx, owner: Owner, lock: boolean): Promise<Stock[]> {
       asc(inventoryItems.createdAt),
       asc(inventoryItems.id),
     );
-  const rows = await (lock ? query.for("update", { of: inventoryItems }) : query);
+  const rows = await query;
   return rows.map((r) => ({ ...r.item, available: r.item.quantity - Number(r.reserved) }));
 }
 
@@ -185,25 +194,89 @@ const viewReservation = (
   state: r.state,
 });
 
-async function setState(
-  tx: Tx,
-  batchId: string,
-  from: "reserved" | "used",
-  to: "reserved" | "used" | "released",
-) {
-  const rows = await tx
+const ofBatch = (batchId: string, state: "reserved" | "used") =>
+  and(eq(inventoryReservations.batchId, batchId), eq(inventoryReservations.state, state));
+
+async function release(tx: Tx, batchId: string) {
+  return tx
     .update(inventoryReservations)
-    .set({ state: to })
-    .where(and(eq(inventoryReservations.batchId, batchId), eq(inventoryReservations.state, from)))
-    .returning();
-  // Using takes stock off the shelf; undoing it puts it back.
-  const sign = from === "reserved" && to === "used" ? -1 : from === "used" ? 1 : 0;
-  for (const r of sign ? rows : []) {
+    .set({ state: "released" })
+    .where(ofBatch(batchId, "reserved"))
+    .returning({ id: inventoryReservations.id });
+}
+
+/**
+ * Takes reserved stock off the shelf. Each reservation keeps the amount actually taken, which
+ * can be less than reserved if the item was corrected down since; undo puts back exactly that.
+ */
+async function useUp(tx: Tx, batchId: string) {
+  const held = await tx
+    .select({ r: inventoryReservations, onHand: inventoryItems.quantity })
+    .from(inventoryReservations)
+    .innerJoin(inventoryItems, eq(inventoryItems.id, inventoryReservations.inventoryItemId))
+    .where(ofBatch(batchId, "reserved"))
+    .orderBy(asc(inventoryReservations.id))
+    .for("update");
+  const left = new Map(held.map((h) => [h.r.inventoryItemId, h.onHand]));
+  for (const { r } of held) {
+    const take = Math.min(r.quantity, left.get(r.inventoryItemId) ?? 0);
+    left.set(r.inventoryItemId, (left.get(r.inventoryItemId) ?? 0) - take);
+    if (take <= EPSILON) {
+      await tx
+        .update(inventoryReservations)
+        .set({ state: "released" })
+        .where(eq(inventoryReservations.id, r.id));
+      continue;
+    }
     await tx
       .update(inventoryItems)
-      .set({ quantity: sql`greatest(0, ${inventoryItems.quantity} + ${sign * r.quantity})` })
+      .set({ quantity: sql`${inventoryItems.quantity} - ${take}` })
+      .where(eq(inventoryItems.id, r.inventoryItemId));
+    await tx
+      .update(inventoryReservations)
+      .set({ state: "used", quantity: take })
+      .where(eq(inventoryReservations.id, r.id));
+  }
+}
+
+/** Puts used stock back on the shelf and holds it for the batch again. */
+async function putBack(tx: Tx, batchId: string) {
+  const rows = await tx
+    .update(inventoryReservations)
+    .set({ state: "reserved" })
+    .where(ofBatch(batchId, "used"))
+    .returning();
+  for (const r of rows) {
+    await tx
+      .update(inventoryItems)
+      .set({ quantity: sql`${inventoryItems.quantity} + ${r.quantity}` })
       .where(eq(inventoryItems.id, r.inventoryItemId));
   }
+}
+
+/** Reserves what the batch needs from its owner's inventory and reports what's short. */
+async function reserve(tx: Tx, batch: BatchRow) {
+  const { content } = await batchContent(tx, batch);
+  const { takes, short } = allocate(linesOf(content), await stockOf(tx, batch, true));
+  const reserved: ReturnType<typeof viewReservation>[] = [];
+  for (const { item, quantity } of takes) {
+    const [row] = await tx
+      .insert(inventoryReservations)
+      .values({ batchId: batch.id, inventoryItemId: item.id, quantity })
+      .returning();
+    if (row) reserved.push(viewReservation(row, item));
+  }
+  return { reserved, short };
+}
+
+/**
+ * After a started batch changes owner, its held stock comes from the new owner's inventory:
+ * the old reservations are released and the batch reserves again. Used stock stays used.
+ */
+export async function reserveForNewOwner(tx: Tx, batchId: string) {
+  if (!(await release(tx, batchId)).length) return;
+  const [batch] = await tx.select().from(batches).where(eq(batches.id, batchId));
+  if (batch) await reserve(tx, batch);
 }
 
 /**
@@ -220,25 +293,14 @@ export async function syncReservations(tx: Tx, batch: BatchRow, from: Status, to
     used: false,
     released: false,
   };
-  if (a === 0) {
-    const { content } = await batchContent(tx, batch);
-    const { takes, short } = allocate(linesOf(content), await stockOf(tx, batch, true));
-    for (const { item, quantity } of takes) {
-      const [row] = await tx
-        .insert(inventoryReservations)
-        .values({ batchId: batch.id, inventoryItemId: item.id, quantity })
-        .returning();
-      if (row) change.reserved.push(viewReservation(row, item));
-    }
-    change.short = short;
-  }
+  if (a === 0) Object.assign(change, await reserve(tx, batch));
   if (a < 2 && b === 2) {
-    await setState(tx, batch.id, "reserved", "used");
+    await useUp(tx, batch.id);
     change.used = true;
   }
-  if (a === 2 && b < 2) await setState(tx, batch.id, "used", "reserved");
+  if (a === 2 && b < 2) await putBack(tx, batch.id);
   if (b === 0) {
-    await setState(tx, batch.id, "reserved", "released");
+    await release(tx, batch.id);
     change.released = true;
   }
   return change;

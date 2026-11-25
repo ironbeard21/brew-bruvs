@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Inventory API: items, reservations through a batch's life, low stock, the shopping list, and
 // hop alpha acid from reserved lots. Postgres tests need TEST_DATABASE_URL.
+import type { Client } from "pg";
 import { describe, expect, it } from "vitest";
 import { createApp } from "../src/app.ts";
 import {
@@ -26,12 +27,12 @@ const content = {
 const beer = { name: "House Pale", beverage: "beer", batchSizeL: 20, content };
 const code = (r: { json: Json }) => r.json.error?.code;
 
-type Ctx = { app: TestApp; me: string; ann: string };
+type Ctx = { app: TestApp; sql: Client; me: string; ann: string };
 
 async function withInventory(run: (ctx: Ctx) => Promise<void>) {
-  await withApp({}, async (app) => {
+  await withApp({}, async (app, sql) => {
     const { adminToken, annToken } = await twoUsers(app);
-    await run({ app, me: adminToken, ann: annToken });
+    await run({ app, sql, me: adminToken, ann: annToken });
   });
 }
 
@@ -186,6 +187,81 @@ describe.skipIf(!TEST_DATABASE_URL)("inventory API on PostgreSQL", () => {
       expect(new Set((held.json.items as Json[]).map((r) => r.state))).toEqual(
         new Set(["released"]),
       );
+    });
+  });
+
+  it("never reserves the same stock twice when two batches start at once", async () => {
+    await withInventory(async (ctx) => {
+      const malt = await item(ctx, { name: "Pale malt", quantity: 5, quantityUnit: "kg" });
+      const first = await plannedBatch(ctx);
+      const second = await plannedBatch(ctx);
+      // Hold the lot so both starts queue on its lock, then let them through together.
+      await ctx.sql.query("BEGIN");
+      await ctx.sql.query("SELECT 1 FROM inventory_items WHERE id = $1 FOR UPDATE", [malt.id]);
+      const starts = Promise.all([move(ctx, first, "brewing"), move(ctx, second, "brewing")]);
+      await new Promise((done) => setTimeout(done, 300));
+      await ctx.sql.query("COMMIT");
+      const results = await starts;
+      // The second start sees the first's 4.5 kg and takes only the 0.5 kg left.
+      expect(await stockOf(ctx, malt.id)).toEqual({ quantity: 5, reserved: 5, available: 0 });
+      const shorts = results.map((r) =>
+        ((r.json.inventory as Json).short as Json[]).find((s) => s.name === "Pale malt"),
+      );
+      expect(shorts.filter(Boolean)).toEqual([expect.objectContaining({ short: 4 })]);
+    });
+  });
+
+  it("puts back on undo exactly what packaging took, after a stock correction", async () => {
+    await withInventory(async (ctx) => {
+      const malt = await item(ctx, { name: "Pale malt", quantity: 5, quantityUnit: "kg" });
+      const id = await plannedBatch(ctx);
+      await move(ctx, id, "brewing");
+      // Found only 2 kg on the shelf after reserving 4.5.
+      await call(ctx.app, "PATCH", `/api/inventory/${malt.id}`, {
+        token: ctx.me,
+        body: { quantity: 2 },
+      });
+      await move(ctx, id, "packaged");
+      expect(await stockOf(ctx, malt.id)).toEqual({ quantity: 0, reserved: 0, available: 0 });
+      const used = await call(ctx.app, "GET", `/api/batches/${id}/reservations`, { token: ctx.me });
+      expect((used.json.items as Json[]).find((r) => r.name === "Pale malt")).toMatchObject({
+        quantity: 2,
+        state: "used",
+      });
+      await move(ctx, id, "conditioning");
+      expect(await stockOf(ctx, malt.id)).toEqual({ quantity: 2, reserved: 2, available: 0 });
+    });
+  });
+
+  it("moves a started batch's reservations to its new owner's inventory", async () => {
+    await withInventory(async (ctx) => {
+      const brewery = await call(ctx.app, "POST", "/api/breweries", {
+        token: ctx.me,
+        body: { name: "Hops Co" },
+      });
+      const breweryId = brewery.json.id as string;
+      const mine = await item(ctx, { name: "Pale malt", quantity: 5, quantityUnit: "kg" });
+      const theirs = await item(ctx, {
+        name: "Pale malt",
+        quantity: 10,
+        quantityUnit: "kg",
+        breweryId,
+      });
+      const id = await plannedBatch(ctx);
+      await move(ctx, id, "brewing");
+      expect((await stockOf(ctx, mine.id)).reserved).toBe(4.5);
+
+      const moved = await call(ctx.app, "POST", `/api/batches/${id}/move`, {
+        token: ctx.me,
+        body: { breweryId },
+      });
+      expect(moved.status).toBe(200);
+      expect((await stockOf(ctx, mine.id)).reserved).toBe(0);
+      expect((await stockOf(ctx, theirs.id)).reserved).toBe(4.5);
+
+      await move(ctx, id, "packaged");
+      expect((await stockOf(ctx, mine.id)).quantity).toBe(5);
+      expect((await stockOf(ctx, theirs.id)).quantity).toBe(5.5);
     });
   });
 

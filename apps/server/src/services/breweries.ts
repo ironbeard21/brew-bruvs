@@ -14,6 +14,7 @@ import type {
 import { ApiError, pgCode } from "../errors.ts";
 import type { BreweryRole, User } from "../permissions.ts";
 import { moveToBrewery, newId, signedIn, type Tx } from "./access.ts";
+import { reserveForNewOwner } from "./inventory.ts";
 
 const { breweries, memberships, breweryInvites, users } = schema;
 const INVITE_DAYS = 7;
@@ -125,7 +126,12 @@ export function createBreweryService(db: Db, opts: { baseUrl: string }) {
       type: Parameters<typeof moveToBrewery>[2],
       id: string,
       breweryId: string,
-    ) => db.transaction((tx) => moveToBrewery(tx, viewer, type, id, breweryId)),
+    ) =>
+      db.transaction(async (tx) => {
+        const owner = await moveToBrewery(tx, viewer, type, id, breweryId);
+        if (type === "batch") await reserveForNewOwner(tx, id);
+        return owner;
+      }),
 
     /** The breweries the user belongs to, by name. */
     async list(viewer: User | null) {
