@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { type Db, schema } from "@brew-bruvs/db";
-import { and, asc, eq, isNull, lte, or, sql } from "drizzle-orm";
+import { and, asc, eq, isNotNull, isNull, lte, or, sql } from "drizzle-orm";
 import { z } from "zod";
 import { newSecret } from "../auth/secrets.ts";
 import type { WebhookInput } from "../contracts/webhooks.ts";
@@ -60,7 +60,6 @@ const failed = sql<boolean>`exists (
   select 1 from ${webhookJobs}
   where "webhook_jobs"."integration_id" = "integrations"."id"
   and "webhook_jobs"."failed_at" is not null
-  and ("integrations"."last_seen_at" is null or "webhook_jobs"."failed_at" > "integrations"."last_seen_at")
 )`;
 
 function view(row: typeof integrations.$inferSelect, failing: boolean) {
@@ -145,6 +144,18 @@ export function createWebhookService(db: Db, sender = createWebhookSender()) {
       const user = signedIn(viewer);
       await db.transaction(async (tx) => {
         const integration = await manage(tx, user, id);
+        const [pending] = await tx
+          .select({ id: webhookJobs.id })
+          .from(webhookJobs)
+          .where(
+            and(
+              eq(webhookJobs.integrationId, id),
+              isNull(webhookJobs.failedAt),
+              sql`${webhookJobs.event}->>'type' = 'webhook.test'`,
+            ),
+          )
+          .limit(1);
+        if (pending) return;
         await tx.insert(webhookJobs).values({
           integrationId: id,
           event: {
@@ -214,6 +225,15 @@ export function createWebhookService(db: Db, sender = createWebhookSender()) {
         } catch {
           // Invalid destinations and network failures follow the retry schedule.
         }
+        const delay = delays[job.attempts];
+        if (delivered || delay === undefined) {
+          // Only the most recent terminal outcome is needed to show the webhook's health.
+          await tx
+            .delete(webhookJobs)
+            .where(
+              and(eq(webhookJobs.integrationId, integration.id), isNotNull(webhookJobs.failedAt)),
+            );
+        }
         if (delivered) {
           await tx.delete(webhookJobs).where(eq(webhookJobs.id, job.id));
           await tx
@@ -221,7 +241,6 @@ export function createWebhookService(db: Db, sender = createWebhookSender()) {
             .set({ lastSeenAt: now })
             .where(eq(integrations.id, integration.id));
         } else {
-          const delay = delays[job.attempts];
           await tx
             .update(webhookJobs)
             .set({

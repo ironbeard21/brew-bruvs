@@ -63,10 +63,10 @@ export function createWebhookSender(resolve: Resolver = systemResolve, send = po
         refuse("Could not resolve the webhook destination");
       }
     },
-    async deliver(input: string, key: string, jobId: string, event: unknown) {
+    async deliver(input: string, key: string, jobId: string, event: Record<string, unknown>) {
       const signal = AbortSignal.timeout(5_000);
       const { url, address } = await destination(input, signal);
-      const body = JSON.stringify(event);
+      const body = JSON.stringify({ ...event, deliveryId: jobId });
       const signature = createHmac("sha256", key).update(body).digest("hex");
       const status = await send(
         url,

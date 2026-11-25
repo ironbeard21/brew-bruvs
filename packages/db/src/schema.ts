@@ -770,7 +770,7 @@ export const webhookJobs = pgTable(
     integrationId: uuid("integration_id")
       .notNull()
       .references(() => integrations.id, { onDelete: "cascade" }),
-    event: jsonb("event").notNull(),
+    event: jsonb("event").$type<Record<string, unknown>>().notNull(),
     attempts: integer("attempts").notNull().default(0),
     dueAt: timestamp("due_at", { withTimezone: true }).notNull().defaultNow(),
     failedAt: timestamp("failed_at", { withTimezone: true }),

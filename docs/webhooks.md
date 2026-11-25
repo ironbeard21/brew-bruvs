@@ -7,13 +7,15 @@ Save it in the receiver's secret store.
 
 Use `POST /api/integrations/webhooks/{id}/test` to queue a test and
 `GET /api/integrations/webhooks` to see the last successful delivery and failing status.
+Each subscription can have one pending test. Each user can make up to five test requests per
+five minutes.
 `DELETE /api/integrations/webhooks/{id}` removes the subscription and its pending deliveries.
 
-The receiver gets a JSON object with `type`, `batchId`, `occurredAt`, and `data`. The event types
+The receiver gets a JSON object with `deliveryId`, `type`, `batchId`, `occurredAt`, and `data`. The event types
 are `batch.status_changed`, `reading.logged`, `reminder.due`, and `webhook.test`.
 Use the original body bytes to calculate HMAC-SHA256 with the signing key. Compare the result
 in constant time to the hexadecimal digest in `Brew-Bruvs-Signature: sha256=<digest>`.
-Return a 2xx response and use the `Brew-Bruvs-Delivery` ID to deduplicate retries.
+Return a 2xx response and use the signed body's `deliveryId` to deduplicate retries.
 
 Brew-Bruvs retries unsuccessful deliveries after 30 seconds, 2 minutes, 10 minutes, and
 30 minutes. After the last attempt, the webhook is marked failing. A later success clears

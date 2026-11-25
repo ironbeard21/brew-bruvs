@@ -24,6 +24,7 @@ it("pins a public address, signs the exact bytes, refuses changed DNS, and rejec
   const [, address, payload, headers] = send.mock.calls[0] ?? [];
   expect(address).toEqual(publicAddress);
   expect(headers?.["Brew-Bruvs-Delivery"]).toBe("job-id");
+  expect(JSON.parse(payload ?? "{}")).toEqual({ type: "test", deliveryId: "job-id" });
   expect(headers?.["Brew-Bruvs-Signature"]).toBe(
     `sha256=${createHmac("sha256", "test-key")
       .update(payload ?? "")
@@ -103,6 +104,7 @@ describe.skipIf(!TEST_DATABASE_URL)("webhook API and durable worker", () => {
       await worker.enqueueDue();
       await worker.enqueueDue();
       expect((await post(`${target}/test`)).status).toBe(202);
+      expect((await post(`${target}/test`)).status).toBe(202);
       const afterEnqueue = new Date(Date.now() + 1_000);
       for (let i = 0; i < 4; i++) expect(await worker.deliverOne(afterEnqueue)).toBe(true);
       expect(await worker.deliverOne()).toBe(false);
@@ -113,6 +115,7 @@ describe.skipIf(!TEST_DATABASE_URL)("webhook API and durable worker", () => {
         "webhook.test",
       ]);
       for (const event of events) {
+        expect(JSON.parse(event.body).deliveryId).toBe(event.id);
         expect(event.signature).toBe(
           `sha256=${createHmac("sha256", key).update(event.body).digest("hex")}`,
         );
@@ -134,6 +137,17 @@ describe.skipIf(!TEST_DATABASE_URL)("webhook API and durable worker", () => {
         { id: created.json.id, failing: true, lastDeliveredAt: expect.any(String) },
       ]);
       expect(JSON.stringify(list.json)).not.toContain(key);
+      expect((await sql.query("SELECT count(*)::int AS n FROM webhook_jobs")).rows[0]?.n).toBe(1);
+      status = 204;
+      expect((await post(`${target}/test`)).status).toBe(202);
+      expect(await worker.deliverOne(new Date(now.getTime() + 1_000))).toBe(true);
+      const recovered = await call(app, "GET", path, { token });
+      expect(recovered.json.items).toMatchObject([{ id: created.json.id, failing: false }]);
+      expect((await sql.query("SELECT count(*)::int AS n FROM webhook_jobs")).rows[0]?.n).toBe(0);
+      expect((await post(`${target}/test`)).status).toBe(202);
+      const limited = await post(`${target}/test`);
+      expect(limited.status).toBe(429);
+      expect(limited.res.headers.get("Retry-After")).toBeTruthy();
       expect((await call(app, "DELETE", target, { token: annToken })).status).toBe(404);
       expect((await call(app, "DELETE", target, { token })).status).toBe(204);
       expect((await sql.query("SELECT count(*)::int AS n FROM webhook_jobs")).rows[0]?.n).toBe(0);

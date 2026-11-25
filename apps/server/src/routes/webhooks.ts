@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { createRoute, type OpenAPIHono, type RouteConfig, z } from "@hono/zod-openapi";
 import { type AppEnv, requireSession } from "../auth/middleware.ts";
+import { enforce, RateLimiter } from "../auth/rate-limit.ts";
 import { IssuedWebhook, Webhook, WebhookInput } from "../contracts/webhooks.ts";
 import { errorResponses } from "../errors.ts";
 import type { WebhookService } from "../services/webhooks.ts";
@@ -44,7 +45,7 @@ const routes = {
     request: { params },
     responses: {
       202: json(z.object({ queued: z.literal(true) }), "Queued test delivery"),
-      ...errorResponses(400, 401, 403, 404),
+      ...errorResponses(400, 401, 403, 404, 429),
     },
   }),
   remove: createRoute({
@@ -58,6 +59,7 @@ const routes = {
 };
 
 export function registerWebhookRoutes(app: OpenAPIHono<AppEnv>, hooks: WebhookService) {
+  const testSends = new RateLimiter(5, 5 * 60_000);
   app.openapi(routes.list, async (c) =>
     c.json(await hooks.list(requireSession(c).user, c.req.valid("query").breweryId), 200),
   );
@@ -66,7 +68,10 @@ export function registerWebhookRoutes(app: OpenAPIHono<AppEnv>, hooks: WebhookSe
     return c.json(await hooks.create(requireSession(c).user, c.req.valid("json")), 201);
   });
   app.openapi(routes.test, async (c) => {
-    await hooks.test(requireSession(c).user, c.req.valid("param").id);
+    const { user } = requireSession(c);
+    enforce(c, testSends, user.id);
+    testSends.hit(user.id);
+    await hooks.test(user, c.req.valid("param").id);
     return c.json({ queued: true as const }, 202);
   });
   app.openapi(routes.remove, async (c) => {
