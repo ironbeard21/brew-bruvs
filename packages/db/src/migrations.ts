@@ -54,3 +54,29 @@ export async function rollbackLatest(client: Client): Promise<string | null> {
   }
   return entry.tag;
 }
+
+/**
+ * Makes sure the server's role (brew_app) exists with its grants, which a restore made with
+ * `pg_restore --no-privileges` into a fresh cluster leaves out. With `password`, the role can
+ * log in with it (APP_DATABASE_URL). Runs at every start, after the migrations.
+ */
+export async function ensureAppRole(client: Client, password?: string): Promise<void> {
+  await client.query(`
+    DO $$ BEGIN
+      CREATE ROLE brew_app NOLOGIN;
+    EXCEPTION WHEN duplicate_object OR unique_violation THEN NULL;
+    END $$;
+    DO $$ BEGIN
+      IF NOT pg_has_role(current_user, 'brew_app', 'MEMBER') THEN
+        EXECUTE format('GRANT brew_app TO %I', current_user);
+      END IF;
+    END $$;
+    GRANT USAGE ON SCHEMA public, app TO brew_app;
+    GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO brew_app;
+    ALTER DEFAULT PRIVILEGES IN SCHEMA public
+      GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO brew_app;
+  `);
+  if (password !== undefined) {
+    await client.query(`ALTER ROLE brew_app WITH LOGIN PASSWORD ${client.escapeLiteral(password)}`);
+  }
+}

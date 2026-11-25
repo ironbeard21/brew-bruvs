@@ -14,7 +14,10 @@ services:
     environment:
       BASE_URL: ${BASE_URL:-http://localhost:8080}
       SOURCE_URL: ${SOURCE_URL:-https://github.com/ironbeard21/brew-bruvs}
+      # Migrations and the catalog import run as brew, the owner. The server runs as brew_app,
+      # which row-level security applies to (ADR-0011); the app sets its password at start.
       DATABASE_URL: postgres://brew:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in the root .env file}@postgres:5432/brew
+      APP_DATABASE_URL: postgres://brew_app:${POSTGRES_APP_PASSWORD:-${POSTGRES_PASSWORD}}@postgres:5432/brew
       LOG_LEVEL: ${LOG_LEVEL:-info}
       SIGNUP_MODE: ${SIGNUP_MODE:-invite}
       TRUST_PROXY: ${TRUST_PROXY:-false}

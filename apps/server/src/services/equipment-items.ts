@@ -59,9 +59,14 @@ async function catalogDefaults(tx: Tx, id: string) {
 
 async function authorizeItem(tx: Tx, user: User, action: Action, id: string) {
   const query = tx.select().from(equipmentItems).where(eq(equipmentItems.id, id));
-  const [row] = await (action === "read" ? query : query.for("update"));
+  // Check first, then lock: under row-level security a locking read skips rows the user can read
+  // but not change, which would turn a 403 into a 404.
+  const [found] = await query;
+  if (!found) throw new ApiError(404, "not_found", "Equipment item not found");
+  await authorizeRow(tx, user, action, shareableType, found, label);
+  if (action === "read") return found;
+  const [row] = await query.for("update");
   if (!row) throw new ApiError(404, "not_found", "Equipment item not found");
-  await authorizeRow(tx, user, action, shareableType, row, label);
   return row;
 }
 

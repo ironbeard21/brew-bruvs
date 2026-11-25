@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Builds the Hono app: API routes, OpenAPI document, static web build, error format.
+import { asUser } from "@brew-bruvs/db";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { HTTPException } from "hono/http-exception";
@@ -120,6 +121,8 @@ export function createApp(deps: AppDeps) {
   app.openAPIRegistry.register("Error", ErrorSchema);
   app.openAPIRegistry.register("RecipeContent", RecipeContent);
   app.use("/api/*", sessionMiddleware(auth.auth));
+  // Every query after this acts for the signed-in user, so row-level security applies to them.
+  app.use("/api/*", (c, next) => asUser(c.get("session")?.user.id ?? null, next));
   registerHealthRoutes(app, deps.sourceUrl ?? DEFAULT_SOURCE_URL);
   registerAuthRoutes(app, auth);
   registerAdminRoutes(app, auth);

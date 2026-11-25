@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Builds the app for tests: offline (no database) or against a fresh migrated Postgres database.
-import { createDb, migrateUp } from "@brew-bruvs/db";
+import { APP_ROLE, createDb, migrateUp } from "@brew-bruvs/db";
 import { withTestDatabase } from "@brew-bruvs/db/testing";
 import { Client } from "pg";
 import { expect } from "vitest";
@@ -84,7 +84,8 @@ export async function withApp(
   if (!TEST_DATABASE_URL) throw new Error("TEST_DATABASE_URL is not set");
   await withTestDatabase(TEST_DATABASE_URL, async (url) => {
     const sql = new Client({ connectionString: url });
-    const { db, close } = createDb(url);
+    // As the server runs: brew_app, under row-level security.
+    const { db, close } = createDb(url, { role: APP_ROLE });
     try {
       await sql.connect();
       await migrateUp(sql);

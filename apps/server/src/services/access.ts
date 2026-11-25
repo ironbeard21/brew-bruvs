@@ -137,7 +137,7 @@ export const OWNED = {
   equipment_profile: { table: "equipment_profiles", what: "Equipment profile" },
 } as const satisfies Record<ShareableType, { table: string; what: string }>;
 
-/** Loads any owned row (locked for update) and checks `action` on it; throws 404 or 403. */
+/** Loads any owned row, checks `action` on it (throws 404 or 403), then locks it for update. */
 export async function ownedRow(
   tx: Tx,
   user: User | null,
@@ -152,7 +152,7 @@ export async function ownedRow(
     owner_brewery_id: string | null;
     visibility: Resource["visibility"];
   }>(
-    sql`SELECT id, owner_user_id, owner_brewery_id, visibility FROM ${sql.identifier(table)} WHERE id = ${id} FOR UPDATE`,
+    sql`SELECT id, owner_user_id, owner_brewery_id, visibility FROM ${sql.identifier(table)} WHERE id = ${id}`,
   );
   const found = rows[0];
   if (!found) throw new ApiError(404, "not_found", `${what} not found`);
@@ -163,6 +163,9 @@ export async function ownedRow(
     visibility: found.visibility,
   };
   await authorizeRow(tx, user, action, type, row, what);
+  // Locked only after the check: under row-level security a locking read skips rows the user can
+  // read but not change, which would turn a 403 into a 404.
+  await tx.execute(sql`SELECT 1 FROM ${sql.identifier(table)} WHERE id = ${id} FOR UPDATE`);
   return { row, table, what };
 }
 

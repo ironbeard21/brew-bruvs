@@ -288,8 +288,17 @@ async function holdsOthersStock(tx: Tx, batch: BatchRow) {
 export async function reserveForNewOwner(tx: Tx, batchId: string) {
   const [batch] = await tx.select().from(batches).where(eq(batches.id, batchId));
   if (!batch || stage(batch.status) !== 1) return;
+  await actFor(tx, batch.id);
   await release(tx, batchId);
   await reserve(tx, batch);
+}
+
+/**
+ * Lets this transaction use the batch owner's stock on behalf of someone who may edit the batch
+ * but not the stock itself (row-level security: app.batch_stock in migration 0008).
+ */
+async function actFor(tx: Tx, batchId: string) {
+  await tx.execute(sql`SELECT set_config('app.batch_id', ${batchId}, true)`);
 }
 
 /**
@@ -300,6 +309,7 @@ export async function syncReservations(tx: Tx, batch: BatchRow, from: Status, to
   const a = stage(from);
   const b = stage(to);
   if (a === b) return null;
+  await actFor(tx, batch.id);
   const change = {
     reserved: [] as ReturnType<typeof viewReservation>[],
     short: [] as ReturnType<typeof allocate>["short"],

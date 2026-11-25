@@ -9,6 +9,9 @@ Run the commands below from that checkout's root.
 1. Copy `.env.example` to `.env`.
 2. Set `POSTGRES_PASSWORD` to a random URL-safe password, for example the output of
    `openssl rand -hex 24`. Keep a protected copy of this file.
+   Set `POSTGRES_APP_PASSWORD` to a different random URL-safe password. The server signs in to
+   PostgreSQL as `brew_app` with it, a role that row-level security applies to; migrations use the
+   `brew` owner. If it is left unset, `brew_app` uses `POSTGRES_PASSWORD`.
 3. Set `BASE_URL` to the address users will open. Use `http://localhost:8080` for a local evaluation.
 4. Set `BREW_BRUVS_IMAGE` to the full version tag published for your release. For example, Git tag
    `v1.0.0` publishes `ghcr.io/ironbeard21/brew-bruvs:1.0.0`. The Phase 1 prerelease uses
@@ -80,6 +83,25 @@ docker compose -f docker/compose.yml up -d --no-build --wait app
 Check that sign-in, recipes and batches work. If a schema migration has run, recover by restoring
 the pre-upgrade backup into a fresh volume with the previous app image. The image change described
 here leaves the PostgreSQL major version unchanged.
+
+### Upgrading to row-level security (Phase 2)
+
+From this release, PostgreSQL enforces who can see and change each recipe, batch, note, inventory
+item and piece of equipment, alongside the server's own checks (ADR-0011). The upgrade does this on
+its own:
+
+- The migration creates the `brew_app` role and its policies. The `brew` role needs to be able to
+  create roles. It can in the Compose PostgreSQL; on a managed database, grant `CREATEROLE` or create
+  `brew_app` yourself first.
+- The release's Compose file gives the server `APP_DATABASE_URL`, and the app sets `brew_app`'s
+  password from `POSTGRES_APP_PASSWORD` (or `POSTGRES_PASSWORD`) each time it starts. Add
+  `POSTGRES_APP_PASSWORD` to `.env` to give it its own password.
+- With an older or hand-written Compose file that only sets `DATABASE_URL`, the server still runs
+  under row-level security: it signs in as `brew` and switches to `brew_app`.
+- The server refuses to start if its database role bypasses row-level security.
+
+A restore with `--no-privileges`, as above, drops the grants to `brew_app`; the app puts them back
+when it starts.
 
 ## Release tags and browser headers
 

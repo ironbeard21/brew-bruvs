@@ -108,9 +108,14 @@ export function createBatchService(
       .from(batches)
       .innerJoin(recipeVersions, eq(recipeVersions.id, batches.recipeVersionId))
       .where(eq(batches.id, id));
-    const [row] = await (lock ? query.for("update", { of: batches }) : query);
+    // Check first, then lock: under row-level security a locking read skips rows the user can
+    // read but not change, which would turn a 403 into a 404.
+    const [found] = await query;
+    if (!found) throw new ApiError(404, "not_found", "Batch not found");
+    await authorizeRow(tx, user, action, "batch", found.batch, "Batch");
+    if (!lock) return found;
+    const [row] = await query.for("update", { of: batches });
     if (!row) throw new ApiError(404, "not_found", "Batch not found");
-    await authorizeRow(tx, user, action, "batch", row.batch, "Batch");
     return row;
   }
 
