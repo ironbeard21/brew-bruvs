@@ -37,6 +37,7 @@ export function AppShell({ children, title, subtitle }: AppShellProps) {
   const onCalculators = pathname === "/calculators";
   const onRecipes = pathname === "/recipes" || pathname.startsWith("/recipes/");
   const onBatches = pathname === "/batches" || pathname.startsWith("/batches/");
+  const onInventory = pathname === "/inventory" || pathname.startsWith("/inventory/");
   const onBreweries = pathname === "/breweries" || pathname.startsWith("/breweries/");
   const onSettings = pathname === "/settings" || pathname === "/admin";
   const onAbout = pathname === "/about";
@@ -114,6 +115,19 @@ export function AppShell({ children, title, subtitle }: AppShellProps) {
               >
                 <Text style={[styles.navLinkText, onBatches && styles.navLinkTextActive]}>
                   Batches
+                </Text>
+              </Pressable>
+
+              <Pressable
+                onPress={() => router.push("/inventory")}
+                accessibilityRole="tab"
+                accessibilityLabel="Inventory and shopping list"
+                accessibilityState={{ selected: onInventory }}
+                testID="nav-inventory"
+                style={[styles.navLink, onInventory && styles.navLinkActive]}
+              >
+                <Text style={[styles.navLinkText, onInventory && styles.navLinkTextActive]}>
+                  Inventory
                 </Text>
               </Pressable>
 

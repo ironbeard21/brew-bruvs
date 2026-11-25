@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-import { units } from "@brew-bruvs/brew-math";
 import { StyleSheet, Text, View } from "react-native";
 import type { Brewery } from "../../api/breweries";
 import { type InventoryItem, type QuantityUnit, useInventory } from "../../api/inventory";
 import { useUnits } from "../../state/units";
 import { colors, radii, spacing } from "../../theme";
+import { formatInventoryAmount } from "../inventory/inventoryUnits";
 import { OwnerBadge } from "../OwnerBadge";
 import { Banner, Card } from "../ui";
 
@@ -13,19 +13,7 @@ export function formatInventoryQuantity(
   unit: QuantityUnit,
   unitSystem: "us" | "metric",
 ): string {
-  if (unit === "each") {
-    return `${Number.isInteger(amount) ? amount : amount.toFixed(1)} each`;
-  }
-  if (unit === "kg") {
-    if (unitSystem === "us") {
-      return `${units.kgToLb(amount).toFixed(2)} lb`;
-    }
-    return `${amount.toFixed(2)} kg`;
-  }
-  if (unitSystem === "us") {
-    return `${units.litersToGallons(amount).toFixed(2)} gal`;
-  }
-  return `${amount.toFixed(2)} L`;
+  return formatInventoryAmount(amount, unit, unitSystem);
 }
 
 export interface InventoryPreviewCardProps {
