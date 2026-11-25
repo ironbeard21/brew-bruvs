@@ -2876,6 +2876,264 @@
         "additionalProperties": false,
         "description": "Scores merge into the existing ones; null clears one"
       },
+      "EquipmentItemPage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EquipmentItem"
+            }
+          },
+          "nextOffset": {
+            "type": ["integer", "null"],
+            "minimum": 0
+          }
+        },
+        "required": ["items", "nextOffset"]
+      },
+      "EquipmentItem": {
+        "type": "object",
+        "properties": {
+          "batchSizeL": {
+            "type": ["number", "null"]
+          },
+          "boilSizeL": {
+            "type": ["number", "null"]
+          },
+          "kettleVolumeL": {
+            "type": ["number", "null"]
+          },
+          "kettleLossL": {
+            "type": ["number", "null"]
+          },
+          "boilRateLPerHr": {
+            "type": ["number", "null"]
+          },
+          "mashTunVolumeL": {
+            "type": ["number", "null"]
+          },
+          "grainAbsorptionLPerKg": {
+            "type": ["number", "null"]
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "uri": {
+            "type": "string"
+          },
+          "catalogId": {
+            "type": ["string", "null"]
+          },
+          "owner": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": ["user", "brewery"]
+              },
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              }
+            },
+            "required": ["type", "id"]
+          },
+          "visibility": {
+            "type": "string",
+            "enum": ["private", "unlisted", "server", "public"],
+            "description": "private: owner, brewery and shares only. unlisted: anyone with the link, never listed. server: every signed-in user here. public: anyone."
+          },
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": ["string", "null"]
+          },
+          "condition": {
+            "type": ["string", "null"],
+            "enum": ["new", "good", "worn", "needs_repair", "retired", null]
+          },
+          "notes": {
+            "type": ["string", "null"]
+          },
+          "heldByUserId": {
+            "type": ["string", "null"],
+            "format": "uuid"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "batchSizeL",
+          "boilSizeL",
+          "kettleVolumeL",
+          "kettleLossL",
+          "boilRateLPerHr",
+          "mashTunVolumeL",
+          "grainAbsorptionLPerKg",
+          "id",
+          "uri",
+          "catalogId",
+          "owner",
+          "visibility",
+          "name",
+          "type",
+          "condition",
+          "notes",
+          "heldByUserId",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "EquipmentItemInput": {
+        "type": "object",
+        "properties": {
+          "batchSizeL": {
+            "type": ["number", "null"],
+            "exclusiveMinimum": 0,
+            "maximum": 100000,
+            "description": "Volume into the fermenter"
+          },
+          "boilSizeL": {
+            "type": ["number", "null"],
+            "exclusiveMinimum": 0,
+            "maximum": 100000
+          },
+          "kettleVolumeL": {
+            "type": ["number", "null"],
+            "exclusiveMinimum": 0,
+            "maximum": 100000
+          },
+          "kettleLossL": {
+            "type": ["number", "null"],
+            "minimum": 0,
+            "maximum": 100000
+          },
+          "boilRateLPerHr": {
+            "type": ["number", "null"],
+            "minimum": 0,
+            "maximum": 100000
+          },
+          "mashTunVolumeL": {
+            "type": ["number", "null"],
+            "exclusiveMinimum": 0,
+            "maximum": 100000
+          },
+          "grainAbsorptionLPerKg": {
+            "type": ["number", "null"],
+            "minimum": 0,
+            "maximum": 5
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "type": {
+            "type": ["string", "null"],
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "condition": {
+            "type": ["string", "null"],
+            "enum": ["new", "good", "worn", "needs_repair", "retired", null]
+          },
+          "notes": {
+            "type": ["string", "null"],
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "catalogId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "breweryId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "additionalProperties": false
+      },
+      "EquipmentItemPatch": {
+        "type": "object",
+        "properties": {
+          "batchSizeL": {
+            "type": ["number", "null"],
+            "exclusiveMinimum": 0,
+            "maximum": 100000,
+            "description": "Volume into the fermenter"
+          },
+          "boilSizeL": {
+            "type": ["number", "null"],
+            "exclusiveMinimum": 0,
+            "maximum": 100000
+          },
+          "kettleVolumeL": {
+            "type": ["number", "null"],
+            "exclusiveMinimum": 0,
+            "maximum": 100000
+          },
+          "kettleLossL": {
+            "type": ["number", "null"],
+            "minimum": 0,
+            "maximum": 100000
+          },
+          "boilRateLPerHr": {
+            "type": ["number", "null"],
+            "minimum": 0,
+            "maximum": 100000
+          },
+          "mashTunVolumeL": {
+            "type": ["number", "null"],
+            "exclusiveMinimum": 0,
+            "maximum": 100000
+          },
+          "grainAbsorptionLPerKg": {
+            "type": ["number", "null"],
+            "minimum": 0,
+            "maximum": 5
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "type": {
+            "type": ["string", "null"],
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "condition": {
+            "type": ["string", "null"],
+            "enum": ["new", "good", "worn", "needs_repair", "retired", null]
+          },
+          "notes": {
+            "type": ["string", "null"],
+            "minLength": 1,
+            "maxLength": 2000
+          }
+        },
+        "additionalProperties": false
+      },
+      "EquipmentHolderInput": {
+        "type": "object",
+        "properties": {
+          "heldByUserId": {
+            "type": ["string", "null"],
+            "format": "uuid",
+            "description": "Null returns the item"
+          }
+        },
+        "required": ["heldByUserId"],
+        "additionalProperties": false
+      },
       "BreweryList": {
         "type": "object",
         "properties": {
@@ -7975,6 +8233,482 @@
         "responses": {
           "204": {
             "description": "Done"
+          },
+          "400": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/equipment": {
+      "get": {
+        "tags": ["equipment"],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "operationId": "listEquipmentItems",
+        "summary": "List personal and brewery equipment you can read",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": false,
+            "name": "breweryId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 25
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647,
+              "default": 0
+            },
+            "required": false,
+            "name": "offset",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Equipment items",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EquipmentItemPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["equipment"],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "operationId": "createEquipmentItem",
+        "summary": "Add a personal or brewery-owned equipment item",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EquipmentItemInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EquipmentItem"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/equipment/{id}": {
+      "get": {
+        "tags": ["equipment"],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "operationId": "getEquipmentItem",
+        "summary": "Read an equipment item",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Equipment item",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EquipmentItem"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": ["equipment"],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "operationId": "updateEquipmentItem",
+        "summary": "Edit an equipment item",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EquipmentItemPatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EquipmentItem"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["equipment"],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "operationId": "deleteEquipmentItem",
+        "summary": "Delete an equipment item",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
+          },
+          "400": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/equipment/{id}/holder": {
+      "put": {
+        "tags": ["equipment"],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "operationId": "setEquipmentHolder",
+        "summary": "Lend brewery equipment to a member or mark it returned",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EquipmentHolderInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EquipmentItem"
+                }
+              }
+            }
           },
           "400": {
             "description": "Error",
