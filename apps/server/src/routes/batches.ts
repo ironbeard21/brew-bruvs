@@ -56,10 +56,13 @@ const routes = {
           .default("false")
           .transform((v) => v === "true")
           .openapi({ description: "Only batches you own" }),
+        breweryId: z.uuid().optional().openapi({
+          description: "Only this brewery's; you must belong to it",
+        }),
         ...paging,
       }),
     },
-    responses: { 200: json(BatchPage, "Batches"), ...errorResponses(400, 401) },
+    responses: { 200: json(BatchPage, "Batches"), ...errorResponses(400, 401, 404) },
   }),
   create: createRoute({
     ...batch,

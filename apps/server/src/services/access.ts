@@ -188,3 +188,24 @@ export async function moveToBrewery(
   );
   return { type: "brewery" as const, id: breweryId };
 }
+
+/**
+ * List filter for one owner: yours (`mine`), or a brewery you belong to (`breweryId`, 404 for
+ * anyone else). Undefined when neither is asked for.
+ */
+export function ownedBy(
+  viewer: User | null,
+  table: { ownerUserId: AnyPgColumn; ownerBreweryId: AnyPgColumn },
+  filter: { mine: boolean; breweryId?: string | undefined },
+): SQL | undefined {
+  if (filter.mine && filter.breweryId) {
+    throw new ApiError(400, "validation_error", "Use either mine or breweryId");
+  }
+  if (!filter.mine && !filter.breweryId) return undefined;
+  const user = signedIn(viewer);
+  if (filter.mine) return eq(table.ownerUserId, user.id);
+  if (!user.memberships.some((m) => m.breweryId === filter.breweryId)) {
+    throw new ApiError(404, "not_found", "Brewery not found");
+  }
+  return eq(table.ownerBreweryId, filter.breweryId as string);
+}

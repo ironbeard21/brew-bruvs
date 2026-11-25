@@ -51,11 +51,14 @@ const routes = {
           .default("false")
           .transform((v) => v === "true")
           .openapi({ description: "Only recipes you own" }),
+        breweryId: z.uuid().optional().openapi({
+          description: "Only this brewery's; you must belong to it",
+        }),
         limit: z.preprocess(parseDecimal, z.int().min(1).max(100)).default(25),
         offset: z.preprocess(parseDecimal, z.int().nonnegative().max(2_147_483_647)).default(0),
       }),
     },
-    responses: { 200: json(RecipePage, "Recipes"), ...errorResponses(400, 401) },
+    responses: { 200: json(RecipePage, "Recipes"), ...errorResponses(400, 401, 404) },
   }),
   create: createRoute({
     ...recipe,

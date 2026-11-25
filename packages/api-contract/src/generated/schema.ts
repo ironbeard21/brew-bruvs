@@ -3993,6 +3993,8 @@ export interface operations {
                 q?: string;
                 /** @description Only recipes you own */
                 mine?: "true" | "false";
+                /** @description Only this brewery's; you must belong to it */
+                breweryId?: string;
                 limit?: number;
                 offset?: number;
             };
@@ -4022,6 +4024,15 @@ export interface operations {
             };
             /** @description Error */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -5114,6 +5125,8 @@ export interface operations {
                 status?: components["schemas"]["BatchStatus"];
                 /** @description Only batches you own */
                 mine?: "true" | "false";
+                /** @description Only this brewery's; you must belong to it */
+                breweryId?: string;
                 limit?: number;
                 offset?: number;
             };
@@ -5143,6 +5156,15 @@ export interface operations {
             };
             /** @description Error */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

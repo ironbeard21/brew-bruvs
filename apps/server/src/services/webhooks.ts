@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { type Db, schema } from "@brew-bruvs/db";
-import { and, asc, eq, isNotNull, isNull, lte, or, sql } from "drizzle-orm";
+import { and, asc, eq, isNotNull, isNull, lte, sql } from "drizzle-orm";
 import { z } from "zod";
 import { newSecret } from "../auth/secrets.ts";
 import type { WebhookInput } from "../contracts/webhooks.ts";

@@ -15,7 +15,16 @@ import type {
 import { MEASUREMENTS } from "../contracts/batches.ts";
 import { ApiError } from "../errors.ts";
 import type { Action, User } from "../permissions.ts";
-import { authorizeRow, newId, newOwner, ownerOf, readableBy, signedIn, type Tx } from "./access.ts";
+import {
+  authorizeRow,
+  newId,
+  newOwner,
+  ownedBy,
+  ownerOf,
+  readableBy,
+  signedIn,
+  type Tx,
+} from "./access.ts";
 import { recordActivity } from "./activity.ts";
 import type { EquipmentProfileService } from "./equipment-profiles.ts";
 import { batchStats, reservationsOf, syncReservations } from "./inventory.ts";
@@ -233,13 +242,15 @@ export function createBatchService(
   return {
     async list(
       viewer: User | null,
-      page: { status?: Status | undefined; mine: boolean; limit: number; offset: number },
+      page: {
+        status?: Status | undefined;
+        mine: boolean;
+        breweryId?: string | undefined;
+        limit: number;
+        offset: number;
+      },
     ) {
-      if (page.mine && !viewer) throw new ApiError(401, "unauthorized", "Sign in first");
-      const access =
-        page.mine && viewer
-          ? eq(batches.ownerUserId, viewer.id)
-          : readableBy(db, viewer, "batch", batches);
+      const access = ownedBy(viewer, batches, page) ?? readableBy(db, viewer, "batch", batches);
       const rows = await db
         .select(batchColumns)
         .from(batches)
