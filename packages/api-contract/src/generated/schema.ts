@@ -3622,7 +3622,7 @@ export interface components {
             content: components["schemas"]["RecipeContent"];
             /** @enum {string} */
             beverage: "beer" | "mead" | "wine" | "cider";
-            credit: components["schemas"]["CreditInput"];
+            credit?: components["schemas"]["CreditInput"];
             /** @enum {string} */
             visibility: "private";
         };

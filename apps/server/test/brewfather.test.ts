@@ -51,10 +51,18 @@ it("requires authentication before an import", async () => {
 
 describe.skipIf(!TEST_DATABASE_URL)("Brewfather import on PostgreSQL", () => {
   it("previews private drafts and saves reviewed recipes, batch snapshots, readings and stock", async () => {
+    let readingRequests = 0;
+    let simultaneousReadings = 0;
     const fetchBrewfather = vi.fn<typeof fetch>(async (request) => {
       const url = new URL(String(request));
       const result = responses[url.pathname];
       if (!result) throw new Error(`Unknown fixture route ${url.pathname}`);
+      if (url.pathname.endsWith("/readings")) {
+        readingRequests++;
+        simultaneousReadings = Math.max(simultaneousReadings, readingRequests);
+        await Promise.resolve();
+        readingRequests--;
+      }
       return Response.json(result);
     });
     await withApp({ fetchBrewfather }, async (app, sql) => {
@@ -65,7 +73,11 @@ describe.skipIf(!TEST_DATABASE_URL)("Brewfather import on PostgreSQL", () => {
       expect(preview.res.headers.get("Cache-Control")).toBe("no-store");
       expect(JSON.stringify(preview.json)).not.toContain(credentials.apiKey);
       const data = BrewfatherImport.parse(preview.json);
-      expect(data.recipes).toHaveLength(2);
+      expect(data.recipes).toHaveLength(3);
+      const own = data.recipes.find((r) => r.ref === "recipe:Own12")?.draft;
+      expect(own?.name).toBe("My house beer");
+      expect(own?.credit).toBeUndefined();
+      expect(simultaneousReadings).toBe(2);
       const library = data.recipes.find((r) => r.ref === "recipe:Library9")?.draft;
       expect(library).toMatchObject({
         visibility: "private",
@@ -105,7 +117,7 @@ describe.skipIf(!TEST_DATABASE_URL)("Brewfather import on PostgreSQL", () => {
       ).toBe(400);
       const saved = await call(app, "POST", `${base}/import`, { token, body: data });
       expect(saved.status).toBe(201);
-      expect(fetchBrewfather).toHaveBeenCalledTimes(7);
+      expect(fetchBrewfather).toHaveBeenCalledTimes(8);
       const recipeId = (saved.json.recipeIds as string[])[0];
       const recipe = await call(app, "GET", `/api/recipes/${recipeId}`, { token });
       expect(recipe.json).toMatchObject({
@@ -119,13 +131,21 @@ describe.skipIf(!TEST_DATABASE_URL)("Brewfather import on PostgreSQL", () => {
       expect((await call(app, "GET", `/api/recipes/${recipeId}`, { token: annToken })).status).toBe(
         404,
       );
+      const ownRecipeId = (saved.json.recipeIds as string[])[1];
+      const ownRecipe = await call(app, "GET", `/api/recipes/${ownRecipeId}`, { token });
+      expect(ownRecipe.json.credit).toBeNull();
+      const published = await call(app, "PATCH", `/api/recipes/${ownRecipeId}`, {
+        token,
+        body: { visibility: "public" },
+      });
+      expect(published.status).toBe(200);
       const batchId = (saved.json.batchIds as string[])[0];
       const batch = await call(app, "GET", `/api/batches/${batchId}`, { token });
       expect(batch.json).toMatchObject({
         name: "Batch 17",
         status: "finished",
         batchSizeL: 19.5,
-        recipe: { id: (saved.json.recipeIds as string[])[1] },
+        recipe: { id: (saved.json.recipeIds as string[])[2] },
       });
       const readings = await call(app, "GET", `/api/batches/${batchId}/readings`, { token });
       expect(readings.json).toMatchObject([

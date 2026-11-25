@@ -26,6 +26,7 @@ const agedStatus = {
   packaged: "bottled",
   finished: "finished",
 } as const;
+const readingsConcurrency = 4;
 
 export function createBrewfatherService(db: Db, fetcher: BrewfatherFetch = fetch) {
   return {
@@ -40,7 +41,7 @@ export function createBrewfatherService(db: Db, fetcher: BrewfatherFetch = fetch
         for (const row of rows)
           recipes.set(`recipe:${brewfatherId(row._id)}`, brewfatherDraft(row));
 
-        for (const row of await client.list("batches", 250)) {
+        async function importBatch(row: Record<string, unknown>) {
           const id = brewfatherId(row._id);
           if (!row.recipe || typeof row.recipe !== "object" || Array.isArray(row.recipe)) {
             throw new ApiError(422, "brewfather_data_invalid", "A Brewfather batch has no recipe");
@@ -62,7 +63,16 @@ export function createBrewfatherService(db: Db, fetcher: BrewfatherFetch = fetch
               "A Brewfather batch has too many readings",
             );
           }
-          batches.push(brewfatherBatch(row, ref, readings));
+          return brewfatherBatch(row, ref, readings);
+        }
+
+        const batchRows = await client.list("batches", 250);
+        for (let offset = 0; offset < batchRows.length; offset += readingsConcurrency) {
+          const group = batchRows.slice(offset, offset + readingsConcurrency);
+          for (const result of await Promise.allSettled(group.map(importBatch))) {
+            if (result.status === "rejected") throw result.reason;
+            batches.push(result.value);
+          }
         }
 
         const [fermentables, hops, yeasts, miscs] = await Promise.all([

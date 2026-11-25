@@ -129,13 +129,14 @@ function credit(raw: Entry) {
       value.length <= 2000 &&
       z.url({ protocol: /^https?$/ }).safeParse(value).success,
   );
+  const site =
+    text(source?.site ?? raw.sourceSite) ?? (sourceUrl === undefined ? sourceText : undefined);
+  const author = text(source?.author ?? raw.sourceAuthor);
+  if (typeof sourceUrl !== "string" && !site && !author) return undefined;
   return {
     sourceUrl: typeof sourceUrl === "string" ? sourceUrl : null,
-    site:
-      text(source?.site ?? raw.sourceSite) ??
-      (sourceUrl === undefined ? sourceText : undefined) ??
-      "Brewfather",
-    author: text(source?.author ?? raw.sourceAuthor ?? raw.author),
+    site,
+    author,
     license: text(source?.license ?? raw.sourceLicense),
     publicSharingBlocked:
       source?.publicSharingBlocked === true || raw.publicSharingBlocked === true,

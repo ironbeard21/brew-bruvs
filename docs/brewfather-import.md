@@ -7,7 +7,8 @@ discards it. The response contains private recipe drafts, batches and on-hand st
 
 Review the drafts and keep each batch's recipe reference in the selection. A batch has its own
 draft when its Brewfather recipe differs from the current library recipe. Ingredient names with
-no unambiguous catalog match stay as free text. Source credit is saved with the recipe.
+no unambiguous catalog match stay as free text. Outside source credit is saved with the recipe
+when Brewfather includes it.
 
 Send the reviewed response shape to `POST /api/integrations/brewfather/import` to save the
 selected records in one transaction. The confirmation accepts only import data. Each save adds

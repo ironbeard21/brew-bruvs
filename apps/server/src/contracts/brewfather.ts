@@ -23,7 +23,11 @@ export const BrewfatherCredentials = z
 const ref = z.string().min(1).max(260);
 const date = z.iso.datetime();
 const BrewfatherRecipeDraft = z
-  .strictObject({ ...RecipeFile.shape, visibility: z.literal("private"), credit: CreditInput })
+  .strictObject({
+    ...RecipeFile.shape,
+    visibility: z.literal("private"),
+    credit: CreditInput.optional(),
+  })
   .openapi("BrewfatherRecipeDraft");
 
 export const BrewfatherImport = z

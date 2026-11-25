@@ -3928,7 +3928,7 @@
             "enum": ["private"]
           }
         },
-        "required": ["name", "batchSizeL", "content", "beverage", "credit", "visibility"],
+        "required": ["name", "batchSizeL", "content", "beverage", "visibility"],
         "additionalProperties": false
       },
       "BrewfatherCredentials": {
