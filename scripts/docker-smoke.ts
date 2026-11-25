@@ -7,10 +7,17 @@ const fetchApp = (path: string, init?: RequestInit) => fetch(new URL(path, baseU
 
 const health = await fetchApp("/healthz");
 assert.equal(health.status, 200);
+assert.equal(
+  (await health.json()).sourceUrl,
+  process.argv[3] ?? "https://github.com/ironbeard21/brew-bruvs",
+);
 
 const web = await fetchApp("/");
 assert.equal(web.status, 200);
 assert.match(web.headers.get("content-type") ?? "", /^text\/html\b/);
+assert.match(web.headers.get("content-security-policy") ?? "", /frame-ancestors 'none'/);
+assert.equal(web.headers.get("x-content-type-options"), "nosniff");
+assert.equal(web.headers.get("referrer-policy"), "no-referrer");
 
 const authStatus = async () => {
   const response = await fetchApp("/api/auth/status");

@@ -274,6 +274,12 @@ describe("AdminPanel", () => {
 });
 
 describe("AboutPanel", () => {
+  it("displays the connected server's corresponding source link", () => {
+    const sourceUrl = "https://code.example.test/brew/fork";
+    render(<AboutPanel sourceUrl={sourceUrl} />);
+    expect(screen.getByTestId("about-source-code-link").textContent).toContain(sourceUrl);
+  });
+
   it("renders AGPL-3.0-or-later license, source code link, and live catalog attribution", () => {
     const attribution: CatalogAttribution = {
       sources: {

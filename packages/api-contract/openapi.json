@@ -481,6 +481,11 @@
           "status": {
             "type": "string",
             "enum": ["ok"]
+          },
+          "sourceUrl": {
+            "type": "string",
+            "format": "uri",
+            "description": "Corresponding source code for this server; older servers omit it"
           }
         },
         "required": ["status"]

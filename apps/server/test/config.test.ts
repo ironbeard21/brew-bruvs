@@ -13,6 +13,7 @@ describe("loadConfig", () => {
       webDir: undefined,
       databaseUrl: "postgres://db/brew",
       baseUrl: "https://brew.example",
+      sourceUrl: "https://github.com/ironbeard21/brew-bruvs",
       signupMode: "invite",
       trustProxy: false,
       oidc: undefined,

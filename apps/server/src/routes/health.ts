@@ -11,12 +11,24 @@ const healthz = createRoute({
     200: {
       description: "The server is up",
       content: {
-        "application/json": { schema: z.object({ status: z.literal("ok") }).openapi("Health") },
+        "application/json": {
+          schema: z
+            .object({
+              status: z.literal("ok"),
+              sourceUrl: z
+                .url({ protocol: /^https?$/ })
+                .optional()
+                .openapi({
+                  description: "Corresponding source code for this server; older servers omit it",
+                }),
+            })
+            .openapi("Health"),
+        },
       },
     },
   },
 });
 
-export function registerHealthRoutes(app: OpenAPIHono<AppEnv>) {
-  app.openapi(healthz, (c) => c.json({ status: "ok" as const }, 200));
+export function registerHealthRoutes(app: OpenAPIHono<AppEnv>, sourceUrl: string) {
+  app.openapi(healthz, (c) => c.json({ status: "ok" as const, sourceUrl }, 200));
 }

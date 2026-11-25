@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
+
+import type { components } from "@brew-bruvs/api-contract";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { normalizeServerUrl } from "../state/server";
 import { formatApiError, getApiClient } from "./client";
@@ -6,14 +8,14 @@ import { formatApiError, getApiClient } from "./client";
 export async function verifyServerHealth(
   rawUrl: string,
   customFetch?: typeof fetch,
-): Promise<{ url: string; status: "ok" }> {
+): Promise<components["schemas"]["Health"] & { url: string }> {
   const normalized = normalizeServerUrl(rawUrl);
   if (!normalized.ok) {
     throw new Error(normalized.error);
   }
 
   const client = getApiClient(normalized.url, customFetch);
-  let data: { status: "ok" } | undefined;
+  let data: components["schemas"]["Health"] | undefined;
   let error: unknown;
   try {
     const response = await client.GET("/healthz");
@@ -34,7 +36,7 @@ export async function verifyServerHealth(
     );
   }
 
-  return { url: normalized.url, status: data.status };
+  return { ...data, url: normalized.url };
 }
 
 export function useVerifyServer(customFetch?: typeof fetch) {
