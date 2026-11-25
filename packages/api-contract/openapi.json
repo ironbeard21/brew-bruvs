@@ -2347,9 +2347,12 @@
           "scheduleError": {
             "type": ["string", "null"],
             "description": "Why a mead's nutrient schedule couldn't be made (e.g. the recipe has no stats)"
+          },
+          "inventory": {
+            "$ref": "#/components/schemas/InventoryChange"
           }
         },
-        "required": ["batch", "addedReminders", "scheduleError"]
+        "required": ["batch", "addedReminders", "scheduleError", "inventory"]
       },
       "Reminder": {
         "type": "object",
@@ -2384,6 +2387,78 @@
         },
         "required": ["id", "batchId", "batchName", "kind", "dueAt", "note", "doneAt", "createdAt"]
       },
+      "InventoryChange": {
+        "type": ["object", "null"],
+        "properties": {
+          "reserved": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Reservation"
+            },
+            "description": "Reserved by this move"
+          },
+          "short": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "catalogId": {
+                  "type": ["string", "null"]
+                },
+                "unit": {
+                  "$ref": "#/components/schemas/QuantityUnit"
+                },
+                "short": {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                }
+              },
+              "required": ["name", "catalogId", "unit", "short"]
+            },
+            "description": "What the owner's inventory didn't have; the batch starts anyway"
+          },
+          "used": {
+            "type": "boolean",
+            "description": "This move used up the batch's reservations"
+          },
+          "released": {
+            "type": "boolean",
+            "description": "This move gave the reservations back"
+          }
+        },
+        "required": ["reserved", "short", "used", "released"],
+        "description": "Starting reserves ingredients, packaging or bottling uses them, undoing gives them back. Null when this move changes nothing"
+      },
+      "Reservation": {
+        "type": "object",
+        "properties": {
+          "itemId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "number"
+          },
+          "unit": {
+            "$ref": "#/components/schemas/QuantityUnit"
+          },
+          "state": {
+            "type": "string",
+            "enum": ["reserved", "used", "released"]
+          }
+        },
+        "required": ["itemId", "name", "quantity", "unit", "state"]
+      },
+      "QuantityUnit": {
+        "type": "string",
+        "enum": ["kg", "l", "each"]
+      },
       "StatusChange": {
         "type": "object",
         "properties": {
@@ -2393,6 +2468,50 @@
         },
         "required": ["status"],
         "additionalProperties": false
+      },
+      "BatchReservations": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Reservation"
+            }
+          }
+        },
+        "required": ["items"]
+      },
+      "BatchStats": {
+        "type": "object",
+        "properties": {
+          "stats": {
+            "$ref": "#/components/schemas/RecipeStats"
+          },
+          "statsError": {
+            "type": ["string", "null"]
+          },
+          "alphaAcidFromInventory": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "hop": {
+                  "type": "string"
+                },
+                "alphaAcidPct": {
+                  "type": "number"
+                },
+                "itemId": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "required": ["hop", "alphaAcidPct", "itemId"]
+            },
+            "description": "Hop lines whose alpha acid came from a reserved inventory lot"
+          }
+        },
+        "required": ["stats", "statsError", "alphaAcidFromInventory"]
       },
       "Reading": {
         "type": "object",
@@ -3078,6 +3197,295 @@
         "required": ["breweryId"],
         "additionalProperties": false,
         "description": "A brewery where you are an owner or brewer"
+      },
+      "InventoryPage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InventoryItem"
+            }
+          },
+          "nextOffset": {
+            "type": ["integer", "null"]
+          }
+        },
+        "required": ["items", "nextOffset"]
+      },
+      "InventoryItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "uri": {
+            "type": "string"
+          },
+          "owner": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": ["user", "brewery"]
+              },
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              }
+            },
+            "required": ["type", "id"]
+          },
+          "name": {
+            "type": "string"
+          },
+          "catalogId": {
+            "type": ["string", "null"]
+          },
+          "quantity": {
+            "type": "number",
+            "description": "On hand"
+          },
+          "quantityUnit": {
+            "$ref": "#/components/schemas/QuantityUnit"
+          },
+          "reserved": {
+            "type": "number",
+            "description": "Held by started batches"
+          },
+          "available": {
+            "type": "number",
+            "description": "On hand minus reserved; can be negative"
+          },
+          "lot": {
+            "type": ["string", "null"]
+          },
+          "location": {
+            "type": ["string", "null"]
+          },
+          "alphaAcidPct": {
+            "type": ["number", "null"]
+          },
+          "purchasedOn": {
+            "type": ["string", "null"],
+            "format": "date"
+          },
+          "bestBefore": {
+            "type": ["string", "null"],
+            "format": "date"
+          },
+          "lowStockThreshold": {
+            "type": ["number", "null"]
+          },
+          "notes": {
+            "type": ["string", "null"]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "uri",
+          "owner",
+          "name",
+          "catalogId",
+          "quantity",
+          "quantityUnit",
+          "reserved",
+          "available",
+          "lot",
+          "location",
+          "alphaAcidPct",
+          "purchasedOn",
+          "bestBefore",
+          "lowStockThreshold",
+          "notes",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "CreateInventoryItem": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "catalogId": {
+            "type": ["string", "null"],
+            "minLength": 1,
+            "maxLength": 100,
+            "description": "A catalog row's id (e.g. hop-citra); batches match on it before the name"
+          },
+          "quantity": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1000000
+          },
+          "quantityUnit": {
+            "$ref": "#/components/schemas/QuantityUnit"
+          },
+          "lot": {
+            "type": ["string", "null"],
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "location": {
+            "type": ["string", "null"],
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "alphaAcidPct": {
+            "type": ["number", "null"],
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Hops: this lot's alpha acid, used in the stats of batches it is reserved for"
+          },
+          "purchasedOn": {
+            "type": ["string", "null"],
+            "format": "date"
+          },
+          "bestBefore": {
+            "type": ["string", "null"],
+            "format": "date"
+          },
+          "lowStockThreshold": {
+            "type": ["number", "null"],
+            "minimum": 0,
+            "maximum": 1000000,
+            "description": "In the item's unit; it is low on stock when less than this is available"
+          },
+          "notes": {
+            "type": ["string", "null"],
+            "maxLength": 2000
+          },
+          "breweryId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Add it to this brewery's inventory. You must be one of its owners or brewers"
+          }
+        },
+        "required": ["name", "quantity", "quantityUnit"],
+        "additionalProperties": false
+      },
+      "ShoppingList": {
+        "type": "object",
+        "properties": {
+          "short": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "catalogId": {
+                  "type": ["string", "null"]
+                },
+                "unit": {
+                  "$ref": "#/components/schemas/QuantityUnit"
+                },
+                "short": {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                },
+                "batches": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      "name": {
+                        "type": "string"
+                      }
+                    },
+                    "required": ["id", "name"]
+                  }
+                }
+              },
+              "required": ["name", "catalogId", "unit", "short", "batches"]
+            },
+            "description": "What planned batches need beyond what is available"
+          },
+          "lowStock": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InventoryItem"
+            },
+            "description": "Items below their threshold"
+          }
+        },
+        "required": ["short", "lowStock"]
+      },
+      "InventoryItemPatch": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "catalogId": {
+            "type": ["string", "null"],
+            "minLength": 1,
+            "maxLength": 100,
+            "description": "A catalog row's id (e.g. hop-citra); batches match on it before the name"
+          },
+          "quantity": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1000000
+          },
+          "quantityUnit": {
+            "$ref": "#/components/schemas/QuantityUnit"
+          },
+          "lot": {
+            "type": ["string", "null"],
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "location": {
+            "type": ["string", "null"],
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "alphaAcidPct": {
+            "type": ["number", "null"],
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Hops: this lot's alpha acid, used in the stats of batches it is reserved for"
+          },
+          "purchasedOn": {
+            "type": ["string", "null"],
+            "format": "date"
+          },
+          "bestBefore": {
+            "type": ["string", "null"],
+            "format": "date"
+          },
+          "lowStockThreshold": {
+            "type": ["number", "null"],
+            "minimum": 0,
+            "maximum": 1000000,
+            "description": "In the item's unit; it is low on stock when less than this is available"
+          },
+          "notes": {
+            "type": ["string", "null"],
+            "maxLength": 2000
+          }
+        },
+        "additionalProperties": false
       }
     },
     "parameters": {}
@@ -6410,6 +6818,122 @@
         }
       }
     },
+    "/api/batches/{id}/reservations": {
+      "get": {
+        "tags": ["batches"],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "operationId": "listBatchReservations",
+        "summary": "What the batch holds from its owner's inventory",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reservations",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchReservations"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/batches/{id}/stats": {
+      "get": {
+        "tags": ["batches"],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "operationId": "getBatchStats",
+        "summary": "Stats at the batch's size and equipment, with hop alpha acid from reserved lots",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Stats",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchStats"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/batches/{id}/readings": {
       "get": {
         "tags": ["batches"],
@@ -8746,6 +9270,547 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/inventory": {
+      "get": {
+        "tags": ["inventory"],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "operationId": "listInventory",
+        "summary": "Your inventory or a brewery's, by name",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "A brewery you belong to; leave out for your own inventory"
+            },
+            "required": false,
+            "description": "A brewery you belong to; leave out for your own inventory",
+            "name": "breweryId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100,
+              "description": "Search name, catalog id, lot and location"
+            },
+            "required": false,
+            "description": "Search name, catalog id, lot and location",
+            "name": "q",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647,
+              "default": 0
+            },
+            "required": false,
+            "name": "offset",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Items",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["inventory"],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "operationId": "createInventoryItem",
+        "summary": "Add an item to your inventory or a brewery's",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateInventoryItem"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryItem"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/inventory/low-stock": {
+      "get": {
+        "tags": ["inventory"],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "operationId": "listLowStock",
+        "summary": "Items with less available than their low-stock threshold",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "A brewery you belong to; leave out for your own inventory"
+            },
+            "required": false,
+            "description": "A brewery you belong to; leave out for your own inventory",
+            "name": "breweryId",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Items",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/InventoryItem"
+                      }
+                    }
+                  },
+                  "required": ["items"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/inventory/shopping-list": {
+      "get": {
+        "tags": ["inventory"],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "operationId": "getShoppingList",
+        "summary": "What planned batches are short of, plus items below their threshold",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "A brewery you belong to; leave out for your own inventory"
+            },
+            "required": false,
+            "description": "A brewery you belong to; leave out for your own inventory",
+            "name": "breweryId",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Shopping list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShoppingList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/inventory/{id}": {
+      "get": {
+        "tags": ["inventory"],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "operationId": "getInventoryItem",
+        "summary": "One inventory item",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Item",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryItem"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": ["inventory"],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "operationId": "updateInventoryItem",
+        "summary": "Change an inventory item",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InventoryItemPatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryItem"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["inventory"],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "sessionCookie": []
+          }
+        ],
+        "operationId": "deleteInventoryItem",
+        "summary": "Delete an inventory item and any reservations of it",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted"
           },
           "400": {
             "description": "Error",

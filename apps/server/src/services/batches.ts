@@ -17,6 +17,7 @@ import { ApiError } from "../errors.ts";
 import type { Action, User } from "../permissions.ts";
 import { authorizeRow, newId, newOwner, ownerOf, readableBy, signedIn, type Tx } from "./access.ts";
 import type { EquipmentProfileService } from "./equipment-profiles.ts";
+import { batchStats, reservationsOf, syncReservations } from "./inventory.ts";
 import { versionStats } from "./recipe-stats.ts";
 
 const {
@@ -324,6 +325,7 @@ export function createBatchService(
           .where(eq(batches.id, id))
           .returning();
         await recordStatus(tx, id, status, user.id, now);
+        const inventory = await syncReservations(tx, updated as BatchRow, batch.status, status);
 
         let schedule: { added: ReturnType<typeof viewReminder>[]; error: string | null } = {
           added: [],
@@ -341,6 +343,7 @@ export function createBatchService(
           batch: await detail(tx, { ...row, batch: updated as BatchRow }),
           addedReminders: schedule.added,
           scheduleError: schedule.error,
+          inventory,
         };
       });
     },
@@ -354,6 +357,21 @@ export function createBatchService(
           .where(and(eq(shares.resourceType, "batch"), eq(shares.resourceId, id)));
         await tx.delete(batches).where(eq(batches.id, id));
       });
+    },
+
+    /** What the batch holds from inventory: reserved, used, or given back. */
+    async reservations(viewer: User | null, id: string) {
+      return db.transaction(async (tx) => {
+        await authorize(tx, viewer, "read", id);
+        return reservationsOf(tx, id);
+      });
+    },
+
+    /** Stats for the batch as brewed: its size, equipment, and the hop lots it holds. */
+    async stats(viewer: User | null, id: string) {
+      return db.transaction(async (tx) =>
+        batchStats(tx, (await authorize(tx, viewer, "read", id)).batch),
+      );
     },
 
     async readings(viewer: User | null, id: string) {

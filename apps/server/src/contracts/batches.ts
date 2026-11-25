@@ -4,6 +4,7 @@
 
 import { schema } from "@brew-bruvs/db";
 import { z } from "@hono/zod-openapi";
+import { InventoryChange } from "./inventory.ts";
 import { Beverage, Visibility } from "./recipes.ts";
 
 const { TASTING_SCORE_MAX } = schema;
@@ -176,6 +177,10 @@ export const StatusResult = z
     }),
     scheduleError: z.string().nullable().openapi({
       description: "Why a mead's nutrient schedule couldn't be made (e.g. the recipe has no stats)",
+    }),
+    inventory: InventoryChange.nullable().openapi({
+      description:
+        "Starting reserves ingredients, packaging or bottling uses them, undoing gives them back. Null when this move changes nothing",
     }),
   })
   .openapi("StatusResult");

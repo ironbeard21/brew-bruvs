@@ -21,6 +21,7 @@ import {
   StatusChange,
   StatusResult,
 } from "../contracts/batches.ts";
+import { BatchReservations, BatchStats } from "../contracts/inventory.ts";
 import { errorResponses } from "../errors.ts";
 import type { BatchService } from "../services/batches.ts";
 import type { NoteService } from "../services/notes.ts";
@@ -96,6 +97,24 @@ const routes = {
       "Move to any later status of the batch's beverage, or one step back. A mead moving to primary gets its nutrient reminders.",
     request: { params: id, ...body(StatusChange) },
     responses: { 200: json(StatusResult, "Moved"), ...errorResponses(400, 401, 403, 404, 409) },
+  }),
+  reservations: createRoute({
+    ...batch,
+    method: "get",
+    path: "/api/batches/{id}/reservations",
+    operationId: "listBatchReservations",
+    summary: "What the batch holds from its owner's inventory",
+    request: { params: id },
+    responses: { 200: json(BatchReservations, "Reservations"), ...errorResponses(400, 404) },
+  }),
+  stats: createRoute({
+    ...batch,
+    method: "get",
+    path: "/api/batches/{id}/stats",
+    operationId: "getBatchStats",
+    summary: "Stats at the batch's size and equipment, with hop alpha acid from reserved lots",
+    request: { params: id },
+    responses: { 200: json(BatchStats, "Stats"), ...errorResponses(400, 404) },
   }),
   readings: createRoute({
     ...batch,
@@ -248,6 +267,10 @@ export function registerBatchRoutes(
   app.openapi(routes.status, async (c) =>
     c.json(await batches.setStatus(viewer(c), param(c), c.req.valid("json").status), 200),
   );
+  app.openapi(routes.reservations, async (c) =>
+    c.json(await batches.reservations(viewer(c), param(c)), 200),
+  );
+  app.openapi(routes.stats, async (c) => c.json(await batches.stats(viewer(c), param(c)), 200));
   app.openapi(routes.readings, async (c) =>
     c.json(await batches.readings(viewer(c), param(c)), 200),
   );
