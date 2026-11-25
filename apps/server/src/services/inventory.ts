@@ -3,7 +3,7 @@
 // the batch owner's inventory, packaging or bottling uses them up, and undoing either move gives
 // them back. Quantities are in each item's unit (kg, L, each).
 import { type Db, schema } from "@brew-bruvs/db";
-import { and, asc, eq, ilike, inArray, or, type SQL, sql } from "drizzle-orm";
+import { and, asc, eq, ilike, or, type SQL, sql } from "drizzle-orm";
 import type { z } from "zod";
 import type { CreateInventoryItem, InventoryItemPatch } from "../contracts/inventory.ts";
 import { RecipeContent } from "../contracts/recipe-content.ts";

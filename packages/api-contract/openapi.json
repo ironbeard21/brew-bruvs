@@ -5568,6 +5568,17 @@
           },
           {
             "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Only this brewery's; you must belong to it"
+            },
+            "required": false,
+            "description": "Only this brewery's; you must belong to it",
+            "name": "breweryId",
+            "in": "query"
+          },
+          {
+            "schema": {
               "type": "integer",
               "minimum": 1,
               "maximum": 100,
@@ -5611,6 +5622,16 @@
             }
           },
           "401": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
             "description": "Error",
             "content": {
               "application/json": {
@@ -7194,6 +7215,17 @@
           },
           {
             "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Only this brewery's; you must belong to it"
+            },
+            "required": false,
+            "description": "Only this brewery's; you must belong to it",
+            "name": "breweryId",
+            "in": "query"
+          },
+          {
+            "schema": {
               "type": "integer",
               "minimum": 1,
               "maximum": 100,
@@ -7237,6 +7269,16 @@
             }
           },
           "401": {
+            "description": "Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
             "description": "Error",
             "content": {
               "application/json": {

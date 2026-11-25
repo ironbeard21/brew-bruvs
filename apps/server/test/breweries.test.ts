@@ -553,4 +553,44 @@ describe.skipIf(!TEST_DATABASE_URL)("breweries API on PostgreSQL", () => {
       ).toBe(204);
     });
   });
+  it("lists only a brewery's recipes and batches, paged, for its members", async () => {
+    await withBrewery(async ({ app, brewery, people }) => {
+      const post = (path: string, body: object, token = people.owner.token) =>
+        call(app, "POST", path, { token, body });
+      const theirs: string[] = [];
+      for (let i = 0; i < 3; i++) {
+        const r = await post("/api/recipes", { ...beer, name: `Brewery ${i}`, breweryId: brewery });
+        theirs.push(r.json.id as string);
+        await post("/api/batches", { recipeId: r.json.id, breweryId: brewery });
+      }
+      // Readable, but not the brewery's: a personal recipe and someone else's server recipe.
+      const mine = await post("/api/recipes", beer);
+      await post("/api/batches", { recipeId: mine.json.id });
+      const other = await post("/api/recipes", beer, people.outsider.token);
+      await call(app, "PATCH", `/api/recipes/${other.json.id}`, {
+        token: people.outsider.token,
+        body: { visibility: "server" },
+      });
+
+      for (const path of ["/api/recipes", "/api/batches"]) {
+        const list = (query: string, token = people.viewer.token) =>
+          call(app, "GET", `${path}?breweryId=${brewery}${query}`, { token });
+        const first = await list("&limit=2");
+        const second = await list(`&limit=2&offset=${first.json.nextOffset}`);
+        const items = [...(first.json.items as Json[]), ...(second.json.items as Json[])];
+        expect(items.length, path).toBe(3);
+        expect(
+          items.every((i) => (i.owner as Json).id === brewery),
+          path,
+        ).toBe(true);
+        expect(second.json.nextOffset, path).toBeNull();
+        if (path === "/api/recipes") {
+          expect(items.map((i) => i.id).sort()).toEqual([...theirs].sort());
+        }
+        expect((await list("", people.outsider.token)).status, path).toBe(404);
+        expect((await list("&mine=true")).status, path).toBe(400);
+        expect((await call(app, "GET", `${path}?breweryId=${brewery}`)).status, path).toBe(401);
+      }
+    });
+  });
 });

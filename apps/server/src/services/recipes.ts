@@ -16,7 +16,16 @@ import type {
 } from "../contracts/recipes.ts";
 import { ApiError, pgCode } from "../errors.ts";
 import type { Action, User } from "../permissions.ts";
-import { authorizeRow, newId, newOwner, ownerOf, readableBy, signedIn, type Tx } from "./access.ts";
+import {
+  authorizeRow,
+  newId,
+  newOwner,
+  ownedBy,
+  ownerOf,
+  readableBy,
+  signedIn,
+  type Tx,
+} from "./access.ts";
 import type { EquipmentProfileService } from "./equipment-profiles.ts";
 import {
   catalogValues,
@@ -192,13 +201,15 @@ export function createRecipeService(
      */
     async list(
       viewer: User | null,
-      page: { q?: string | undefined; mine: boolean; limit: number; offset: number },
+      page: {
+        q?: string | undefined;
+        mine: boolean;
+        breweryId?: string | undefined;
+        limit: number;
+        offset: number;
+      },
     ) {
-      if (page.mine && !viewer) throw new ApiError(401, "unauthorized", "Sign in first");
-      const access =
-        page.mine && viewer
-          ? eq(recipes.ownerUserId, viewer.id)
-          : readableBy(db, viewer, "recipe", recipes);
+      const access = ownedBy(viewer, recipes, page) ?? readableBy(db, viewer, "recipe", recipes);
       const search = page.q ? sql`strpos(lower(${recipes.name}), lower(${page.q})) > 0` : undefined;
       const rows = await db
         .select({ recipe: recipes, latestVersion })
