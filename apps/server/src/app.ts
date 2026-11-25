@@ -14,6 +14,7 @@ import { registerBatchRoutes } from "./routes/batches.ts";
 import { registerBreweryRoutes } from "./routes/breweries.ts";
 import { registerBrewfatherRoutes } from "./routes/brewfather.ts";
 import { registerCatalogRoutes } from "./routes/catalog.ts";
+import { registerDeviceRoutes } from "./routes/device-readings.ts";
 import { registerEquipmentItemRoutes } from "./routes/equipment-items.ts";
 import { registerHealthRoutes } from "./routes/health.ts";
 import { registerInventoryRoutes } from "./routes/inventory.ts";
@@ -25,6 +26,7 @@ import type { BatchService } from "./services/batches.ts";
 import type { BreweryService } from "./services/breweries.ts";
 import type { BrewfatherService } from "./services/brewfather.ts";
 import type { CatalogService } from "./services/catalog.ts";
+import type { DeviceService } from "./services/device-readings.ts";
 import type { EquipmentItemService } from "./services/equipment-items.ts";
 import type { EquipmentProfileService } from "./services/equipment-profiles.ts";
 import type { InventoryService } from "./services/inventory.ts";
@@ -60,6 +62,7 @@ export interface AppDeps {
   breweries: BreweryService;
   inventory: InventoryService;
   brewfather: BrewfatherService;
+  devices: DeviceService;
   sharing: SharingService;
   activity: ActivityService;
 }
@@ -124,6 +127,7 @@ export function createApp(deps: AppDeps) {
   registerBreweryRoutes(app, breweries);
   registerInventoryRoutes(app, inventory);
   registerBrewfatherRoutes(app, deps);
+  registerDeviceRoutes(app, deps.devices, auth.trustProxy);
   registerSharingRoutes(app, { sharing, activity });
   app.doc31(OPENAPI_PATH, OPENAPI_INFO);
 

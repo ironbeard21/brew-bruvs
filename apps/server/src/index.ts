@@ -12,6 +12,7 @@ import { createBatchService } from "./services/batches.ts";
 import { createBreweryService } from "./services/breweries.ts";
 import { createBrewfatherService } from "./services/brewfather.ts";
 import { createCatalogService } from "./services/catalog.ts";
+import { createDeviceService } from "./services/device-readings.ts";
 import { createEquipmentItemService } from "./services/equipment-items.ts";
 import { createEquipmentProfileService } from "./services/equipment-profiles.ts";
 import { createInventoryService } from "./services/inventory.ts";
@@ -30,6 +31,7 @@ const app = createApp({
   sourceUrl: config.sourceUrl,
   catalog: createCatalogService(db),
   profiles,
+  devices: createDeviceService(db, { baseUrl: config.baseUrl }),
   equipmentItems: createEquipmentItemService(db, { baseUrl: config.baseUrl }),
   recipes: createRecipeService(db, { baseUrl: config.baseUrl, profiles }),
   recipeFiles: createRecipeFileService(db),

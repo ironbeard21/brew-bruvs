@@ -19,6 +19,7 @@ import { authorizeRow, newId, newOwner, ownerOf, readableBy, signedIn, type Tx }
 import { recordActivity } from "./activity.ts";
 import type { EquipmentProfileService } from "./equipment-profiles.ts";
 import { batchStats, reservationsOf, syncReservations } from "./inventory.ts";
+import { recordReading } from "./readings.ts";
 import { versionStats } from "./recipe-stats.ts";
 
 const {
@@ -446,23 +447,7 @@ export function createBatchService(
       const user = signedIn(viewer);
       return db.transaction(async (tx) => {
         const { batch } = await authorize(tx, user, "contribute", id);
-        const [row] = await tx
-          .insert(readings)
-          .values({
-            ...input,
-            takenAt: new Date(input.takenAt),
-            batchId: id,
-            createdByUserId: user.id,
-          })
-          .returning();
-        await recordActivity(tx, {
-          breweryId: batch.ownerBreweryId,
-          actorUserId: user.id,
-          verb: "reading_logged",
-          objectType: "reading",
-          objectId: (row as ReadingRow).id,
-        });
-        return viewReading(row as ReadingRow);
+        return viewReading(await recordReading(tx, batch, input, user.id));
       });
     },
 

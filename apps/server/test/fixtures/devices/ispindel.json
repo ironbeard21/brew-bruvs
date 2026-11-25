@@ -1,0 +1,10 @@
+{
+  "name": "iSpindel",
+  "angle": 56.40998,
+  "temperature": 19.375,
+  "temp_units": "C",
+  "battery": 4.702816,
+  "gravity": 13.32561,
+  "interval": 30,
+  "RSSI": -77
+}

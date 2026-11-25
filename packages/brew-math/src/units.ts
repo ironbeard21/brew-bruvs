@@ -60,6 +60,9 @@ export const sgToPlato = (sg: number): number =>
 /** °Plato → specific gravity. Common inverse approximation used with the ASBC polynomial. */
 export const platoToSg = (plato: number): number => 1 + plato / (258.6 - (plato / 258.2) * 227.1);
 
+/** Scaled specific gravity from devices that transmit SG × 1000. */
+export const milliSgToSg = (scaled: number): number => scaled / 1_000;
+
 /** Gravity points per pound per gallon → SG potential for one pound in one US gallon. */
 export const ppgToPotentialSg = (ppg: number): number => 1 + ppg / 1000;
 
