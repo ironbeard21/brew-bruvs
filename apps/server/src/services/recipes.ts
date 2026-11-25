@@ -211,10 +211,10 @@ export function createRecipeService(
       };
     },
 
-    async create(viewer: User | null, input: z.infer<typeof CreateRecipe>) {
+    async create(viewer: User | null, input: z.infer<typeof CreateRecipe>, tx?: Tx) {
       const user = signedIn(viewer);
       const { credit } = input;
-      return db.transaction((tx) =>
+      return (tx ?? db).transaction((tx) =>
         insertRecipe(
           tx,
           user,

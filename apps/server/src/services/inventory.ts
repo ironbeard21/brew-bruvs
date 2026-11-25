@@ -444,11 +444,11 @@ export function createInventoryService(db: Db, opts: { baseUrl: string }) {
       };
     },
 
-    async create(viewer: User | null, input: z.infer<typeof CreateInventoryItem>) {
+    async create(viewer: User | null, input: z.infer<typeof CreateInventoryItem>, tx?: Tx) {
       const user = signedIn(viewer);
       const { breweryId, ...fields } = input;
       const owner = newOwner(user, breweryId);
-      return db.transaction(async (tx) => {
+      return (tx ?? db).transaction(async (tx) => {
         const id = await newId(tx);
         const [row] = await tx
           .insert(inventoryItems)

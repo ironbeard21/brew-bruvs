@@ -2091,6 +2091,40 @@ export interface paths {
         patch: operations["updateInventoryItem"];
         trace?: never;
     };
+    "/api/integrations/brewfather/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Fetch Brewfather data for review using a one-time API key */
+        post: operations["previewBrewfatherImport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/integrations/brewfather/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Save a reviewed Brewfather import without credentials */
+        post: operations["saveBrewfatherImport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/integrations/devices": {
         parameters: {
             query?: never;
@@ -3606,6 +3640,60 @@ export interface components {
             /** @description In the item's unit; it is low on stock when less than this is available */
             lowStockThreshold?: number | null;
             notes?: string | null;
+        };
+        BrewfatherImport: {
+            recipes: {
+                ref: string;
+                draft: components["schemas"]["BrewfatherRecipeDraft"];
+            }[];
+            batches: {
+                recipeRef: string;
+                /** @description Defaults to the recipe version's name */
+                name?: string;
+                /** @description Defaults to the version's batch size */
+                batchSizeL?: number;
+                /** @enum {string} */
+                status: "planned" | "brewing" | "fermenting" | "conditioning" | "packaged" | "finished";
+                /** Format: date-time */
+                brewedAt?: string;
+                /** Format: date-time */
+                completedAt?: string;
+                readings: components["schemas"]["ReadingInput"][];
+            }[];
+            inventory: {
+                name: string;
+                /** @description A catalog row's id (e.g. hop-citra); batches match on it before the name */
+                catalogId?: string | null;
+                quantity: number;
+                quantityUnit: components["schemas"]["QuantityUnit"];
+                lot?: string | null;
+                location?: string | null;
+                /** @description Hops: this lot's alpha acid, used in the stats of batches it is reserved for */
+                alphaAcidPct?: number | null;
+                /** Format: date */
+                purchasedOn?: string | null;
+                /** Format: date */
+                bestBefore?: string | null;
+                /** @description In the item's unit; it is low on stock when less than this is available */
+                lowStockThreshold?: number | null;
+                notes?: string | null;
+            }[];
+        };
+        BrewfatherRecipeDraft: {
+            name: string;
+            batchSizeL: number;
+            /** @description Catalog style id */
+            styleId?: string | null;
+            content: components["schemas"]["RecipeContent"];
+            /** @enum {string} */
+            beverage: "beer" | "mead" | "wine" | "cider";
+            credit?: components["schemas"]["CreditInput"];
+            /** @enum {string} */
+            visibility: "private";
+        };
+        BrewfatherCredentials: {
+            userId: string;
+            apiKey: string;
         };
         Device: {
             /** Format: uuid */
@@ -7684,6 +7772,166 @@ export interface operations {
             };
             /** @description Error */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    previewBrewfatherImport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BrewfatherCredentials"];
+            };
+        };
+        responses: {
+            /** @description Recipes, batches and inventory to review before saving */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BrewfatherImport"];
+                };
+            };
+            /** @description Error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    saveBrewfatherImport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BrewfatherImport"];
+            };
+        };
+        responses: {
+            /** @description IDs of newly imported records */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        recipeIds: string[];
+                        batchIds: string[];
+                        inventoryIds: string[];
+                    };
+                };
+            };
+            /** @description Error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };

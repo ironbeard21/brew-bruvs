@@ -10,6 +10,7 @@ import { createActivityService } from "./services/activity.ts";
 import { createAuthService } from "./services/auth.ts";
 import { createBatchService } from "./services/batches.ts";
 import { createBreweryService } from "./services/breweries.ts";
+import { createBrewfatherService } from "./services/brewfather.ts";
 import { createCatalogService } from "./services/catalog.ts";
 import { createDeviceService } from "./services/device-readings.ts";
 import { createEquipmentItemService } from "./services/equipment-items.ts";
@@ -37,6 +38,7 @@ const app = createApp({
   batches: createBatchService(db, { baseUrl: config.baseUrl, profiles }),
   notes: createNoteService(db, { baseUrl: config.baseUrl }),
   breweries: createBreweryService(db, { baseUrl: config.baseUrl }),
+  brewfather: createBrewfatherService(db),
   inventory: createInventoryService(db, { baseUrl: config.baseUrl }),
   sharing: createSharingService(db),
   activity: createActivityService(db),

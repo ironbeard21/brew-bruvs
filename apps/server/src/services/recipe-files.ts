@@ -18,13 +18,7 @@ function addMatch(index: Map<string, string | null>, name: string, id: string) {
   index.set(normalized, previous === undefined || previous === id ? id : null);
 }
 
-async function matchLines<T extends { name: string; catalogId?: string | undefined }>(
-  db: Db,
-  catalog: IngredientCatalog,
-  lines: T[],
-  native: boolean,
-) {
-  if (!lines.length) return lines;
+export async function loadIngredientMatcher(db: Db, catalog: IngredientCatalog) {
   const table = catalogTables[catalog];
   const rows = await db
     .select({ id: table.id, name: table.name, aliases: table.aliases })
@@ -37,13 +31,27 @@ async function matchLines<T extends { name: string; catalogId?: string | undefin
     addMatch(names, row.name, row.id);
     for (const alias of row.aliases) addMatch(aliases, alias, row.id);
   }
-  return lines.map((line) => {
+  return <T extends { name: string; catalogId?: string | null | undefined }>(
+    line: T,
+    native = false,
+  ) => {
     if (native && !line.catalogId) return line;
     if (line.catalogId && ids.has(line.catalogId)) return line;
     const name = key(line.name);
     const catalogId = names.has(name) ? names.get(name) : aliases.get(name);
     return { ...line, catalogId: catalogId ?? undefined };
-  });
+  };
+}
+
+async function matchLines<T extends { name: string; catalogId?: string | undefined }>(
+  db: Db,
+  catalog: IngredientCatalog,
+  lines: T[],
+  native: boolean,
+) {
+  if (!lines.length) return lines;
+  const match = await loadIngredientMatcher(db, catalog);
+  return lines.map((line) => match(line, native));
 }
 
 export function createRecipeFileService(db: Db, readUrl = createRemoteRecipeReader()) {

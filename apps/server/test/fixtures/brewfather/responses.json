@@ -1,0 +1,174 @@
+{
+  "/v2/recipes": [
+    {
+      "_id": "Library9",
+      "name": "Harvest pale ale",
+      "author": "Exporting Brewer",
+      "source": {
+        "url": "https://example.test/harvest-pale",
+        "site": "Harvest Brewery",
+        "author": "Recipe Author"
+      },
+      "type": "All Grain",
+      "batchSize": 20,
+      "boilTime": 60,
+      "efficiency": 72,
+      "og": 1.047,
+      "fg": 1.011,
+      "ibu": 34,
+      "color": 6.1,
+      "fermentables": [
+        {
+          "name": "Local malt blend",
+          "type": "Grain",
+          "amount": 4,
+          "use": "Mash"
+        }
+      ],
+      "hops": [
+        {
+          "name": "Columbus",
+          "type": "Pellet",
+          "amount": 20,
+          "use": "Boil",
+          "time": 60,
+          "alpha": 14
+        }
+      ],
+      "yeasts": [
+        {
+          "name": "US-05",
+          "form": "Dry",
+          "amount": 1,
+          "unit": "pkg"
+        }
+      ],
+      "miscs": [
+        {
+          "name": "House water adjustment",
+          "type": "Water Agent",
+          "amount": 2,
+          "unit": "g",
+          "use": "Mash"
+        }
+      ],
+      "mash": {
+        "steps": [
+          {
+            "name": "Saccharification",
+            "type": "Temperature",
+            "stepTemp": 67,
+            "stepTime": 60
+          }
+        ]
+      },
+      "fermentation": {
+        "steps": [
+          {
+            "name": "Primary",
+            "type": "Primary",
+            "stepTemp": 19,
+            "stepTime": 12
+          }
+        ]
+      }
+    },
+    {
+      "_id": "Own12",
+      "name": "My house beer",
+      "author": "Exporting Brewer",
+      "batchSize": 20
+    }
+  ],
+  "/v2/batches": [
+    {
+      "_id": "B17",
+      "name": "Batch 17",
+      "status": "Completed",
+      "brewDate": 1572307200000,
+      "bottlingDate": 1573516800000,
+      "measuredBatchSize": 19.5,
+      "recipe": {
+        "_id": "Library9",
+        "name": "Harvest pale ale",
+        "author": "Exporting Brewer",
+        "source": {
+          "url": "https://example.test/harvest-pale",
+          "site": "Harvest Brewery",
+          "author": "Recipe Author"
+        },
+        "type": "All Grain",
+        "batchSize": 19,
+        "fermentables": [
+          {
+            "name": "Local malt blend",
+            "type": "Grain",
+            "amount": 3.8,
+            "use": "Mash"
+          }
+        ]
+      }
+    },
+    {
+      "_id": "B18",
+      "name": "Batch 18",
+      "status": "Planning",
+      "recipe": {
+        "_id": "Own12",
+        "name": "My house beer",
+        "author": "Exporting Brewer",
+        "batchSize": 20
+      }
+    }
+  ],
+  "/v2/batches/B17/readings": [
+    {
+      "battery": 4.082377,
+      "id": "GREEN",
+      "rssi": -75,
+      "temp": 5.1,
+      "type": "iSpindel",
+      "sg": 1.039,
+      "time": 1572383500131,
+      "angle": 32.8009
+    },
+    {
+      "time": 1572383600131,
+      "temp": 5,
+      "type": "manual",
+      "comment": "Temperature check"
+    }
+  ],
+  "/v2/inventory/fermentables": [
+    {
+      "_id": "StockA",
+      "name": "Local malt blend",
+      "inventory": 9
+    }
+  ],
+  "/v2/inventory/hops": [
+    {
+      "_id": "StockB",
+      "name": "Columbus",
+      "inventory": 100,
+      "alpha": 14
+    }
+  ],
+  "/v2/inventory/yeasts": [
+    {
+      "_id": "StockC",
+      "name": "US-05",
+      "inventory": 2,
+      "unit": "pkg"
+    }
+  ],
+  "/v2/inventory/miscs": [
+    {
+      "_id": "StockD",
+      "name": "House water adjustment",
+      "inventory": 250,
+      "unit": "ml"
+    }
+  ],
+  "/v2/batches/B18/readings": []
+}
