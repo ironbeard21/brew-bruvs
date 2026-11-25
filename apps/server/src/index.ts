@@ -21,6 +21,7 @@ const profiles = createEquipmentProfileService(db, { baseUrl: config.baseUrl });
 const app = createApp({
   logger,
   webDir: config.webDir,
+  sourceUrl: config.sourceUrl,
   catalog: createCatalogService(db),
   profiles,
   recipes: createRecipeService(db, { baseUrl: config.baseUrl, profiles }),

@@ -1813,6 +1813,11 @@ export interface components {
         Health: {
             /** @enum {string} */
             status: "ok";
+            /**
+             * Format: uri
+             * @description Corresponding source code for this server; older servers omit it
+             */
+            sourceUrl?: string;
         };
         AuthStatus: {
             setupNeeded: boolean;

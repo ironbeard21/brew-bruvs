@@ -13,6 +13,7 @@ services:
         condition: service_healthy
     environment:
       BASE_URL: ${BASE_URL:-http://localhost:8080}
+      SOURCE_URL: ${SOURCE_URL:-https://github.com/ironbeard21/brew-bruvs}
       DATABASE_URL: postgres://brew:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in the root .env file}@postgres:5432/brew
       LOG_LEVEL: ${LOG_LEVEL:-info}
       SIGNUP_MODE: ${SIGNUP_MODE:-invite}

@@ -4,6 +4,7 @@ import { serveStatic } from "@hono/node-server/serve-static";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { HTTPException } from "hono/http-exception";
 import { type AppEnv, sessionMiddleware } from "./auth/middleware.ts";
+import { DEFAULT_SOURCE_URL } from "./config.ts";
 import { RecipeContent } from "./contracts/recipe-content.ts";
 import { ApiError, ErrorSchema, errorBody } from "./errors.ts";
 import type { Logger } from "./logger.ts";
@@ -36,6 +37,7 @@ export interface AppDeps {
   logger: Logger;
   /** Absolute path to the static web build; undefined serves the API only. */
   webDir: string | undefined;
+  sourceUrl?: string;
   auth: AuthRouteDeps;
   catalog: CatalogService;
   recipes: RecipeService;
@@ -61,6 +63,13 @@ export function createApp(deps: AppDeps) {
   app.use(async (c, next) => {
     const start = performance.now();
     await next();
+    c.header(
+      "Content-Security-Policy",
+      "base-uri 'self'; frame-ancestors 'none'; object-src 'none'",
+    );
+    c.header("Referrer-Policy", "no-referrer");
+    c.header("X-Content-Type-Options", "nosniff");
+    c.header("X-Frame-Options", "DENY");
     // Path only, never the query string: it may carry tokens.
     logger.info("request", {
       method: c.req.method,
@@ -73,7 +82,7 @@ export function createApp(deps: AppDeps) {
   app.openAPIRegistry.register("Error", ErrorSchema);
   app.openAPIRegistry.register("RecipeContent", RecipeContent);
   app.use("/api/*", sessionMiddleware(auth.auth));
-  registerHealthRoutes(app);
+  registerHealthRoutes(app, deps.sourceUrl ?? DEFAULT_SOURCE_URL);
   registerAuthRoutes(app, auth);
   registerAdminRoutes(app, auth);
   registerCatalogRoutes(app, catalog);

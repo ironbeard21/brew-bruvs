@@ -84,6 +84,7 @@ export const BUNDLED_CATALOG_SOURCES: readonly {
 ];
 
 export interface AboutPanelProps {
+  sourceUrl?: string | undefined;
   attribution?: CatalogAttribution | null;
   loading?: boolean;
   error?: string | null;
@@ -93,7 +94,13 @@ function isHttpUrl(url: string): boolean {
   return url.startsWith("http://") || url.startsWith("https://");
 }
 
-export function AboutPanel({ attribution = null, loading = false, error = null }: AboutPanelProps) {
+export function AboutPanel({
+  sourceUrl,
+  attribution = null,
+  loading = false,
+  error = null,
+}: AboutPanelProps) {
+  const sourceCodeUrl = sourceUrl && isHttpUrl(sourceUrl) ? sourceUrl : SOURCE_CODE_URL;
   const sourceRows: { id: string; source: CatalogSource }[] = attribution
     ? Object.entries(attribution.sources).map(([id, source]) => ({ id, source }))
     : BUNDLED_CATALOG_SOURCES.map((s) => ({
@@ -121,12 +128,12 @@ export function AboutPanel({ attribution = null, loading = false, error = null }
           </Text>
           <View style={styles.linkRow}>
             <Pressable
-              onPress={() => void Linking.openURL(SOURCE_CODE_URL)}
+              onPress={() => void Linking.openURL(sourceCodeUrl)}
               accessibilityRole="link"
               accessibilityLabel="View Brew-Bruvs source code repository"
               testID="about-source-code-link"
             >
-              <Text style={styles.link}>Source code: {SOURCE_CODE_URL}</Text>
+              <Text style={styles.link}>Source code: {sourceCodeUrl}</Text>
             </Pressable>
             <Pressable
               onPress={() => void Linking.openURL(AGPL_LICENSE_URL)}

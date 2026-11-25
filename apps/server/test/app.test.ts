@@ -6,6 +6,7 @@ import { createRoute, z } from "@hono/zod-openapi";
 import { HTTPException } from "hono/http-exception";
 import { describe, expect, it } from "vitest";
 import { createApp, OPENAPI_INFO } from "../src/app.ts";
+import { DEFAULT_SOURCE_URL, loadConfig } from "../src/config.ts";
 import { createLogger } from "../src/logger.ts";
 import { offlineDeps } from "./helpers.ts";
 
@@ -23,7 +24,30 @@ describe("GET /healthz", () => {
   it("returns ok", async () => {
     const res = await setup().app.request("/healthz");
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ status: "ok" });
+    expect(await res.json()).toEqual({ status: "ok", sourceUrl: DEFAULT_SOURCE_URL });
+  });
+
+  it("advertises the configured HTTP source URL", async () => {
+    const env = { BASE_URL: "https://brew.example.test", DATABASE_URL: "postgres://unused" };
+    const sourceUrl = "https://code.example.test/brew/fork";
+    expect(loadConfig(env).sourceUrl).toBe(DEFAULT_SOURCE_URL);
+    expect(() => loadConfig({ ...env, SOURCE_URL: "data:text/plain,source" })).toThrow(
+      "SOURCE_URL",
+    );
+    const config = loadConfig({ ...env, SOURCE_URL: sourceUrl });
+    const res = await createApp({ ...offlineDeps(), sourceUrl: config.sourceUrl }).request(
+      "/healthz",
+    );
+    expect(await res.json()).toEqual({ status: "ok", sourceUrl });
+  });
+
+  it("applies browser security headers to API errors", async () => {
+    const res = await setup().app.request("/api/missing");
+    expect(res.status).toBe(404);
+    expect(res.headers.get("content-security-policy")).toContain("frame-ancestors 'none'");
+    expect(res.headers.get("x-frame-options")).toBe("DENY");
+    expect(res.headers.get("x-content-type-options")).toBe("nosniff");
+    expect(res.headers.get("referrer-policy")).toBe("no-referrer");
   });
 
   it("logs the request without the query string", async () => {
