@@ -18,7 +18,7 @@ import {
   scaleContent,
 } from "./recipe-stats.ts";
 
-const { inventoryItems, inventoryReservations, batches, recipeVersions } = schema;
+const { inventoryItems, inventoryReservations, batches, recipeVersions, shares } = schema;
 
 type ItemRow = typeof inventoryItems.$inferSelect;
 type BatchRow = typeof batches.$inferSelect;
@@ -478,6 +478,9 @@ export function createInventoryService(db: Db, opts: { baseUrl: string }) {
     async remove(viewer: User | null, id: string) {
       await db.transaction(async (tx) => {
         await authorize(tx, viewer, "delete", id);
+        await tx
+          .delete(shares)
+          .where(and(eq(shares.resourceType, "inventory_item"), eq(shares.resourceId, id)));
         await tx.delete(inventoryItems).where(eq(inventoryItems.id, id));
       });
     },

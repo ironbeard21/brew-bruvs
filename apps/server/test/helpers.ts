@@ -7,6 +7,7 @@ import { expect } from "vitest";
 import { type AppDeps, createApp } from "../src/app.ts";
 import type { Oidc } from "../src/auth/oidc.ts";
 import { createLogger } from "../src/logger.ts";
+import { createActivityService } from "../src/services/activity.ts";
 import { createAuthService } from "../src/services/auth.ts";
 import { createBatchService } from "../src/services/batches.ts";
 import { createBreweryService } from "../src/services/breweries.ts";
@@ -16,6 +17,7 @@ import { createInventoryService } from "../src/services/inventory.ts";
 import { createNoteService } from "../src/services/notes.ts";
 import { createRecipeFileService } from "../src/services/recipe-files.ts";
 import { createRecipeService } from "../src/services/recipes.ts";
+import { createSharingService } from "../src/services/sharing.ts";
 
 export const BASE_URL = "http://brew.test";
 export const TEST_DATABASE_URL = process.env.TEST_DATABASE_URL;
@@ -38,6 +40,8 @@ function deps(
     notes: createNoteService(db, { baseUrl: BASE_URL }),
     breweries: createBreweryService(db, { baseUrl: BASE_URL }),
     inventory: createInventoryService(db, { baseUrl: BASE_URL }),
+    sharing: createSharingService(db),
+    activity: createActivityService(db),
     auth: {
       auth: createAuthService(db, { baseUrl: BASE_URL, signupMode }),
       oidc,

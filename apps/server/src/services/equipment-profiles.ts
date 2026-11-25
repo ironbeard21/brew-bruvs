@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // A brewer's own equipment profiles: volumes, losses and efficiency used to scale recipes.
 import { type Db, schema } from "@brew-bruvs/db";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import type { z } from "zod";
 import type { CreateEquipmentProfile, EquipmentProfilePatch } from "../contracts/recipes.ts";
 import { ApiError, pgCode } from "../errors.ts";
 import type { Action, User } from "../permissions.ts";
-import { denied, newId, newOwner, ownerOf, signedIn, type Tx } from "./access.ts";
+import { authorizeRow, newId, newOwner, ownerOf, signedIn, type Tx } from "./access.ts";
 
-const { equipmentProfiles } = schema;
+const { equipmentProfiles, shares } = schema;
 type ProfileRow = typeof equipmentProfiles.$inferSelect;
 
 function view(row: ProfileRow) {
@@ -47,14 +47,7 @@ export function createEquipmentProfileService(db: Db, opts: { baseUrl: string })
   async function authorize(tx: Tx, user: User | null, action: Action, id: string) {
     const [row] = await tx.select().from(equipmentProfiles).where(eq(equipmentProfiles.id, id));
     if (!row) throw new ApiError(404, "not_found", "Equipment profile not found");
-    // Profiles have no shares yet: owner, brewery role and visibility decide.
-    const err = denied(
-      user,
-      action,
-      { owner: ownerOf(row), visibility: row.visibility, shares: [] },
-      "Equipment profile",
-    );
-    if (err) throw err;
+    await authorizeRow(tx, user, action, "equipment_profile", row, "Equipment profile");
     return row;
   }
 
@@ -123,6 +116,9 @@ export function createEquipmentProfileService(db: Db, opts: { baseUrl: string })
     async remove(viewer: User | null, id: string) {
       await db.transaction(async (tx) => {
         await authorize(tx, viewer, "delete", id);
+        await tx
+          .delete(shares)
+          .where(and(eq(shares.resourceType, "equipment_profile"), eq(shares.resourceId, id)));
         await tx.delete(equipmentProfiles).where(eq(equipmentProfiles.id, id));
       });
     },
