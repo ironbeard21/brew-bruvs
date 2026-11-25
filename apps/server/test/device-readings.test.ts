@@ -117,10 +117,55 @@ describe.skipIf(!TEST_DATABASE_URL)("device API on PostgreSQL", () => {
       });
       expect(filtered.json).toHaveLength(13);
 
+      const brewery = await call(app, "POST", "/api/breweries", {
+        token: adminToken,
+        body: { name: "Device test brewery" },
+      });
+      expect(brewery.status).toBe(201);
+      const moved = await call(app, "POST", `/api/batches/${batch.json.id}/move`, {
+        token: adminToken,
+        body: { breweryId: brewery.json.id },
+      });
+      expect(moved.status).toBe(200);
+      expect((await send(replacement)).status).toBe(200);
+      const reowned = await sql.query(
+        "SELECT owner_user_id, owner_brewery_id FROM integrations WHERE id = $1",
+        [issued.json.id],
+      );
+      expect(reowned.rows[0]).toEqual({ owner_user_id: null, owner_brewery_id: brewery.json.id });
+
       expect(
         (await call(app, "DELETE", `${path}/${issued.json.id}`, { token: adminToken })).status,
       ).toBe(204);
       expect((await send(replacement)).status).toBe(401);
+
+      for (let i = 0; i < 20; i++) {
+        const invalid = await call(
+          app,
+          "POST",
+          `/api/device-readings?token=bb_${String(i).padStart(43, "0")}`,
+          {
+            ip: "203.0.113.1",
+            body: JSON.parse(read("ispindel.json")),
+          },
+        );
+        expect(invalid.status).toBe(401);
+      }
+      const nextBadToken = `/api/device-readings?token=bb_${"x".repeat(43)}`;
+      const blocked = await call(app, "POST", nextBadToken, {
+        ip: "203.0.113.1",
+        body: JSON.parse(read("ispindel.json")),
+      });
+      expect(blocked.status).toBe(429);
+      expect(blocked.res.headers.get("retry-after")).toBeTruthy();
+      expect(
+        (
+          await call(app, "POST", nextBadToken, {
+            ip: "203.0.113.2",
+            body: JSON.parse(read("ispindel.json")),
+          })
+        ).status,
+      ).toBe(401);
     });
   }, 20_000);
 });

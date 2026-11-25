@@ -123,7 +123,7 @@ export function createApp(deps: AppDeps) {
   registerEquipmentItemRoutes(app, deps.equipmentItems);
   registerBreweryRoutes(app, breweries);
   registerInventoryRoutes(app, inventory);
-  registerDeviceRoutes(app, deps.devices);
+  registerDeviceRoutes(app, deps.devices, auth.trustProxy);
   registerSharingRoutes(app, { sharing, activity });
   app.doc31(OPENAPI_PATH, OPENAPI_INFO);
 

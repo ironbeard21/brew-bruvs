@@ -15,14 +15,19 @@ The URL accepts device requests without a Brew-Bruvs session.
   ```
 
 Use HTTPS when the device supports it. A device that supports HTTP only should post over a trusted
-local network. Redact the upload query string in any reverse proxy access logs. Brew-Bruvs
-timestamps readings on receipt and converts incoming units to SG and Celsius. It accepts up to
-12 requests per token per minute, with a payload limit of 16 KiB.
+local network. Reverse proxies can record full URLs, including the token, in access logs. Configure
+your proxy to redact the query string for `/api/device-readings`, or disable access logging for
+that route. Treat any logs containing device URLs as secrets.
+
+Brew-Bruvs timestamps readings on receipt and converts incoming units to SG and Celsius. It
+accepts up to 12 requests per token per minute, with a payload limit of 16 KiB. After 20 invalid
+token lookups from one address in a minute, that address temporarily receives HTTP 429.
 
 `GET /api/integrations/devices` lists metadata and the time of the last accepted reading. To replace
 the URL, call `POST /api/integrations/devices/{id}/rotate` and update the device. To revoke the
-integration, call `DELETE /api/integrations/devices/{id}`. A deleted batch or a transfer to a
-different owner disables uploads to its old integration.
+integration, call `DELETE /api/integrations/devices/{id}`. When a personal batch moves into a
+brewery, the device moves with it and its URL keeps working. Deleting a batch disables uploads
+to its device.
 
 Firmware formats: [iSpindel](https://github.com/universam1/iSpindel),
 [GravityMon](https://mp-se.github.io/gravitymon/v1.4/data.html),

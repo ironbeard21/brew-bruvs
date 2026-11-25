@@ -13,6 +13,13 @@ const { batches, integrations } = schema;
 const storedDeviceKinds = ["ispindel", "tilt", "rapt"] as const;
 type Integration = typeof integrations.$inferSelect;
 
+export async function moveBatchDevices(tx: Tx, batchId: string, breweryId: string) {
+  await tx
+    .update(integrations)
+    .set({ ownerUserId: null, ownerBreweryId: breweryId })
+    .where(and(eq(integrations.batchId, batchId), inArray(integrations.kind, storedDeviceKinds)));
+}
+
 function kindOf(row: Integration) {
   return DeviceKind.parse(
     row.kind === "ispindel" && (row.config as { gravitymon?: boolean }).gravitymon

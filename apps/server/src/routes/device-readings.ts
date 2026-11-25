@@ -2,9 +2,9 @@
 import { createRoute, type OpenAPIHono, type RouteConfig, z } from "@hono/zod-openapi";
 import { bodyLimit } from "hono/body-limit";
 import { type AppEnv, requireSession } from "../auth/middleware.ts";
-import { enforce, RateLimiter } from "../auth/rate-limit.ts";
+import { clientIp, enforce, RateLimiter } from "../auth/rate-limit.ts";
 import { Device, DeviceInput, IssuedDevice } from "../contracts/device-readings.ts";
-import { errorBody, errorResponses } from "../errors.ts";
+import { ApiError, errorBody, errorResponses } from "../errors.ts";
 import { deviceBody } from "../integrations/device-payload.ts";
 import type { DeviceService } from "../services/device-readings.ts";
 import { body, json } from "./auth.ts";
@@ -79,8 +79,13 @@ const routes = {
   }),
 };
 
-export function registerDeviceRoutes(app: OpenAPIHono<AppEnv>, devices: DeviceService) {
-  const limit = new RateLimiter(12, 60_000);
+export function registerDeviceRoutes(
+  app: OpenAPIHono<AppEnv>,
+  devices: DeviceService,
+  trustProxy: boolean,
+) {
+  const byToken = new RateLimiter(12, 60_000);
+  const failedByIp = new RateLimiter(20, 60_000);
   app.openapi(routes.list, async (c) => c.json(await devices.list(requireSession(c).user), 200));
   app.openapi(routes.create, async (c) => {
     c.header("Cache-Control", "no-store");
@@ -95,12 +100,19 @@ export function registerDeviceRoutes(app: OpenAPIHono<AppEnv>, devices: DeviceSe
     return c.body(null, 204);
   });
   app.openapi(routes.ingest, async (c) => {
+    const ip = clientIp(c, trustProxy);
+    enforce(c, failedByIp, ip);
     const contentType = c.req.header("content-type")?.split(";")[0]?.trim().toLowerCase() ?? "";
     const payload = deviceBody(await c.req.text(), contentType);
-    await devices.ingest(c.req.valid("query").token, payload, (hash) => {
-      enforce(c, limit, hash);
-      limit.hit(hash);
-    });
+    try {
+      await devices.ingest(c.req.valid("query").token, payload, (hash) => {
+        enforce(c, byToken, hash);
+        byToken.hit(hash);
+      });
+    } catch (error) {
+      if (error instanceof ApiError && error.code === "invalid_device_token") failedByIp.hit(ip);
+      throw error;
+    }
     return c.json({ result: "success" as const }, 200);
   });
 }
