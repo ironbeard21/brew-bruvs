@@ -341,6 +341,83 @@ test.describe("Brew-Bruvs app shell", () => {
 
     // Switch back to personal ("Me") workspace
     await page.getByTestId("workspace-switch-me").click();
+
+    // P2-12: Inventory list & editor in user's units, scan-friendly search, shopping list,
+    // and batch start showing what gets reserved and what's short.
+    const lotTag = `LOT-E2E-${test.info().project.name}`;
+    await page.getByTestId("nav-inventory").click();
+    await expect(page).toHaveURL(/\/inventory$/);
+    await expect(page.getByTestId("inventory-panel")).toBeVisible();
+
+    await page.getByTestId("inventory-add-button").click();
+    await page.getByTestId("inventory-toggle-catalog-picker").click();
+    await page.getByTestId("inv-catalog-search-input").fill("Pale Malt (2 Row) US");
+    await page.getByTestId("inv-catalog-option-ferm-pale-malt-2-row-us").click();
+    await page.getByTestId("inventory-quantity-input").fill("10");
+    await page.getByTestId("inventory-threshold-input").fill("12");
+    await page.getByTestId("inventory-location-input").fill("Grain Room");
+    await page.getByTestId("inventory-lot-input").fill(lotTag);
+    await page.getByTestId("inventory-editor-submit").click();
+
+    // Scan-friendly search by lot code finds the new item with Low stock badge
+    await page.getByTestId("inventory-search-input").fill(lotTag);
+    await expect(page.locator('[data-testid^="inventory-item-"]').first()).toContainText(
+      "Pale Malt (2 Row) US",
+    );
+    await expect(page.locator('[data-testid^="low-stock-badge-"]').first()).toBeVisible();
+    await page.getByTestId("inventory-search-clear").click();
+
+    // Shopping list shows the low-stock item
+    await page.getByRole("tab", { name: "Shopping list and low-stock items" }).click();
+    await expect(page.getByTestId("shopping-lowstock-list")).toContainText("Pale Malt (2 Row) US");
+
+    // Start a new batch from Backyard Pale Ale -> reserves Pale Malt and reports short ingredients
+    await page.getByTestId("nav-batches").click();
+    await expect(page).toHaveURL(/\/batches$/);
+    await page.getByTestId("new-batch-button").click();
+    await page
+      .locator('[data-testid^="pick-recipe-"]', { hasText: "Backyard Pale Ale" })
+      .first()
+      .click();
+    await page.getByTestId("new-batch-name-input").fill("Inventory Reserved Pale");
+    await page.getByTestId("create-batch-submit-button").click();
+    await expect(page).toHaveURL(/\/batches\/[0-9a-f-]+$/);
+
+    await page.getByTestId("status-step-brewing").click();
+    await expect(page.getByTestId("batch-inventory-change")).toBeVisible();
+    await expect(page.getByTestId("batch-inventory-reserved-summary")).toContainText(
+      "Pale Malt (2 Row) US",
+    );
+    await expect(page.getByTestId("batch-inventory-short-summary")).toBeVisible();
+
+    // Verify persistent reservations tab on batch detail
+    await page.getByRole("tab", { name: "Batch inventory reservations and lot stats" }).click();
+    await expect(page.getByTestId("batch-reservations-list")).toContainText("Pale Malt (2 Row) US");
+
+    // Cross-workspace batch link check: create a brewery batch, switch workspace to Me,
+    // start the brewery batch, and verify "Open shopping list" lands on the brewery's shopping list.
+    await page.locator('[data-testid^="workspace-switch-"]', { hasText: breweryName }).click();
+    await page.getByTestId("nav-batches").click();
+    await page.getByTestId("new-batch-button").click();
+    await page
+      .locator('[data-testid^="pick-recipe-"]', { hasText: "Backyard Pale Ale" })
+      .first()
+      .click();
+    await page.getByTestId("new-batch-name-input").fill("Brewery Shortfall Pale");
+    await page.getByTestId("create-batch-submit-button").click();
+    await expect(page).toHaveURL(/\/batches\/[0-9a-f-]+$/);
+    const breweryBatchUrl = page.url();
+
+    await page.getByTestId("workspace-switch-me").click();
+    await page.goto(breweryBatchUrl);
+    await page.getByTestId("status-step-brewing").click();
+    await expect(page.getByTestId("batch-open-shopping-list-button")).toBeVisible();
+    await page.getByTestId("batch-open-shopping-list-button").click();
+    await expect(page).toHaveURL(/\/inventory\?tab=shopping&breweryId=/);
+    await expect(page.getByTestId("shopping-list-panel")).toContainText(breweryName);
+
+    // Leave workspace cleanly back on Me
+    await page.getByTestId("workspace-switch-me").click();
   });
 
   test("calculators work completely offline without a server", async ({ page, context }) => {

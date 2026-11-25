@@ -1,10 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-// Local notifications for brew-day timers and batch reminders (no push server, Decision 3).
+// Local notifications for brew-day timers, batch reminders, and low-stock alerts (no push server, Decision 3).
 import { Platform } from "react-native";
 import type { Reminder } from "./api/batches";
-import { appStorage } from "./state/storage";
+import type { InventoryItem } from "./api/inventory";
+import { formatInventoryAmount } from "./components/inventory/inventoryUnits";
+import { appStorage, type KeyValueStorage } from "./state/storage";
+import type { UnitSystem } from "./state/units";
 
 const REMINDER_NOTIF_MAP_KEY = "brewbruvs.notifications.reminders";
+const LOW_STOCK_ALERT_KEY = "brewbruvs.notifications.lowStock";
 
 let nativeConfigured = false;
 
@@ -52,14 +56,16 @@ export async function requestNotificationPermission(): Promise<boolean> {
   return asked.granted;
 }
 
-export function fireWebNotification(title: string, body: string): void {
-  if (Platform.OS !== "web") return;
-  if (typeof window === "undefined" || typeof Notification === "undefined") return;
-  if (Notification.permission !== "granted") return;
+export function fireWebNotification(title: string, body: string): boolean {
+  if (Platform.OS !== "web") return false;
+  if (typeof window === "undefined" || typeof Notification === "undefined") return false;
+  if (Notification.permission !== "granted") return false;
   try {
     new Notification(title, { body });
+    return true;
   } catch {
     // Ignore browser notification restrictions.
+    return false;
   }
 }
 
@@ -190,4 +196,138 @@ export async function syncReminderNotifications(
 
   await writeReminderMap(map);
   return { scheduled, permissionGranted: true };
+}
+
+async function readLowStockMap(storage: KeyValueStorage): Promise<Record<string, number>> {
+  const raw = await storage.getItem(LOW_STOCK_ALERT_KEY);
+  if (!raw) return {};
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (parsed && typeof parsed === "object") {
+      return parsed as Record<string, number>;
+    }
+  } catch {
+    // Ignore corrupt map.
+  }
+  return {};
+}
+
+export interface LowStockNotificationResult {
+  newlyAlerted: InventoryItem[];
+  permissionGranted: boolean;
+  delivered: boolean;
+}
+
+/**
+ * Fires a local device notification (no push service) whenever one or more inventory items
+ * newly drop below their low-stock threshold or drop further since the last delivered alert.
+ * Deduplication state is only written after OS/browser notification delivery succeeds, so
+ * pending alerts fire once notification permission is granted. Restocked items are pruned.
+ */
+export async function notifyLowStockItems(
+  lowStockItems: readonly InventoryItem[],
+  unitSystem: UnitSystem,
+  opts: {
+    scopeKey?: string;
+    workspaceLabel?: string;
+    requestPermission?: boolean;
+    force?: boolean;
+    storage?: KeyValueStorage;
+  } = {},
+): Promise<LowStockNotificationResult> {
+  const storage = opts.storage ?? appStorage;
+  const scopePrefix = `${opts.scopeKey ?? "me"}::`;
+  const previous = await readLowStockMap(storage);
+  const currentIds = new Set(lowStockItems.map((i) => i.id));
+  const pruned: Record<string, number> = {};
+  let prunedAny = false;
+
+  // Keep entries from other scopes and still-low items in this scope; prune restocked items.
+  for (const [k, v] of Object.entries(previous)) {
+    if (!k.startsWith(scopePrefix)) {
+      pruned[k] = v;
+      continue;
+    }
+    const itemId = k.slice(scopePrefix.length);
+    if (currentIds.has(itemId)) {
+      pruned[k] = v;
+    } else {
+      prunedAny = true;
+    }
+  }
+
+  const newlyAlerted: InventoryItem[] = [];
+  for (const item of lowStockItems) {
+    const key = `${scopePrefix}${item.id}`;
+    const prevAvail = previous[key];
+    // Alert when forced (manual check), first crossing below threshold, or dropping further.
+    if (opts.force || prevAvail === undefined || item.available < prevAvail - 1e-6) {
+      newlyAlerted.push(item);
+    }
+  }
+
+  if (newlyAlerted.length === 0) {
+    if (prunedAny) {
+      await storage.setItem(LOW_STOCK_ALERT_KEY, JSON.stringify(pruned));
+    }
+    return { newlyAlerted: [], permissionGranted: false, delivered: false };
+  }
+
+  const prefix = opts.workspaceLabel ? `${opts.workspaceLabel} — ` : "";
+  const title =
+    newlyAlerted.length === 1
+      ? `${prefix}Low stock: ${newlyAlerted[0]?.name ?? "Item"}`
+      : `${prefix}${newlyAlerted.length} items low on stock`;
+  const body =
+    newlyAlerted.length === 1 && newlyAlerted[0]
+      ? `${formatInventoryAmount(newlyAlerted[0].available, newlyAlerted[0].quantityUnit, unitSystem)} available${
+          newlyAlerted[0].lowStockThreshold != null
+            ? ` (threshold ${formatInventoryAmount(newlyAlerted[0].lowStockThreshold, newlyAlerted[0].quantityUnit, unitSystem)})`
+            : ""
+        }.`
+      : newlyAlerted
+          .slice(0, 4)
+          .map(
+            (i) => `${i.name} (${formatInventoryAmount(i.available, i.quantityUnit, unitSystem)})`,
+          )
+          .join(", ");
+
+  let permissionGranted = false;
+  let delivered = false;
+
+  if (Platform.OS === "web") {
+    permissionGranted = opts.requestPermission
+      ? await requestNotificationPermission()
+      : typeof window !== "undefined" &&
+        typeof Notification !== "undefined" &&
+        Notification.permission === "granted";
+    if (permissionGranted) {
+      delivered = fireWebNotification(title, body);
+    }
+  } else {
+    const Notifications = await getNativeNotifications();
+    if (Notifications) {
+      permissionGranted = opts.requestPermission
+        ? await requestNotificationPermission()
+        : (await Notifications.getPermissionsAsync()).granted;
+      if (permissionGranted) {
+        await Notifications.scheduleNotificationAsync({
+          content: { title, body, sound: true },
+          trigger: null,
+        });
+        delivered = true;
+      }
+    }
+  }
+
+  if (delivered) {
+    for (const item of newlyAlerted) {
+      pruned[`${scopePrefix}${item.id}`] = item.available;
+    }
+    await storage.setItem(LOW_STOCK_ALERT_KEY, JSON.stringify(pruned));
+  } else if (prunedAny) {
+    await storage.setItem(LOW_STOCK_ALERT_KEY, JSON.stringify(pruned));
+  }
+
+  return { newlyAlerted, permissionGranted, delivered };
 }

@@ -270,6 +270,8 @@ export function useLogout(
       queryClient.removeQueries({ queryKey: ["brewery-invites", serverUrl] });
       queryClient.removeQueries({ queryKey: ["my-brewery-invites", serverUrl] });
       queryClient.removeQueries({ queryKey: ["inventory", serverUrl] });
+      queryClient.removeQueries({ queryKey: ["low-stock", serverUrl] });
+      queryClient.removeQueries({ queryKey: ["shopping-list", serverUrl] });
     },
   });
 }

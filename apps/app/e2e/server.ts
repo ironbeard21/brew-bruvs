@@ -217,6 +217,36 @@ interface StoredBreweryInvite {
   expiresAt: string;
 }
 
+type QuantityUnit = "kg" | "l" | "each";
+
+interface StoredInventoryItem {
+  id: string;
+  uri: string;
+  owner: { type: "user" | "brewery"; id: string };
+  name: string;
+  catalogId: string | null;
+  quantity: number;
+  quantityUnit: QuantityUnit;
+  lot: string | null;
+  location: string | null;
+  alphaAcidPct: number | null;
+  purchasedOn: string | null;
+  bestBefore: string | null;
+  lowStockThreshold: number | null;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface StoredReservation {
+  batchId: string;
+  itemId: string;
+  name: string;
+  quantity: number;
+  unit: QuantityUnit;
+  state: "reserved" | "used" | "released";
+}
+
 const users = new Map<string, StoredUser>();
 const sessions = new Map<string, string>();
 const tokens = new Map<string, StoredToken>();
@@ -225,7 +255,78 @@ const batches = new Map<string, StoredBatch>();
 const notes = new Map<string, StoredNote>();
 const breweries = new Map<string, StoredBrewery>();
 const breweryInvites = new Map<string, StoredBreweryInvite>();
+const inventoryItems = new Map<string, StoredInventoryItem>();
+const batchReservations: StoredReservation[] = [];
 const equipmentProfiles: Record<string, unknown>[] = [];
+
+function reservedForItem(itemId: string): number {
+  return batchReservations
+    .filter((r) => r.itemId === itemId && r.state === "reserved")
+    .reduce((sum, r) => sum + r.quantity, 0);
+}
+
+function inventoryView(item: StoredInventoryItem) {
+  const reserved = reservedForItem(item.id);
+  return { ...item, reserved, available: item.quantity - reserved };
+}
+
+function sameOwner(
+  a: { type: "user" | "brewery"; id: string },
+  b: { type: "user" | "brewery"; id: string },
+): boolean {
+  return a.type === b.type && a.id === b.id;
+}
+
+function recipeLinesForBatch(b: StoredBatch) {
+  const recipe = recipes.get(b.recipe.id);
+  const ver = recipe?.versions.find((v) => v.version === b.recipe.version);
+  const content = (ver?.content ?? {}) as {
+    fermentables?: { name: string; catalogId?: string; amountKg?: number; amountL?: number }[];
+    hops?: { name: string; catalogId?: string; amountKg?: number }[];
+    yeasts?: {
+      name: string;
+      catalogId?: string;
+      packs?: number;
+      amountKg?: number;
+      amountL?: number;
+    }[];
+    miscs?: {
+      name: string;
+      catalogId?: string;
+      amountKg?: number;
+      amountL?: number;
+      count?: number;
+    }[];
+  };
+  const out: { name: string; catalogId: string | null; unit: QuantityUnit; amount: number }[] = [];
+  for (const f of content.fermentables ?? []) {
+    if (f.amountKg && f.amountKg > 0)
+      out.push({ name: f.name, catalogId: f.catalogId ?? null, unit: "kg", amount: f.amountKg });
+    else if (f.amountL && f.amountL > 0)
+      out.push({ name: f.name, catalogId: f.catalogId ?? null, unit: "l", amount: f.amountL });
+  }
+  for (const h of content.hops ?? []) {
+    if (h.amountKg && h.amountKg > 0)
+      out.push({ name: h.name, catalogId: h.catalogId ?? null, unit: "kg", amount: h.amountKg });
+  }
+  for (const y of content.yeasts ?? []) {
+    if (y.packs && y.packs > 0)
+      out.push({ name: y.name, catalogId: y.catalogId ?? null, unit: "each", amount: y.packs });
+    else if (y.amountKg && y.amountKg > 0)
+      out.push({ name: y.name, catalogId: y.catalogId ?? null, unit: "kg", amount: y.amountKg });
+    else if (y.amountL && y.amountL > 0)
+      out.push({ name: y.name, catalogId: y.catalogId ?? null, unit: "l", amount: y.amountL });
+  }
+  for (const m of content.miscs ?? []) {
+    if (m.amountKg && m.amountKg > 0)
+      out.push({ name: m.name, catalogId: m.catalogId ?? null, unit: "kg", amount: m.amountKg });
+    else if (m.amountL && m.amountL > 0)
+      out.push({ name: m.name, catalogId: m.catalogId ?? null, unit: "l", amount: m.amountL });
+    else if (m.count && m.count > 0)
+      out.push({ name: m.name, catalogId: m.catalogId ?? null, unit: "each", amount: m.count });
+  }
+  return out;
+}
 
 const SEEDED_CATALOG: Record<string, Record<string, unknown>[]> = {
   styles: [
@@ -1212,7 +1313,7 @@ const server = createServer(async (req, res) => {
   }
 
   const batchSub = pathname.match(
-    /^\/api\/batches\/([^/]+)(?:\/(status|readings|reminders)(?:\/([^/]+))?)?$/,
+    /^\/api\/batches\/([^/]+)(?:\/(status|readings|reminders|reservations|stats)(?:\/([^/]+))?)?$/,
   );
   if (batchSub) {
     const batchId = batchSub[1] ?? "";
@@ -1223,10 +1324,35 @@ const server = createServer(async (req, res) => {
 
     if (!sub && method === "GET") return sendJson(res, 200, batchDetail(b));
     if (!sub && method === "DELETE") {
+      for (const r of batchReservations) {
+        if (r.batchId === batchId && r.state === "reserved") r.state = "released";
+      }
       batches.delete(batchId);
       res.writeHead(204);
       res.end();
       return;
+    }
+    if (sub === "reservations" && method === "GET") {
+      const items = batchReservations
+        .filter((r) => r.batchId === batchId)
+        .map(({ batchId: _, ...rest }) => rest);
+      return sendJson(res, 200, { items });
+    }
+    if (sub === "stats" && method === "GET") {
+      const overrides = batchReservations
+        .filter((r) => r.batchId === batchId && r.state !== "released")
+        .map((r) => {
+          const item = inventoryItems.get(r.itemId);
+          return item && item.alphaAcidPct != null
+            ? { hop: r.name, alphaAcidPct: item.alphaAcidPct, itemId: item.id }
+            : null;
+        })
+        .filter((x): x is { hop: string; alphaAcidPct: number; itemId: string } => x !== null);
+      return sendJson(res, 200, {
+        stats: null,
+        statsError: null,
+        alphaAcidFromInventory: overrides,
+      });
     }
     if (sub === "status" && method === "POST") {
       const data = JSON.parse(await readBody(req)) as { status: string };
@@ -1236,6 +1362,7 @@ const server = createServer(async (req, res) => {
           error: { code: "conflict", message: "Status move not allowed" },
         });
       }
+      const prevStatus = b.status;
       const now = new Date().toISOString();
       b.status = data.status;
       b.updatedAt = now;
@@ -1246,10 +1373,110 @@ const server = createServer(async (req, res) => {
         b.completedAt = now;
       }
       b.statusHistory.push({ status: data.status, changedAt: now });
+
+      let inventory: {
+        reserved: {
+          itemId: string;
+          name: string;
+          quantity: number;
+          unit: QuantityUnit;
+          state: "reserved" | "used" | "released";
+        }[];
+        short: { name: string; catalogId: string | null; unit: QuantityUnit; short: number }[];
+        used: boolean;
+        released: boolean;
+      } | null = null;
+
+      if (prevStatus === "planned" && (data.status === "brewing" || data.status === "primary")) {
+        const lines = recipeLinesForBatch(b);
+        const ownerStock = [...inventoryItems.values()].filter((i) => sameOwner(i.owner, b.owner));
+        const reserved: {
+          itemId: string;
+          name: string;
+          quantity: number;
+          unit: QuantityUnit;
+          state: "reserved" | "used" | "released";
+        }[] = [];
+        const short: {
+          name: string;
+          catalogId: string | null;
+          unit: QuantityUnit;
+          short: number;
+        }[] = [];
+
+        for (const line of lines) {
+          const sameUnit = ownerStock.filter((i) => i.quantityUnit === line.unit);
+          const byCat = line.catalogId
+            ? sameUnit.filter((i) => i.catalogId === line.catalogId)
+            : [];
+          const candidates =
+            byCat.length > 0
+              ? byCat
+              : sameUnit.filter(
+                  (i) => i.name.trim().toLowerCase() === line.name.trim().toLowerCase(),
+                );
+          let remaining = line.amount;
+          for (const item of candidates) {
+            if (remaining <= 1e-9) break;
+            const avail = Math.max(0, item.quantity - reservedForItem(item.id));
+            const take = Math.min(avail, remaining);
+            if (take > 1e-9) {
+              const entry: StoredReservation = {
+                batchId: b.id,
+                itemId: item.id,
+                name: item.name,
+                quantity: take,
+                unit: item.quantityUnit,
+                state: "reserved",
+              };
+              batchReservations.push(entry);
+              reserved.push({
+                itemId: entry.itemId,
+                name: entry.name,
+                quantity: entry.quantity,
+                unit: entry.unit,
+                state: entry.state,
+              });
+              remaining -= take;
+            }
+          }
+          if (remaining > 1e-9) {
+            short.push({
+              name: line.name,
+              catalogId: line.catalogId,
+              unit: line.unit,
+              short: remaining,
+            });
+          }
+        }
+        inventory = { reserved, short, used: false, released: false };
+      } else if (data.status === "packaged" || data.status === "bottled") {
+        let usedAny = false;
+        for (const r of batchReservations) {
+          if (r.batchId === b.id && r.state === "reserved") {
+            r.state = "used";
+            const item = inventoryItems.get(r.itemId);
+            if (item) item.quantity = Math.max(0, item.quantity - r.quantity);
+            usedAny = true;
+          }
+        }
+        if (usedAny) inventory = { reserved: [], short: [], used: true, released: false };
+      } else if (data.status === "planned") {
+        let releasedAny = false;
+        for (const r of batchReservations) {
+          if (r.batchId === b.id && r.state === "reserved") {
+            r.state = "released";
+            releasedAny = true;
+          }
+        }
+        if (releasedAny) inventory = { reserved: [], short: [], used: false, released: true };
+      }
+
       return sendJson(res, 200, {
         batch: batchDetail(b),
         addedReminders: [],
         scheduleError: null,
+        inventory,
       });
     }
     if (sub === "readings" && !subId && method === "GET") {
@@ -1422,12 +1649,175 @@ const server = createServer(async (req, res) => {
     return sendJson(res, 200, { owner: targetOwner });
   }
 
-  // Inventory list (P2-04 read-only preview support for P2-11)
+  // Inventory CRUD, low-stock, and shopping list (P2-04)
+  const scopeOwner = (user: StoredUser, breweryId: string | null) =>
+    breweryId
+      ? { type: "brewery" as const, id: breweryId }
+      : { type: "user" as const, id: user.id };
+
   if (pathname === "/api/inventory" && method === "GET") {
     const user = getUserForRequest(req);
     if (!user)
       return sendJson(res, 401, { error: { code: "unauthorized", message: "Sign in first" } });
-    return sendJson(res, 200, { items: [], nextOffset: null });
+    const owner = scopeOwner(user, url.searchParams.get("breweryId"));
+    const q = (url.searchParams.get("q") ?? "").trim().toLowerCase();
+    const limit = Math.min(100, Math.max(1, Number(url.searchParams.get("limit") ?? "50") || 50));
+    const offset = Math.max(0, Number(url.searchParams.get("offset") ?? "0") || 0);
+    const matching = [...inventoryItems.values()]
+      .filter((i) => sameOwner(i.owner, owner))
+      .filter((i) => {
+        if (!q) return true;
+        return [i.name, i.catalogId ?? "", i.lot ?? "", i.location ?? ""]
+          .join(" ")
+          .toLowerCase()
+          .includes(q);
+      })
+      .sort((a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id))
+      .map(inventoryView);
+    const slice = matching.slice(offset, offset + limit);
+    const nextOffset = matching.length > offset + limit ? offset + limit : null;
+    return sendJson(res, 200, { items: slice, nextOffset });
+  }
+
+  if (pathname === "/api/inventory" && method === "POST") {
+    const user = getUserForRequest(req);
+    if (!user)
+      return sendJson(res, 401, { error: { code: "unauthorized", message: "Sign in first" } });
+    const data = JSON.parse(await readBody(req)) as {
+      name: string;
+      catalogId?: string | null;
+      quantity: number;
+      quantityUnit: QuantityUnit;
+      breweryId?: string;
+      lot?: string | null;
+      location?: string | null;
+      alphaAcidPct?: number | null;
+      purchasedOn?: string | null;
+      bestBefore?: string | null;
+      lowStockThreshold?: number | null;
+      notes?: string | null;
+    };
+    const id = randomUUID();
+    const now = new Date().toISOString();
+    const item: StoredInventoryItem = {
+      id,
+      uri: `http://127.0.0.1:${PORT}/inventory/${id}`,
+      owner: scopeOwner(user, data.breweryId ?? null),
+      name: data.name.trim(),
+      catalogId: data.catalogId ?? null,
+      quantity: data.quantity,
+      quantityUnit: data.quantityUnit,
+      lot: data.lot ?? null,
+      location: data.location ?? null,
+      alphaAcidPct: data.alphaAcidPct ?? null,
+      purchasedOn: data.purchasedOn ?? null,
+      bestBefore: data.bestBefore ?? null,
+      lowStockThreshold: data.lowStockThreshold ?? null,
+      notes: data.notes ?? null,
+      createdAt: now,
+      updatedAt: now,
+    };
+    inventoryItems.set(id, item);
+    return sendJson(res, 201, inventoryView(item));
+  }
+
+  if (pathname === "/api/inventory/low-stock" && method === "GET") {
+    const user = getUserForRequest(req);
+    if (!user)
+      return sendJson(res, 401, { error: { code: "unauthorized", message: "Sign in first" } });
+    const owner = scopeOwner(user, url.searchParams.get("breweryId"));
+    const items = [...inventoryItems.values()]
+      .filter((i) => sameOwner(i.owner, owner))
+      .map(inventoryView)
+      .filter((i) => i.lowStockThreshold != null && i.available < i.lowStockThreshold);
+    return sendJson(res, 200, { items });
+  }
+
+  if (pathname === "/api/inventory/shopping-list" && method === "GET") {
+    const user = getUserForRequest(req);
+    if (!user)
+      return sendJson(res, 401, { error: { code: "unauthorized", message: "Sign in first" } });
+    const owner = scopeOwner(user, url.searchParams.get("breweryId"));
+    const stock = [...inventoryItems.values()]
+      .filter((i) => sameOwner(i.owner, owner))
+      .map(inventoryView);
+    const lowStock = stock.filter(
+      (i) => i.lowStockThreshold != null && i.available < i.lowStockThreshold,
+    );
+    const availById = new Map(stock.map((i) => [i.id, i.available]));
+    const shortMap = new Map<
+      string,
+      {
+        name: string;
+        catalogId: string | null;
+        unit: QuantityUnit;
+        short: number;
+        batches: { id: string; name: string }[];
+      }
+    >();
+    for (const b of batches.values()) {
+      if (b.status !== "planned" || !sameOwner(b.owner, owner)) continue;
+      for (const line of recipeLinesForBatch(b)) {
+        const sameUnit = stock.filter((i) => i.quantityUnit === line.unit);
+        const byCat = line.catalogId ? sameUnit.filter((i) => i.catalogId === line.catalogId) : [];
+        const candidates =
+          byCat.length > 0
+            ? byCat
+            : sameUnit.filter(
+                (i) => i.name.trim().toLowerCase() === line.name.trim().toLowerCase(),
+              );
+        let remaining = line.amount;
+        for (const item of candidates) {
+          const avail = Math.max(0, availById.get(item.id) ?? 0);
+          const take = Math.min(avail, remaining);
+          if (take > 1e-9) {
+            availById.set(item.id, avail - take);
+            remaining -= take;
+          }
+        }
+        if (remaining > 1e-9) {
+          const key = `${line.catalogId ?? line.name.trim().toLowerCase()}|${line.unit}`;
+          const entry = shortMap.get(key) ?? {
+            name: line.name,
+            catalogId: line.catalogId,
+            unit: line.unit,
+            short: 0,
+            batches: [],
+          };
+          entry.short += remaining;
+          if (!entry.batches.some((x) => x.id === b.id)) {
+            entry.batches.push({ id: b.id, name: b.name });
+          }
+          shortMap.set(key, entry);
+        }
+      }
+    }
+    return sendJson(res, 200, { short: [...shortMap.values()], lowStock });
+  }
+
+  const invIdMatch = pathname.match(/^\/api\/inventory\/([^/]+)$/);
+  if (invIdMatch) {
+    const user = getUserForRequest(req);
+    if (!user)
+      return sendJson(res, 401, { error: { code: "unauthorized", message: "Sign in first" } });
+    const invId = invIdMatch[1] ?? "";
+    const item = inventoryItems.get(invId);
+    if (!item)
+      return sendJson(res, 404, {
+        error: { code: "not_found", message: "Inventory item not found" },
+      });
+    if (method === "GET") return sendJson(res, 200, inventoryView(item));
+    if (method === "PATCH") {
+      const patch = JSON.parse(await readBody(req)) as Partial<StoredInventoryItem>;
+      Object.assign(item, patch, { updatedAt: new Date().toISOString() });
+      return sendJson(res, 200, inventoryView(item));
+    }
+    if (method === "DELETE") {
+      inventoryItems.delete(invId);
+      res.writeHead(204);
+      res.end();
+      return;
+    }
   }
 
   // Breweries & invites (P2-03)

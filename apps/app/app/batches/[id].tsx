@@ -20,8 +20,19 @@ import {
   useUpdateReading,
 } from "../../src/api/batches";
 import { useMoveBatchToBrewery } from "../../src/api/breweries";
+import {
+  fetchLowStock,
+  type InventoryChange,
+  useBatchReservations,
+  useBatchStats,
+  useShoppingList,
+} from "../../src/api/inventory";
 import { useRecipeVersion } from "../../src/api/recipes";
 import { AppShell } from "../../src/components/AppShell";
+import {
+  BatchInventoryChangeBanner,
+  BatchInventorySection,
+} from "../../src/components/batches/BatchInventorySection";
 import { BatchNotesSection } from "../../src/components/batches/BatchNotesSection";
 import { BrewDayMode } from "../../src/components/batches/BrewDayMode";
 import {
@@ -34,19 +45,29 @@ import { PackagingStepCard } from "../../src/components/batches/PackagingStepCar
 import { ReadingsSection } from "../../src/components/batches/ReadingsSection";
 import { RemindersSection } from "../../src/components/batches/RemindersSection";
 import { MoveToBreweryBar } from "../../src/components/breweries/OwnerPickerCard";
+import {
+  buildBatchInventoryHref,
+  canAccessOwnerInventory,
+} from "../../src/components/inventory/inventoryScope";
 import { OwnerBadge } from "../../src/components/OwnerBadge";
 import { Banner, Button, Card, SegmentedControl } from "../../src/components/ui";
+import { notifyLowStockItems } from "../../src/notifications";
 import { useOptionalBrewery } from "../../src/state/brewery";
 import { canPerformOnOwner } from "../../src/state/permissions";
 import { useServer } from "../../src/state/server";
 import { useUnits } from "../../src/state/units";
 import { colors, radii, spacing } from "../../src/theme";
 
-type BatchTab = "readings" | "brewday" | "reminders" | "packaging" | "notes";
+type BatchTab = "readings" | "brewday" | "inventory" | "reminders" | "packaging" | "notes";
 
 const TAB_OPTIONS: readonly { value: BatchTab; label: string; accessibilityLabel: string }[] = [
   { value: "readings", label: "Readings", accessibilityLabel: "Batch readings and chart" },
   { value: "brewday", label: "Brew Day", accessibilityLabel: "Brew day checklist and timers" },
+  {
+    value: "inventory",
+    label: "Inventory",
+    accessibilityLabel: "Batch inventory reservations and lot stats",
+  },
   { value: "reminders", label: "Reminders", accessibilityLabel: "Batch reminders" },
   { value: "packaging", label: "Packaging", accessibilityLabel: "Packaging and carbonation" },
   { value: "notes", label: "Notes", accessibilityLabel: "Batch notes and tasting scores" },
@@ -64,6 +85,8 @@ export default function BatchDetailScreen() {
   const [tab, setTab] = useState<BatchTab>("readings");
   const [statusNotice, setStatusNotice] = useState<string | null>(null);
   const [statusError, setStatusError] = useState<string | null>(null);
+  const [lastInventoryChange, setLastInventoryChange] = useState<InventoryChange | null>(null);
+  const [lowStockAlert, setLowStockAlert] = useState<string | null>(null);
   const [moveNotice, setMoveNotice] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
@@ -72,8 +95,20 @@ export default function BatchDetailScreen() {
   const readingsQuery = useBatchReadings(serverUrl, authToken, batchId || null);
   const remindersQuery = useBatchReminders(serverUrl, authToken, batchId || null);
   const notesQuery = useBatchNotes(serverUrl, authToken, batchId || null);
+  const reservationsQuery = useBatchReservations(serverUrl, authToken, batchId || null);
+  const statsQuery = useBatchStats(serverUrl, authToken, batchId || null);
 
   const batch = detailQuery.data;
+  const ownerBreweryId = batch?.owner.type === "brewery" ? batch.owner.id : null;
+  const canInspectBatchInventory = Boolean(
+    batch && canAccessOwnerInventory(batch.owner, currentUser.data?.id, breweries),
+  );
+  const shoppingQuery = useShoppingList(serverUrl, authToken, {
+    breweryId: ownerBreweryId,
+    enabled: Boolean(
+      serverUrl && currentUser.data && batch?.status === "planned" && canInspectBatchInventory,
+    ),
+  });
   const recipeVersionQuery = useRecipeVersion(
     serverUrl,
     authToken,
@@ -154,8 +189,10 @@ export default function BatchDetailScreen() {
   const handleChangeStatus = async (nextStatus: BatchStatus) => {
     setStatusError(null);
     setStatusNotice(null);
+    setLowStockAlert(null);
     try {
       const res = await changeStatus.mutateAsync(nextStatus);
+      setLastInventoryChange(res.inventory ?? null);
       if (res.addedReminders.length > 0) {
         setStatusNotice(
           `Moved to ${formatBatchStatus(nextStatus)}. Added ${res.addedReminders.length} scheduled reminder${res.addedReminders.length === 1 ? "" : "s"}!`,
@@ -164,6 +201,27 @@ export default function BatchDetailScreen() {
         setStatusNotice(`Moved to ${formatBatchStatus(nextStatus)} (note: ${res.scheduleError}).`);
       } else {
         setStatusNotice(`Batch status updated to ${formatBatchStatus(nextStatus)}.`);
+      }
+
+      // When packaging/bottling consumes reservations, check low-stock thresholds and trigger local alerts.
+      if (res.inventory?.used && serverUrl) {
+        try {
+          const lowItems = await fetchLowStock(serverUrl, authToken, ownerBreweryId);
+          const workspaceName = ownerBreweryId
+            ? breweries.find((b) => b.id === ownerBreweryId)?.name
+            : undefined;
+          const alertRes = await notifyLowStockItems(lowItems, unitSystem, {
+            scopeKey: `${serverUrl}::${ownerBreweryId ?? "me"}`,
+            ...(workspaceName ? { workspaceLabel: workspaceName } : {}),
+          });
+          if (alertRes.newlyAlerted.length > 0) {
+            setLowStockAlert(
+              `Low stock alert: ${alertRes.newlyAlerted.map((i) => i.name).join(", ")} dropped below threshold.`,
+            );
+          }
+        } catch {
+          // Non-fatal: status update already succeeded.
+        }
       }
     } catch (err) {
       setStatusError(err instanceof Error ? err.message : "Could not change batch status.");
@@ -284,6 +342,24 @@ export default function BatchDetailScreen() {
         {statusError ? (
           <Banner tone="error" message={statusError} testID="batch-status-error" />
         ) : null}
+        {lastInventoryChange ? (
+          <BatchInventoryChangeBanner
+            change={lastInventoryChange}
+            lowStockMessage={lowStockAlert}
+            {...(canInspectBatchInventory
+              ? {
+                  onOpenShoppingList: () =>
+                    router.push(buildBatchInventoryHref(batch.owner, "shopping")),
+                }
+              : {})}
+            onDismiss={() => {
+              setLastInventoryChange(null);
+              setLowStockAlert(null);
+            }}
+          />
+        ) : lowStockAlert ? (
+          <Banner tone="error" message={lowStockAlert} testID="batch-low-stock-alert" />
+        ) : null}
 
         {batch.statusHistory.length > 0 ? (
           <View style={styles.historyRow}>
@@ -333,6 +409,24 @@ export default function BatchDetailScreen() {
           beverage={batch.beverage}
           recipeVersion={recipeVersionQuery.data}
           loadingRecipe={recipeVersionQuery.isPending}
+        />
+      ) : null}
+
+      {tab === "inventory" ? (
+        <BatchInventorySection
+          batch={batch}
+          reservations={reservationsQuery.data ?? []}
+          loadingReservations={reservationsQuery.isPending}
+          stats={statsQuery.data ?? null}
+          loadingStats={statsQuery.isPending}
+          shoppingList={shoppingQuery.data ?? null}
+          {...(canInspectBatchInventory
+            ? {
+                onOpenInventory: () => router.push(buildBatchInventoryHref(batch.owner, "stock")),
+                onOpenShoppingList: () =>
+                  router.push(buildBatchInventoryHref(batch.owner, "shopping")),
+              }
+            : {})}
         />
       ) : null}
 

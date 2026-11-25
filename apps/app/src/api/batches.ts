@@ -324,6 +324,9 @@ export function useDeleteBatch(
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["batches", serverUrl] }),
         queryClient.invalidateQueries({ queryKey: ["my-batches", serverUrl] }),
+        queryClient.invalidateQueries({ queryKey: ["inventory", serverUrl] }),
+        queryClient.invalidateQueries({ queryKey: ["low-stock", serverUrl] }),
+        queryClient.invalidateQueries({ queryKey: ["shopping-list", serverUrl] }),
       ]);
     },
   });
@@ -359,6 +362,11 @@ export function useChangeBatchStatus(
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["batches", serverUrl] }),
         queryClient.invalidateQueries({ queryKey: ["batch-reminders", serverUrl, batchId] }),
+        queryClient.invalidateQueries({ queryKey: ["batch-reservations", serverUrl, batchId] }),
+        queryClient.invalidateQueries({ queryKey: ["batch-stats", serverUrl, batchId] }),
+        queryClient.invalidateQueries({ queryKey: ["inventory", serverUrl] }),
+        queryClient.invalidateQueries({ queryKey: ["low-stock", serverUrl] }),
+        queryClient.invalidateQueries({ queryKey: ["shopping-list", serverUrl] }),
       ]);
     },
   });
