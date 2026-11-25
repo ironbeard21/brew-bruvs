@@ -27,6 +27,67 @@ def case(args, expected, tol, source=PY):
 # The quick-reference table lists SG to 3 decimals; ±0.0005 SG is about ±0.13 °P.
 PLATO_TABLE_TOL = 0.15
 units = {
+    "massToKg": [
+        case(args, expected, 1e-09,
+             "NIST SP 811 Appendix B mass conversion factors")
+        for args, expected in (
+            ([250000, 'mg'], 0.25),
+            ([500, 'g'], 0.5),
+            ([2, 'kg'], 2),
+            ([1, 'lb'], 0.45359237),
+            ([1, 'oz'], 0.028349523125),
+        )
+    ],
+    "volumeToLiters": [
+        case(args, expected, 1e-09,
+             "NIST SP 811 Appendix B customary and imperial volume factors; US beer barrel 31 US gallons, UK brewery barrel 36 imperial gallons")
+        for args, expected in (
+            ([1000, 'ml'], 1),
+            ([2, 'l'], 2),
+            ([1, 'tsp'], 0.00492892159375),
+            ([1, 'tbsp'], 0.01478676478125),
+            ([1, 'floz'], 0.0295735295625),
+            ([1, 'cup'], 0.2365882365),
+            ([1, 'pt'], 0.473176473),
+            ([1, 'qt'], 0.946352946),
+            ([1, 'gal'], 3.785411784),
+            ([1, 'bbl'], 117.347765304),
+            ([1, 'ifloz'], 0.0284130625),
+            ([1, 'ipt'], 0.56826125),
+            ([1, 'iqt'], 1.1365225),
+            ([1, 'igal'], 4.54609),
+            ([1, 'ibbl'], 163.65924),
+        )
+    ],
+    "timeToMinutes": [
+        case(args, expected, 1e-09,
+             "Definitions of minutes, hours, days, and weeks")
+        for args, expected in (
+            ([60, 'sec'], 1),
+            ([2, 'min'], 2),
+            ([1, 'hr'], 60),
+            ([1, 'day'], 1440),
+            ([1, 'week'], 10080),
+        )
+    ],
+    "minutesToDays": [
+        case(args, expected, 1e-09,
+             "1 day is 1,440 minutes")
+        for args, expected in (
+            ([0], 0),
+            ([720], 0.5),
+            ([1440], 1),
+            ([2880], 2),
+            ([10080], 7),
+        )
+    ],
+    "ppgToPotentialSg": [
+        case([0], 1, 1e-12, "SG scale: water at zero gravity points"),
+        case([10], 1.01, 1e-12, "SG scale: ten gravity points"),
+        case([35], 1.035, 1e-12, "SG scale: 35 gravity points, typical honey potential"),
+        case([37.5], 1.0375, 1e-12, "SG scale: 37.5 gravity points"),
+        case([46], 1.046, 1e-12, "SG scale: 46 gravity points, typical sucrose potential"),
+    ],
     "sgToPlato": [case([1.040], 10.0, PLATO_TABLE_TOL, "Plato table: 1.040 = 10.0 °P (beerandbrewing.com SG-Plato reference)"),
                   case([1.048], 12.0, PLATO_TABLE_TOL, "Plato table: 1.048 = 12.0 °P (beerandbrewing.com SG-Plato reference)"),
                   case([1.056], 13.8, PLATO_TABLE_TOL, "Plato table: 1.056 = 13.8 °P (beerandbrewing.com SG-Plato reference)"),

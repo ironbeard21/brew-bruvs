@@ -107,3 +107,81 @@ export function readableBy(
     opts.visibility ? inArray(table.visibility, ["server", "public"]) : undefined,
   );
 }
+
+const forbidden = (message: string) => new ApiError(403, "forbidden", message);
+
+/** The owner columns for a new object: the user, or a brewery where they are an owner or brewer. */
+export function newOwner(user: User, breweryId: string | null | undefined) {
+  if (!breweryId) return { ownerUserId: user.id, ownerBreweryId: null };
+  if (!user.memberships.some((m) => m.breweryId === breweryId)) {
+    throw new ApiError(404, "not_found", "Brewery not found");
+  }
+  const brewery: Resource = {
+    owner: { type: "brewery", id: breweryId },
+    visibility: "private",
+    shares: [],
+  };
+  if (!can(user, "edit", brewery)) {
+    throw forbidden("Only the brewery's owners and brewers can add to it");
+  }
+  return { ownerUserId: null, ownerBreweryId: breweryId };
+}
+
+/** Every owned type, with its table and the name errors use for it. */
+export const OWNED = {
+  recipe: { table: "recipes", what: "Recipe" },
+  batch: { table: "batches", what: "Batch" },
+  note: { table: "notes", what: "Note" },
+  inventory_item: { table: "inventory_items", what: "Inventory item" },
+  equipment_item: { table: "equipment_items", what: "Equipment item" },
+  equipment_profile: { table: "equipment_profiles", what: "Equipment profile" },
+} as const satisfies Record<ShareableType, { table: string; what: string }>;
+
+/** Loads any owned row (locked for update) and checks `action` on it; throws 404 or 403. */
+export async function ownedRow(
+  tx: Tx,
+  user: User | null,
+  action: Action,
+  type: ShareableType,
+  id: string,
+) {
+  const { table, what } = OWNED[type];
+  const { rows } = await tx.execute<{
+    id: string;
+    owner_user_id: string | null;
+    owner_brewery_id: string | null;
+    visibility: Resource["visibility"];
+  }>(
+    sql`SELECT id, owner_user_id, owner_brewery_id, visibility FROM ${sql.identifier(table)} WHERE id = ${id} FOR UPDATE`,
+  );
+  const found = rows[0];
+  if (!found) throw new ApiError(404, "not_found", `${what} not found`);
+  const row = {
+    id: found.id,
+    ownerUserId: found.owner_user_id,
+    ownerBreweryId: found.owner_brewery_id,
+    visibility: found.visibility,
+  };
+  await authorizeRow(tx, user, action, type, row, what);
+  return { row, table, what };
+}
+
+/** Moves something the user owns into a brewery where they are an owner or brewer. */
+export async function moveToBrewery(
+  tx: Tx,
+  viewer: User | null,
+  type: "recipe" | "batch" | "note" | "equipment_profile",
+  id: string,
+  breweryId: string,
+) {
+  const user = signedIn(viewer);
+  const { row, table, what } = await ownedRow(tx, user, "read", type, id);
+  if (row.ownerUserId !== user.id) {
+    throw forbidden(`Only its owner can move this ${what.toLowerCase()}`);
+  }
+  newOwner(user, breweryId);
+  await tx.execute(
+    sql`UPDATE ${sql.identifier(table)} SET owner_user_id = NULL, owner_brewery_id = ${breweryId}, updated_at = now() WHERE id = ${id}`,
+  );
+  return { type: "brewery" as const, id: breweryId };
+}

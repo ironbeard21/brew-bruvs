@@ -5,9 +5,9 @@ import { createRoute, type OpenAPIHono, type RouteConfig, z } from "@hono/zod-op
 import type { Context } from "hono";
 import type { AppEnv } from "../auth/middleware.ts";
 import {
+  CreateEquipmentProfile,
   CreateRecipe,
   EquipmentProfile,
-  EquipmentProfileInput,
   EquipmentProfilePatch,
   ForkInput,
   Recipe,
@@ -185,7 +185,7 @@ const routes = {
     path: "/api/equipment-profiles",
     operationId: "createEquipmentProfile",
     summary: "Add an equipment profile",
-    request: body(EquipmentProfileInput),
+    request: body(CreateEquipmentProfile),
     responses: { 201: json(EquipmentProfile, "Created"), ...errorResponses(400, 401) },
   }),
   getProfile: createRoute({

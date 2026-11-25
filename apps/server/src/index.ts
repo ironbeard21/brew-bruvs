@@ -6,14 +6,18 @@ import { createApp } from "./app.ts";
 import { createOidc } from "./auth/oidc.ts";
 import { loadConfig } from "./config.ts";
 import { createLogger } from "./logger.ts";
+import { createActivityService } from "./services/activity.ts";
 import { createAuthService } from "./services/auth.ts";
 import { createBatchService } from "./services/batches.ts";
+import { createBreweryService } from "./services/breweries.ts";
 import { createCatalogService } from "./services/catalog.ts";
 import { createEquipmentItemService } from "./services/equipment-items.ts";
 import { createEquipmentProfileService } from "./services/equipment-profiles.ts";
+import { createInventoryService } from "./services/inventory.ts";
 import { createNoteService } from "./services/notes.ts";
 import { createRecipeFileService } from "./services/recipe-files.ts";
 import { createRecipeService } from "./services/recipes.ts";
+import { createSharingService } from "./services/sharing.ts";
 
 const config = loadConfig(process.env);
 const logger = createLogger(config.logLevel);
@@ -22,6 +26,7 @@ const profiles = createEquipmentProfileService(db, { baseUrl: config.baseUrl });
 const app = createApp({
   logger,
   webDir: config.webDir,
+  sourceUrl: config.sourceUrl,
   catalog: createCatalogService(db),
   profiles,
   equipmentItems: createEquipmentItemService(db, { baseUrl: config.baseUrl }),
@@ -29,6 +34,10 @@ const app = createApp({
   recipeFiles: createRecipeFileService(db),
   batches: createBatchService(db, { baseUrl: config.baseUrl, profiles }),
   notes: createNoteService(db, { baseUrl: config.baseUrl }),
+  breweries: createBreweryService(db, { baseUrl: config.baseUrl }),
+  inventory: createInventoryService(db, { baseUrl: config.baseUrl }),
+  sharing: createSharingService(db),
+  activity: createActivityService(db),
   auth: {
     auth: createAuthService(db, { baseUrl: config.baseUrl, signupMode: config.signupMode }),
     oidc:

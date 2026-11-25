@@ -4,7 +4,7 @@ on:
   pull_request:
   push:
     branches: [main]
-    tags: ["*"]
+    tags: ["v*"]
 
 permissions:
   contents: read
@@ -16,6 +16,7 @@ jobs:
     env:
       BREW_BRUVS_IMAGE: brew-bruvs:smoke
       POSTGRES_PASSWORD: smoke-test-only
+      SOURCE_URL: https://source.example.test/brew-bruvs
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v7
@@ -27,7 +28,7 @@ jobs:
         run: |
           count=$(docker compose -f docker/compose.yml exec -T postgres psql -v ON_ERROR_STOP=1 -U brew -d brew -Atc "SELECT count(*) FROM hops WHERE id = 'hop-columbus' AND 'Zeus' = ANY(aliases)")
           test "$count" -eq 1
-      - run: node scripts/docker-smoke.ts
+      - run: node scripts/docker-smoke.ts http://127.0.0.1:8080 "$SOURCE_URL"
       - if: failure()
         run: docker compose -f docker/compose.yml logs
       - if: always()
@@ -42,6 +43,7 @@ jobs:
       BREW_BRUVS_IMAGE: brew-bruvs:e2e
       POSTGRES_PASSWORD: e2e-test-only
       BASE_URL: http://127.0.0.1:8080
+      SOURCE_URL: https://source.example.test/brew-bruvs
       PLAYWRIGHT_BASE_URL: http://127.0.0.1:8080
     steps:
       - uses: actions/checkout@v6
@@ -71,9 +73,76 @@ jobs:
       - if: always()
         run: docker compose -f docker/compose.yml down --volumes
 
+  upgrade:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      COMPOSE_PROJECT_NAME: brew-bruvs-upgrade
+      # Published Phase 1 prerelease, pinned to its multi-architecture image index.
+      PHASE1_IMAGE: ghcr.io/ironbeard21/brew-bruvs:0.1.0-rc.1@sha256:5acd7f714bbfdc6720b05371157c2ae54db38cc45bba6024e7efaac807cfe6d1
+      BREW_BRUVS_IMAGE: brew-bruvs:upgrade
+      POSTGRES_PASSWORD: upgrade-test-only
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+      - name: Seed data on the published Phase 1 image
+        run: |
+          BREW_BRUVS_IMAGE="$PHASE1_IMAGE" docker compose -f docker/compose.yml up -d --no-build --wait --wait-timeout 120
+          node scripts/release-data-check.ts seed "$RUNNER_TEMP/upgrade-state.json"
+          docker compose -f docker/compose.yml exec -T postgres psql -v ON_ERROR_STOP=1 -U brew -d brew -Atc "SELECT count(*) FROM drizzle.__drizzle_migrations" > "$RUNNER_TEMP/phase1-migrations"
+      - name: Upgrade the app against the same database
+        run: |
+          docker compose -f docker/compose.yml build app
+          docker compose -f docker/compose.yml up -d --no-build --no-deps --wait --wait-timeout 120 app
+          count=$(docker compose -f docker/compose.yml exec -T postgres psql -v ON_ERROR_STOP=1 -U brew -d brew -Atc "SELECT count(*) FROM drizzle.__drizzle_migrations")
+          test "$count" -gt "$(cat "$RUNNER_TEMP/phase1-migrations")"
+          node scripts/release-data-check.ts verify "$RUNNER_TEMP/upgrade-state.json"
+      - if: failure()
+        run: docker compose -f docker/compose.yml logs --no-color
+      - if: always()
+        run: docker compose -f docker/compose.yml down --volumes
+
+  backup-and-restore:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      COMPOSE_PROJECT_NAME: brew-bruvs-backup
+      BREW_BRUVS_IMAGE: brew-bruvs:backup
+      POSTGRES_PASSWORD: backup-test-only
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+      - name: Back up a populated database
+        run: |
+          docker compose -f docker/compose.yml build app
+          docker compose -f docker/compose.yml up -d --no-build --wait --wait-timeout 120
+          node scripts/release-data-check.ts seed "$RUNNER_TEMP/backup-state.json"
+          docker compose -f docker/compose.yml exec -T postgres pg_dump -U brew -d brew --format=custom > "$RUNNER_TEMP/brew.dump"
+          docker compose -f docker/compose.yml stop app
+      - name: Restore the archive to a fresh Compose volume
+        env:
+          COMPOSE_PROJECT_NAME: brew-bruvs-restore
+        run: |
+          docker compose -f docker/compose.yml up -d --wait --wait-timeout 120 postgres
+          docker compose -f docker/compose.yml exec -T postgres pg_restore -U brew -d brew --exit-on-error --single-transaction --no-owner --no-privileges < "$RUNNER_TEMP/brew.dump"
+          docker compose -f docker/compose.yml up -d --no-build --wait --wait-timeout 120 app
+          node scripts/release-data-check.ts verify "$RUNNER_TEMP/backup-state.json"
+      - if: failure()
+        run: |
+          docker compose -f docker/compose.yml logs --no-color
+          docker compose -p brew-bruvs-restore -f docker/compose.yml logs --no-color
+      - if: always()
+        run: |
+          docker compose -f docker/compose.yml down --volumes
+          docker compose -p brew-bruvs-restore -f docker/compose.yml down --volumes
+
   publish:
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
-    needs: smoke
+    needs: [smoke, upgrade, backup-and-restore]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -92,8 +161,8 @@ jobs:
         with:
           images: ghcr.io/${{ github.repository }}
           tags: |
-            type=ref,event=tag
             type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
       - uses: docker/build-push-action@v7
         with:
           context: .
@@ -102,3 +171,30 @@ jobs:
           push: true
           tags: ${{ steps.metadata.outputs.tags }}
           labels: ${{ steps.metadata.outputs.labels }}
+
+  release-notes:
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+      - name: Publish notes from Conventional Commits
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          node scripts/release-notes.ts "$GITHUB_REF_NAME" > "$RUNNER_TEMP/release-notes.md"
+          if gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1; then
+            exit 0
+          fi
+          flags=(--latest)
+          if [[ "$GITHUB_REF_NAME" == *-* ]]; then
+            flags=(--prerelease --latest=false)
+          fi
+          gh release create "$GITHUB_REF_NAME" --verify-tag --title "$GITHUB_REF_NAME" \
+            --notes-file "$RUNNER_TEMP/release-notes.md" "${flags[@]}"

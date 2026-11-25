@@ -18,9 +18,28 @@ export async function withTestDatabase<T>(
     try {
       return await run(databaseUrl.href);
     } finally {
+      // A pool can still be closing its connections when `run` returns. FORCE would kill them
+      // mid-shutdown and the client reports that as an unhandled error, so give them a moment.
+      for (let i = 0; i < 100; i++) {
+        const { rows } = await admin.query<{ n: number }>(
+          "SELECT count(*)::int AS n FROM pg_stat_activity WHERE datname = $1",
+          [name],
+        );
+        if (!rows[0]?.n) break;
+        await new Promise((resolve) => setTimeout(resolve, 20));
+      }
       await admin.query(`DROP DATABASE ${identifier} WITH (FORCE)`);
     }
   } finally {
     await admin.end();
+  }
+}
+
+/** Rolls back newer migrations, then `tag` itself, so tests don't break when migrations are added. */
+export async function rollbackThrough(client: Client, tag: string): Promise<void> {
+  const { rollbackLatest } = await import("../src/migrations.ts");
+  for (let rolled = await rollbackLatest(client); rolled !== tag; ) {
+    if (!rolled) throw new Error(`Migration ${tag} was not applied`);
+    rolled = await rollbackLatest(client);
   }
 }

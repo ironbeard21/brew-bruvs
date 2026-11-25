@@ -36,15 +36,4 @@ Postgres listens on `127.0.0.1:5432` and keeps its data in the `postgres-dev` vo
 
 ## Run with Docker
 
-Copy `.env.example` to `.env`. Set `POSTGRES_PASSWORD` to a URL-safe random value, such as
-the output of `openssl rand -hex 24`, and set `BASE_URL` to the address users will open.
-Run this command from the repository root.
-
-```sh
-docker compose -f docker/compose.yml up -d --wait
-```
-
-Compose starts PostgreSQL on a private network. The app applies pending migrations and loads the
-ingredient catalog before it starts serving. Open `BASE_URL` and complete first-run setup.
-Set `BREW_BRUVS_IMAGE` to use a particular release, or run `docker compose -f docker/compose.yml build app`
-to build from source.
+See the [install, upgrade, and backup guide](docs/install.md).

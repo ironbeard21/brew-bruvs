@@ -53,7 +53,7 @@ const tables = async (client: Client) =>
 describe.skipIf(!connectionString)("schema on Postgres (TEST_DATABASE_URL)", () => {
   it("applies to an empty database, rolls back to empty, and re-applies", async () => {
     await withMigratedDb(async (client) => {
-      expect(await tables(client)).toHaveLength(27);
+      expect(await tables(client)).toHaveLength(28);
 
       const rolledBack: string[] = [];
       for (let tag = await rollbackLatest(client); tag; tag = await rollbackLatest(client)) {
@@ -68,7 +68,7 @@ describe.skipIf(!connectionString)("schema on Postgres (TEST_DATABASE_URL)", () 
       expect(await rollbackLatest(client)).toBeNull();
 
       await migrateUp(client);
-      expect(await tables(client)).toHaveLength(27);
+      expect(await tables(client)).toHaveLength(28);
     });
   });
 

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { useCurrentUser } from "../src/api/auth";
 import { useCatalogSources } from "../src/api/catalog";
+import { useServerHealth } from "../src/api/health";
 import { AppShell } from "../src/components/AppShell";
 import { AboutPanel } from "../src/components/settings/AboutPanel";
 import { useServer } from "../src/state/server";
@@ -8,6 +9,7 @@ import { useServer } from "../src/state/server";
 export default function AboutScreen() {
   const { serverUrl, authToken } = useServer();
   const currentUser = useCurrentUser(serverUrl, authToken);
+  const serverHealth = useServerHealth(serverUrl);
   const sourcesQuery = useCatalogSources(
     serverUrl,
     authToken,
@@ -20,6 +22,7 @@ export default function AboutScreen() {
       subtitle="Software license, source code, and open-data catalog attribution."
     >
       <AboutPanel
+        sourceUrl={serverHealth.data?.sourceUrl}
         attribution={sourcesQuery.data ?? null}
         loading={sourcesQuery.isLoading}
         error={

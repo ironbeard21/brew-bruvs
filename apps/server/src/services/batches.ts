@@ -15,8 +15,10 @@ import type {
 import { MEASUREMENTS } from "../contracts/batches.ts";
 import { ApiError } from "../errors.ts";
 import type { Action, User } from "../permissions.ts";
-import { authorizeRow, newId, ownerOf, readableBy, signedIn, type Tx } from "./access.ts";
+import { authorizeRow, newId, newOwner, ownerOf, readableBy, signedIn, type Tx } from "./access.ts";
+import { recordActivity } from "./activity.ts";
 import type { EquipmentProfileService } from "./equipment-profiles.ts";
+import { batchStats, reservationsOf, syncReservations } from "./inventory.ts";
 import { versionStats } from "./recipe-stats.ts";
 
 const {
@@ -142,9 +144,11 @@ export function createBatchService(
   }
 
   async function recordStatus(tx: Tx, batchId: string, status: Status, userId: string, at: Date) {
-    await tx
+    const [row] = await tx
       .insert(batchStatusChanges)
-      .values({ batchId, status, changedAt: at, changedByUserId: userId });
+      .values({ batchId, status, changedAt: at, changedByUserId: userId })
+      .returning({ id: batchStatusChanges.id });
+    return (row as { id: string }).id;
   }
 
   /**
@@ -205,6 +209,14 @@ export function createBatchService(
     return row;
   }
 
+  /** Contributors change their own readings; changing anyone else's needs edit. */
+  async function ownReadingOrEdit(tx: Tx, viewer: User | null, id: string, readingId: string) {
+    await authorize(tx, viewer, "contribute", id);
+    const current = await readingOf(tx, id, readingId);
+    if (!viewer || current.createdByUserId !== viewer.id) await authorize(tx, viewer, "edit", id);
+    return current;
+  }
+
   return {
     async list(
       viewer: User | null,
@@ -232,6 +244,7 @@ export function createBatchService(
     /** Brew any recipe you can read; the batch is yours and starts private and planned. */
     async create(viewer: User | null, input: z.infer<typeof CreateBatch>) {
       const user = signedIn(viewer);
+      const owner = newOwner(user, input.breweryId);
       return db.transaction(async (tx) => {
         const [recipe] = await tx.select().from(recipes).where(eq(recipes.id, input.recipeId));
         if (!recipe) throw new ApiError(404, "not_found", "Recipe not found");
@@ -273,7 +286,7 @@ export function createBatchService(
           .values({
             id,
             uri: `${opts.baseUrl}/batches/${id}`,
-            ownerUserId: user.id,
+            ...owner,
             recipeVersionId: version.id,
             name: input.name ?? version.name,
             beverage: recipe.beverage,
@@ -314,7 +327,23 @@ export function createBatchService(
           })
           .where(eq(batches.id, id))
           .returning();
-        await recordStatus(tx, id, status, user.id, now);
+        const changeId = await recordStatus(tx, id, status, user.id, now);
+        const inventory = await syncReservations(tx, updated as BatchRow, batch.status, status);
+        const feed = { breweryId: batch.ownerBreweryId, actorUserId: user.id };
+        await recordActivity(tx, {
+          ...feed,
+          verb: batch.status === "planned" ? "batch_started" : "batch_moved",
+          objectType: "batch_status_change",
+          objectId: changeId,
+        });
+        if (inventory?.used) {
+          await recordActivity(tx, {
+            ...feed,
+            verb: "inventory_used",
+            objectType: "batch",
+            objectId: id,
+          });
+        }
 
         let schedule: { added: ReturnType<typeof viewReminder>[]; error: string | null } = {
           added: [],
@@ -332,6 +361,7 @@ export function createBatchService(
           batch: await detail(tx, { ...row, batch: updated as BatchRow }),
           addedReminders: schedule.added,
           scheduleError: schedule.error,
+          inventory,
         };
       });
     },
@@ -345,6 +375,21 @@ export function createBatchService(
           .where(and(eq(shares.resourceType, "batch"), eq(shares.resourceId, id)));
         await tx.delete(batches).where(eq(batches.id, id));
       });
+    },
+
+    /** What the batch holds from inventory: reserved, used, or given back. */
+    async reservations(viewer: User | null, id: string) {
+      return db.transaction(async (tx) => {
+        await authorize(tx, viewer, "read", id);
+        return reservationsOf(tx, id);
+      });
+    },
+
+    /** Stats for the batch as brewed: its size, equipment, and the hop lots it holds. */
+    async stats(viewer: User | null, id: string) {
+      return db.transaction(async (tx) =>
+        batchStats(tx, (await authorize(tx, viewer, "read", id)).batch),
+      );
     },
 
     async readings(viewer: User | null, id: string) {
@@ -362,7 +407,7 @@ export function createBatchService(
     async addReading(viewer: User | null, id: string, input: z.infer<typeof ReadingInput>) {
       const user = signedIn(viewer);
       return db.transaction(async (tx) => {
-        await authorize(tx, user, "edit", id);
+        const { batch } = await authorize(tx, user, "contribute", id);
         const [row] = await tx
           .insert(readings)
           .values({
@@ -372,6 +417,13 @@ export function createBatchService(
             createdByUserId: user.id,
           })
           .returning();
+        await recordActivity(tx, {
+          breweryId: batch.ownerBreweryId,
+          actorUserId: user.id,
+          verb: "reading_logged",
+          objectType: "reading",
+          objectId: (row as ReadingRow).id,
+        });
         return viewReading(row as ReadingRow);
       });
     },
@@ -383,8 +435,7 @@ export function createBatchService(
       patch: z.infer<typeof ReadingPatch>,
     ) {
       return db.transaction(async (tx) => {
-        await authorize(tx, viewer, "edit", id);
-        const current = await readingOf(tx, id, readingId);
+        const current = await ownReadingOrEdit(tx, viewer, id, readingId);
         if (Object.keys(patch).length === 0) return viewReading(current);
         const merged = { ...current, ...patch };
         if (!MEASUREMENTS.some((k) => merged[k] != null)) {
@@ -402,8 +453,7 @@ export function createBatchService(
 
     async removeReading(viewer: User | null, id: string, readingId: string) {
       await db.transaction(async (tx) => {
-        await authorize(tx, viewer, "edit", id);
-        await readingOf(tx, id, readingId);
+        await ownReadingOrEdit(tx, viewer, id, readingId);
         await tx.delete(readings).where(eq(readings.id, readingId));
       });
     },

@@ -303,8 +303,11 @@ test.describe("Brew-Bruvs app shell", () => {
     await page.getByTestId("nav-about").click();
     await expect(page).toHaveURL(/\/about$/);
     await expect(page.getByTestId("about-license-box")).toContainText("AGPL-3.0-or-later");
+    const health = await page.request.get("/healthz");
+    expect(health.ok()).toBe(true);
+    const { sourceUrl } = await health.json();
     await expect(page.getByTestId("about-source-code-link")).toContainText(
-      "https://github.com/ironbeard21/brew-bruvs",
+      sourceUrl ?? "https://github.com/ironbeard21/brew-bruvs",
     );
     await expect(page.getByTestId("about-catalog-sources")).toContainText("MIT");
   });

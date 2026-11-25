@@ -50,6 +50,13 @@
       "when": 1795553465453,
       "tag": "0006_schema_v3",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1795573802963,
+      "tag": "0007_brewery_invites",
+      "breakpoints": true
     }
   ]
 }

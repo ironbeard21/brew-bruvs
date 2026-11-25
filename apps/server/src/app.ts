@@ -4,24 +4,32 @@ import { serveStatic } from "@hono/node-server/serve-static";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { HTTPException } from "hono/http-exception";
 import { type AppEnv, sessionMiddleware } from "./auth/middleware.ts";
+import { DEFAULT_SOURCE_URL } from "./config.ts";
 import { RecipeContent } from "./contracts/recipe-content.ts";
 import { ApiError, ErrorSchema, errorBody } from "./errors.ts";
 import type { Logger } from "./logger.ts";
 import { registerAdminRoutes } from "./routes/admin.ts";
 import { type AuthRouteDeps, registerAuthRoutes } from "./routes/auth.ts";
 import { registerBatchRoutes } from "./routes/batches.ts";
+import { registerBreweryRoutes } from "./routes/breweries.ts";
 import { registerCatalogRoutes } from "./routes/catalog.ts";
 import { registerEquipmentItemRoutes } from "./routes/equipment-items.ts";
 import { registerHealthRoutes } from "./routes/health.ts";
+import { registerInventoryRoutes } from "./routes/inventory.ts";
 import { registerRecipeFileRoutes } from "./routes/recipe-files.ts";
 import { registerRecipeRoutes } from "./routes/recipes.ts";
+import { registerSharingRoutes } from "./routes/sharing.ts";
+import type { ActivityService } from "./services/activity.ts";
 import type { BatchService } from "./services/batches.ts";
+import type { BreweryService } from "./services/breweries.ts";
 import type { CatalogService } from "./services/catalog.ts";
 import type { EquipmentItemService } from "./services/equipment-items.ts";
 import type { EquipmentProfileService } from "./services/equipment-profiles.ts";
+import type { InventoryService } from "./services/inventory.ts";
 import type { NoteService } from "./services/notes.ts";
 import type { RecipeFileService } from "./services/recipe-files.ts";
 import type { RecipeService } from "./services/recipes.ts";
+import type { SharingService } from "./services/sharing.ts";
 
 export const OPENAPI_PATH = "/api/openapi.json";
 
@@ -38,6 +46,7 @@ export interface AppDeps {
   logger: Logger;
   /** Absolute path to the static web build; undefined serves the API only. */
   webDir: string | undefined;
+  sourceUrl?: string;
   auth: AuthRouteDeps;
   catalog: CatalogService;
   recipes: RecipeService;
@@ -46,10 +55,28 @@ export interface AppDeps {
   equipmentItems: EquipmentItemService;
   batches: BatchService;
   notes: NoteService;
+  breweries: BreweryService;
+  inventory: InventoryService;
+  sharing: SharingService;
+  activity: ActivityService;
 }
 
 export function createApp(deps: AppDeps) {
-  const { logger, webDir, auth, catalog, recipes, recipeFiles, profiles, batches, notes } = deps;
+  const {
+    logger,
+    webDir,
+    auth,
+    catalog,
+    recipes,
+    recipeFiles,
+    profiles,
+    batches,
+    notes,
+    breweries,
+    inventory,
+    sharing,
+    activity,
+  } = deps;
   const app = new OpenAPIHono<AppEnv>({
     defaultHook: (result, c) => {
       if (!result.success) {
@@ -64,6 +91,13 @@ export function createApp(deps: AppDeps) {
   app.use(async (c, next) => {
     const start = performance.now();
     await next();
+    c.header(
+      "Content-Security-Policy",
+      "base-uri 'self'; frame-ancestors 'none'; object-src 'none'",
+    );
+    c.header("Referrer-Policy", "no-referrer");
+    c.header("X-Content-Type-Options", "nosniff");
+    c.header("X-Frame-Options", "DENY");
     // Path only, never the query string: it may carry tokens.
     logger.info("request", {
       method: c.req.method,
@@ -76,7 +110,7 @@ export function createApp(deps: AppDeps) {
   app.openAPIRegistry.register("Error", ErrorSchema);
   app.openAPIRegistry.register("RecipeContent", RecipeContent);
   app.use("/api/*", sessionMiddleware(auth.auth));
-  registerHealthRoutes(app);
+  registerHealthRoutes(app, deps.sourceUrl ?? DEFAULT_SOURCE_URL);
   registerAuthRoutes(app, auth);
   registerAdminRoutes(app, auth);
   registerCatalogRoutes(app, catalog);
@@ -84,6 +118,9 @@ export function createApp(deps: AppDeps) {
   registerRecipeFileRoutes(app, recipes, recipeFiles, { trustProxy: auth.trustProxy });
   registerBatchRoutes(app, { batches, notes });
   registerEquipmentItemRoutes(app, deps.equipmentItems);
+  registerBreweryRoutes(app, breweries);
+  registerInventoryRoutes(app, inventory);
+  registerSharingRoutes(app, { sharing, activity });
   app.doc31(OPENAPI_PATH, OPENAPI_INFO);
 
   if (webDir) {

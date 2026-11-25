@@ -4,6 +4,7 @@
 
 import { schema } from "@brew-bruvs/db";
 import { z } from "@hono/zod-openapi";
+import { InventoryChange } from "./inventory.ts";
 import { Beverage, Visibility } from "./recipes.ts";
 
 const { TASTING_SCORE_MAX } = schema;
@@ -44,6 +45,9 @@ export const CreateBatch = z
     batchSizeL: litres.optional().openapi({ description: "Defaults to the version's batch size" }),
     equipmentProfileId: z.uuid().nullable().optional().openapi({
       description: "Defaults to the version's, when you can read it",
+    }),
+    breweryId: z.uuid().optional().openapi({
+      description: "Create it as this brewery's. You must be one of its owners or brewers",
     }),
   })
   .openapi("CreateBatch");
@@ -174,6 +178,10 @@ export const StatusResult = z
     scheduleError: z.string().nullable().openapi({
       description: "Why a mead's nutrient schedule couldn't be made (e.g. the recipe has no stats)",
     }),
+    inventory: InventoryChange.nullable().openapi({
+      description:
+        "Starting reserves ingredients, packaging or bottling uses them, undoing gives them back. Null when this move changes nothing",
+    }),
   })
   .openapi("StatusResult");
 
@@ -202,6 +210,9 @@ export const NoteInput = z
     recipeId: z.uuid().optional(),
     batchId: z.uuid().optional(),
     scores: TastingScores.optional(),
+    breweryId: z.uuid().optional().openapi({
+      description: "Create it as this brewery's. You must be one of its owners or brewers",
+    }),
   })
   .refine((n) => !(n.recipeId && n.batchId), {
     message: "a note is about a recipe, a batch, or neither",
