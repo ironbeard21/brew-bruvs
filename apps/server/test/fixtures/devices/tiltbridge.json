@@ -1,0 +1,8 @@
+{
+  "device_source": "TiltBridge",
+  "name": "Pink",
+  "temp": "65.0",
+  "temp_unit": "F",
+  "gravity": "1.010",
+  "gravity_unit": "G"
+}

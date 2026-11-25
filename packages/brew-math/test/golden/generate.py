@@ -81,6 +81,8 @@ units = {
             ([10080], 7),
         )
     ],
+    "milliSgToSg": [case([n], sg, 1e-12, "definition: scaled SG is 1,000 times SG")
+                     for n, sg in ((998, 0.998), (1000, 1), (1052.5, 1.0525))],
     "ppgToPotentialSg": [
         case([0], 1, 1e-12, "SG scale: water at zero gravity points"),
         case([10], 1.01, 1e-12, "SG scale: ten gravity points"),

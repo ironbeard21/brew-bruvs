@@ -37,7 +37,7 @@ export async function recordActivity(
   tx: Tx,
   event: {
     breweryId: string | null;
-    actorUserId: string;
+    actorUserId: string | null;
     verb: Verb;
     objectType: "batch_status_change" | "reading" | "batch" | "user";
     objectId: string;
