@@ -21,6 +21,7 @@ import { registerInventoryRoutes } from "./routes/inventory.ts";
 import { registerRecipeFileRoutes } from "./routes/recipe-files.ts";
 import { registerRecipeRoutes } from "./routes/recipes.ts";
 import { registerSharingRoutes } from "./routes/sharing.ts";
+import { registerWebhookRoutes } from "./routes/webhooks.ts";
 import type { ActivityService } from "./services/activity.ts";
 import type { BatchService } from "./services/batches.ts";
 import type { BreweryService } from "./services/breweries.ts";
@@ -34,6 +35,8 @@ import type { NoteService } from "./services/notes.ts";
 import type { RecipeFileService } from "./services/recipe-files.ts";
 import type { RecipeService } from "./services/recipes.ts";
 import type { SharingService } from "./services/sharing.ts";
+
+import type { WebhookService } from "./services/webhooks.ts";
 
 export const OPENAPI_PATH = "/api/openapi.json";
 
@@ -63,6 +66,7 @@ export interface AppDeps {
   inventory: InventoryService;
   brewfather: BrewfatherService;
   devices: DeviceService;
+  webhooks: WebhookService;
   sharing: SharingService;
   activity: ActivityService;
 }
@@ -128,6 +132,7 @@ export function createApp(deps: AppDeps) {
   registerInventoryRoutes(app, inventory);
   registerBrewfatherRoutes(app, deps);
   registerDeviceRoutes(app, deps.devices, auth.trustProxy);
+  registerWebhookRoutes(app, deps.webhooks);
   registerSharingRoutes(app, { sharing, activity });
   app.doc31(OPENAPI_PATH, OPENAPI_INFO);
 

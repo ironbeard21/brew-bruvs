@@ -20,10 +20,12 @@ import { createNoteService } from "./services/notes.ts";
 import { createRecipeFileService } from "./services/recipe-files.ts";
 import { createRecipeService } from "./services/recipes.ts";
 import { createSharingService } from "./services/sharing.ts";
+import { createWebhookService } from "./services/webhooks.ts";
 
 const config = loadConfig(process.env);
 const logger = createLogger(config.logLevel);
 const { db } = createDb(config.databaseUrl);
+const webhooks = createWebhookService(db);
 const profiles = createEquipmentProfileService(db, { baseUrl: config.baseUrl });
 const app = createApp({
   logger,
@@ -40,6 +42,7 @@ const app = createApp({
   breweries: createBreweryService(db, { baseUrl: config.baseUrl }),
   brewfather: createBrewfatherService(db),
   inventory: createInventoryService(db, { baseUrl: config.baseUrl }),
+  webhooks: webhooks,
   sharing: createSharingService(db),
   activity: createActivityService(db),
   auth: {
@@ -61,3 +64,21 @@ serve({ fetch: app.fetch, port: config.port }, (info) => {
     oidc: Boolean(config.oidc),
   });
 });
+
+let processingWebhooks = false;
+setInterval(() => {
+  if (processingWebhooks) return;
+  processingWebhooks = true;
+  void (async () => {
+    try {
+      await webhooks.enqueueDue();
+      for (let count = 0; count < 10; count++) {
+        if (!(await webhooks.deliverOne())) break;
+      }
+    } catch {
+      logger.error("webhook worker failed");
+    } finally {
+      processingWebhooks = false;
+    }
+  })();
+}, 2_000).unref();

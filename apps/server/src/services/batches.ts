@@ -21,6 +21,7 @@ import type { EquipmentProfileService } from "./equipment-profiles.ts";
 import { batchStats, reservationsOf, syncReservations } from "./inventory.ts";
 import { recordReading } from "./readings.ts";
 import { versionStats } from "./recipe-stats.ts";
+import { enqueueBatchWebhook } from "./webhooks.ts";
 
 const {
   batches,
@@ -367,6 +368,10 @@ export function createBatchService(
           .where(eq(batches.id, id))
           .returning();
         const changeId = await recordStatus(tx, id, status, user.id, now);
+        await enqueueBatchWebhook(tx, batch, "batch.status_changed", now, {
+          previous: batch.status,
+          status,
+        });
         const inventory = await syncReservations(tx, updated as BatchRow, batch.status, status);
         const feed = { breweryId: batch.ownerBreweryId, actorUserId: user.id };
         await recordActivity(tx, {

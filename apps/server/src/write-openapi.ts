@@ -21,6 +21,7 @@ import { createNoteService } from "./services/notes.ts";
 import { createRecipeFileService } from "./services/recipe-files.ts";
 import { createRecipeService } from "./services/recipes.ts";
 import { createSharingService } from "./services/sharing.ts";
+import { createWebhookService } from "./services/webhooks.ts";
 
 const out = process.argv[2];
 if (!out) throw new Error("usage: node src/write-openapi.ts <output.json>");
@@ -43,6 +44,7 @@ const app = createApp({
   breweries: createBreweryService(db, { baseUrl }),
   brewfather: createBrewfatherService(db),
   inventory: createInventoryService(db, { baseUrl }),
+  webhooks: createWebhookService(db),
   sharing: createSharingService(db),
   activity: createActivityService(db),
   auth: {

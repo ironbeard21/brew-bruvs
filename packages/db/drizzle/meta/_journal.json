@@ -57,6 +57,13 @@
       "when": 1795573802963,
       "tag": "0007_brewery_invites",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1795576250074,
+      "tag": "0008_webhook_jobs",
+      "breakpoints": true
     }
   ]
 }

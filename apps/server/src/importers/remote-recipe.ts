@@ -1,11 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-import { lookup } from "node:dns/promises";
 import { request as httpRequest } from "node:http";
 import { request as httpsRequest } from "node:https";
-import { isIP } from "node:net";
-import ipaddr from "ipaddr.js";
 import robotsParser from "robots-parser";
 import { ApiError } from "../errors.ts";
+import {
+  type Address,
+  publicDestination,
+  publicWebUrl,
+  systemResolve,
+} from "../integrations/public-target.ts";
 import { invalidFile } from "./recipe-file.ts";
 
 const agent = "BrewBruvs";
@@ -16,36 +19,14 @@ export function invalidUrl(message: string): never {
   throw new ApiError(400, "invalid_recipe_url", message);
 }
 
-function webUrl(input: string, base?: URL) {
-  const url = URL.parse(input, base);
-  if (
-    !url ||
-    (url.protocol !== "http:" && url.protocol !== "https:") ||
-    url.username ||
-    url.password ||
-    url.port ||
-    url.href.length > 2_000
-  ) {
-    invalidUrl("Use a public HTTP or HTTPS URL on its default port");
-  }
-  url.hash = "";
-  return url;
-}
+const webUrl = (input: string, base?: URL) => publicWebUrl(input, invalidUrl, base);
 
-type Address = { address: string; family: number };
 type RemoteResponse = {
   status: number;
   location?: string | undefined;
   mediaType?: string | undefined;
   body: string;
 };
-
-function publicAddress({ address }: Address) {
-  const ip = ipaddr.parse(address);
-  if (ip.range() !== "unicast") return false;
-  // Only globally routed IPv6 space. ipaddr also excludes transition and special-use ranges.
-  return ip.kind() === "ipv4" || /^[23]/.test(address);
-}
 
 function requestPinned(
   url: URL,
@@ -113,7 +94,7 @@ type Transport = {
 };
 
 const network: Transport = {
-  resolve: (host) => lookup(host, { all: true }),
+  resolve: systemResolve,
   request: requestPinned,
 };
 
@@ -132,15 +113,9 @@ export function createRemoteRecipeReader(transport = network, deadlineMs = timeo
     async function get(url: URL, maxBytes: number) {
       signal.throwIfAborted();
       if (++requests > 16) invalidUrl("The source exceeded the request limit");
-      const host = url.hostname.replace(/^\[|\]$/g, "").replace(/\.$/, "");
-      if (!host.includes(".") && !isIP(host)) invalidUrl("Use a public recipe URL");
-      if (/(?:^|\.)(?:localhost|local|internal|home\.arpa)$/i.test(host)) {
-        invalidUrl("Use a public recipe URL");
-      }
-      const family = isIP(host);
-      const addresses = family ? [{ address: host, family }] : await transport.resolve(host);
-      const first = addresses[0];
-      if (!first || !addresses.every(publicAddress)) invalidUrl("Use a public recipe URL");
+      const first = await publicDestination(url, transport.resolve, () =>
+        invalidUrl("Use a public recipe URL"),
+      );
       signal.throwIfAborted();
       return transport.request(url, first, maxBytes, signal);
     }
