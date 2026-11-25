@@ -18,6 +18,7 @@ try {
   } else {
     await migrateUp(client);
     // The server's own login (row-level security, ADR-0011), when it has one.
+    // Compose leaves it empty when POSTGRES_APP_PASSWORD is unset.
     const app = process.env.APP_DATABASE_URL ? new URL(process.env.APP_DATABASE_URL) : undefined;
     if (app && decodeURIComponent(app.username) !== APP_ROLE) {
       throw new Error(`APP_DATABASE_URL must sign in as ${APP_ROLE}`);

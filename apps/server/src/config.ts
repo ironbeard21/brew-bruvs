@@ -17,7 +17,8 @@ const schema = z
     // Folder holding the static web build of the app. Unset: the server only serves the API.
     WEB_DIR: z.string().min(1).optional(),
     DATABASE_URL: z.string().min(1),
-    APP_DATABASE_URL: z.string().min(1).optional(),
+    // Compose passes an empty value when POSTGRES_APP_PASSWORD is unset.
+    APP_DATABASE_URL: z.preprocess((v) => (v === "" ? undefined : v), z.string().min(1).optional()),
     BASE_URL: z.url().transform((v) => v.replace(/\/+$/, "")),
     SOURCE_URL: z.url({ protocol: /^https?$/ }).default(DEFAULT_SOURCE_URL),
     SIGNUP_MODE: z.enum(["open", "invite"]).default("invite"),

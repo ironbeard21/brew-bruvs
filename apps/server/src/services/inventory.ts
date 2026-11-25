@@ -26,8 +26,9 @@ type Unit = ItemRow["quantityUnit"];
 type Status = BatchRow["status"];
 type Owner = { ownerUserId: string | null; ownerBreweryId: string | null };
 
-// What started batches hold. Qualified by hand: Drizzle leaves single-table columns unqualified.
-const reservedSum = sql<number>`coalesce((SELECT sum(r.quantity) FROM inventory_reservations r WHERE r.inventory_item_id = "inventory_items"."id" AND r.state = 'reserved'), 0)`;
+// What started batches hold, including holds the caller can't see under row-level security
+// (app.reserved, migration 0008). Qualified by hand: Drizzle leaves single-table columns unqualified.
+const reservedSum = sql<number>`app.reserved("inventory_items"."id", "inventory_items"."owner_user_id", "inventory_items"."owner_brewery_id")`;
 
 const EPSILON = 1e-9;
 
@@ -148,7 +149,10 @@ function ownerIs(owner: Owner): SQL {
 }
 
 /** Matching items for a line: by catalog id first, then by name; same unit only. */
-function matches(line: { name: string; catalogId: string | null; unit?: Unit }, stock: Stock[]) {
+function matches<T extends { name: string; catalogId: string | null; quantityUnit: Unit }>(
+  line: { name: string; catalogId: string | null; unit?: Unit },
+  stock: T[],
+): T[] {
   const sameUnit = stock.filter((i) => !line.unit || i.quantityUnit === line.unit);
   const byCatalog = line.catalogId ? sameUnit.filter((i) => i.catalogId === line.catalogId) : [];
   if (byCatalog.length) return byCatalog;
@@ -337,36 +341,49 @@ export async function syncReservations(tx: Tx, batch: BatchRow, from: Status, to
   return change;
 }
 
+type Lot = {
+  id: string;
+  item_id: string;
+  quantity: number;
+  state: "reserved" | "used" | "released";
+  name: string;
+  unit: Unit;
+  catalog_id: string | null;
+  alpha_acid_pct: number | null;
+};
+
+/** What a batch holds, with the lot fields its readers may see (app.batch_lots, migration 0008). */
+async function lotsOf(tx: Tx, batchId: string) {
+  const { rows } = await tx.execute<Lot>(sql`SELECT * FROM app.batch_lots(${batchId})`);
+  return rows;
+}
+
 /** The reservations of a batch the caller has already been allowed to read. */
 export async function reservationsOf(tx: Tx, batchId: string) {
-  const rows = await tx
-    .select({
-      r: inventoryReservations,
-      name: inventoryItems.name,
-      unit: inventoryItems.quantityUnit,
-    })
-    .from(inventoryReservations)
-    .innerJoin(inventoryItems, eq(inventoryItems.id, inventoryReservations.inventoryItemId))
-    .where(eq(inventoryReservations.batchId, batchId))
-    .orderBy(asc(inventoryReservations.createdAt), asc(inventoryReservations.id));
-  return { items: rows.map((x) => viewReservation(x.r, { name: x.name, quantityUnit: x.unit })) };
+  const lots = await lotsOf(tx, batchId);
+  return {
+    items: lots.map((l) => ({
+      itemId: l.item_id,
+      name: l.name,
+      quantity: l.quantity,
+      unit: l.unit,
+      state: l.state,
+    })),
+  };
 }
 
 /** A batch's stats, with hop alpha acid from the inventory lots reserved for it. */
 export async function batchStats(tx: Tx, batch: BatchRow) {
   const { content, batchSizeL, equipment } = await batchContent(tx, batch);
-  const lots = await tx
-    .select({ item: inventoryItems })
-    .from(inventoryReservations)
-    .innerJoin(inventoryItems, eq(inventoryItems.id, inventoryReservations.inventoryItemId))
-    .where(
-      and(
-        eq(inventoryReservations.batchId, batch.id),
-        inArray(inventoryReservations.state, ["reserved", "used"]),
-        sql`${inventoryItems.alphaAcidPct} IS NOT NULL`,
-      ),
-    );
-  const stock = lots.map((l) => ({ ...l.item, available: 0 }));
+  const stock = (await lotsOf(tx, batch.id))
+    .filter((l) => l.state !== "released" && l.alpha_acid_pct !== null)
+    .map((l) => ({
+      id: l.item_id,
+      name: l.name,
+      catalogId: l.catalog_id,
+      quantityUnit: l.unit,
+      alphaAcidPct: l.alpha_acid_pct,
+    }));
   const fromInventory: { hop: string; alphaAcidPct: number; itemId: string }[] = [];
   const hops = content.hops.map((h) => {
     const [lot] = matches({ name: h.name, catalogId: h.catalogId ?? null, unit: "kg" }, stock);

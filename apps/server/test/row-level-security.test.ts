@@ -2,7 +2,7 @@
 // Row-level security parity (ADR-0011): the same permission cases through can() (what the API
 // checks), the database policies (as brew_app, straight against Postgres), and the API itself.
 // Postgres tests need TEST_DATABASE_URL.
-import { APP_ROLE, createDb } from "@brew-bruvs/db";
+import { APP_ROLE, checkRowSecurity, createDb } from "@brew-bruvs/db";
 import type { Client } from "pg";
 import { describe, expect, it } from "vitest";
 import {
@@ -191,8 +191,11 @@ async function enforced(sql: Client, kind: Kind, id: string, userId: string | nu
     try {
       return (await sql.query(query, [id])).rowCount ?? 0;
     } catch (err) {
+      const code = (err as { code?: string }).code;
       // Restricted by a foreign key (recipe with batches): the policy allowed the delete.
-      if ((err as { code?: string }).code === "23001") return 1;
+      if (code === "23001") return 1;
+      // Refused by the guard trigger (owner or visibility change).
+      if (code === "42501") return 0;
       throw err;
     } finally {
       await sql.query("ROLLBACK TO SAVEPOINT attempt");
@@ -213,6 +216,10 @@ async function enforced(sql: Client, kind: Kind, id: string, userId: string | nu
     ) as Record<Action, boolean>,
     read: (await count(`SELECT 1 FROM ${table} WHERE id = $1`)) === 1,
     change: (await count(`UPDATE ${table} SET updated_at = updated_at WHERE id = $1`)) === 1,
+    reveal:
+      (await count(
+        `UPDATE ${table} SET visibility = CASE WHEN visibility = 'public' THEN 'private'::visibility ELSE 'public'::visibility END WHERE id = $1`,
+      )) === 1,
     remove: (await count(`DELETE FROM ${table} WHERE id = $1`)) === 1,
   }));
 }
@@ -261,6 +268,8 @@ describe.skipIf(!TEST_DATABASE_URL)("row-level security on PostgreSQL", () => {
               mismatches.push(`${where}: policy ${a} ${got.policy[a]}`);
           }
           if (got.read !== want.read) mismatches.push(`${where}: row read ${got.read}`);
+          if (got.reveal !== want.share)
+            mismatches.push(`${where}: visibility change ${got.reveal}`);
           if (got.change !== (want.edit || want.share)) {
             mismatches.push(`${where}: row change ${got.change}`);
           }
@@ -296,6 +305,133 @@ describe.skipIf(!TEST_DATABASE_URL)("row-level security on PostgreSQL", () => {
       });
       // The editor may edit it, but only its owner may hand it to someone else.
       expect(moved).toBe("42501");
+    });
+  });
+  it("lets a batch editor use the owner's stock without double-booking hidden holds", async () => {
+    await withApp({}, async (app) => {
+      const owner = await setupAdmin(app);
+      const signup = await call(app, "POST", "/api/auth/signup", {
+        body: {
+          email: "editor@brew.test",
+          password: "editor-password",
+          displayName: "Editor",
+          inviteCode: await invite(app, owner),
+          client: "app",
+        },
+      });
+      const editor = signup.json.token as string;
+      const post = (path: string, body: object, token = owner) =>
+        call(app, "POST", path, { token, body });
+      const lot = await post("/api/inventory", {
+        name: "Pale malt",
+        quantity: 5,
+        quantityUnit: "kg",
+        alphaAcidPct: null,
+      });
+      const recipe = await post("/api/recipes", beer);
+      // The owner's own private batch already holds 4.5 kg of the 5.
+      const held = await post("/api/batches", { recipeId: recipe.json.id });
+      await post(`/api/batches/${held.json.id}/status`, { status: "brewing" });
+      const shared = await post("/api/batches", { recipeId: recipe.json.id });
+      await post(`/api/batches/${shared.json.id}/shares`, {
+        email: "editor@brew.test",
+        level: "edit",
+      });
+      await post(`/api/recipes/${recipe.json.id}/shares`, {
+        email: "editor@brew.test",
+        level: "read",
+      });
+
+      const started = await post(
+        `/api/batches/${shared.json.id}/status`,
+        { status: "brewing" },
+        editor,
+      );
+      expect(started.status).toBe(200);
+      const change = started.json.inventory as Json;
+      expect((change.reserved as Json[]).map((r) => r.quantity)).toEqual([0.5]);
+      expect((change.short as Json[]).map((s) => s.short)).toEqual([4]);
+      // The editor can't read the lot itself, but sees what the batch holds.
+      expect(
+        (await call(app, "GET", `/api/inventory/${lot.json.id}`, { token: editor })).status,
+      ).toBe(404);
+      const holds = await call(app, "GET", `/api/batches/${shared.json.id}/reservations`, {
+        token: editor,
+      });
+      expect(holds.json.items).toEqual([
+        { itemId: lot.json.id, name: "Pale malt", quantity: 0.5, unit: "kg", state: "reserved" },
+      ]);
+      expect(
+        (await call(app, "GET", `/api/batches/${shared.json.id}/stats`, { token: editor })).status,
+      ).toBe(200);
+    });
+  });
+
+  it("lets a collaborator outside the brewery log and move a brewery batch shared with them", async () => {
+    await withApp({}, async (app) => {
+      const owner = await setupAdmin(app);
+      const signup = await call(app, "POST", "/api/auth/signup", {
+        body: {
+          email: "friend@brew.test",
+          password: "friend-password",
+          displayName: "Friend",
+          inviteCode: await invite(app, owner),
+          client: "app",
+        },
+      });
+      const friend = signup.json.token as string;
+      const post = (path: string, body: object, token = owner) =>
+        call(app, "POST", path, { token, body });
+      const brewery = await post("/api/breweries", { name: "Hops Co" });
+      const recipe = await post("/api/recipes", { ...beer, breweryId: brewery.json.id });
+      const batch = await post("/api/batches", {
+        recipeId: recipe.json.id,
+        breweryId: brewery.json.id,
+      });
+      await post(`/api/batches/${batch.json.id}/shares`, {
+        email: "friend@brew.test",
+        level: "edit",
+      });
+
+      const reading = await post(
+        `/api/batches/${batch.json.id}/readings`,
+        { takenAt: "2026-11-25T12:00:00Z", gravitySg: 1.05 },
+        friend,
+      );
+      expect(reading.status).toBe(201);
+      const moved = await post(
+        `/api/batches/${batch.json.id}/status`,
+        { status: "brewing" },
+        friend,
+      );
+      expect(moved.status).toBe(200);
+      const feed = await call(app, "GET", `/api/breweries/${brewery.json.id}/activity`, {
+        token: owner,
+      });
+      expect(
+        (feed.json.items as Json[]).map((e) => [e.verb, (e.actor as Json).displayName]),
+      ).toEqual([
+        ["batch_started", "Friend"],
+        ["reading_logged", "Friend"],
+      ]);
+    });
+  });
+
+  it("refuses to run the server unless row-level security really applies", async () => {
+    await withApp({}, async (_app, sql) => {
+      const url = new URL(TEST_DATABASE_URL as string);
+      url.pathname = `/${sql.database}`;
+      const owner = createDb(url.href);
+      const app = createDb(url.href, { role: APP_ROLE });
+      try {
+        await expect(checkRowSecurity(owner.db)).rejects.toThrow(/not brew_app/);
+        await checkRowSecurity(app.db);
+        await sql.query("ALTER TABLE notes DISABLE ROW LEVEL SECURITY");
+        await expect(checkRowSecurity(app.db)).rejects.toThrow(/on notes/);
+      } finally {
+        await owner.close();
+        await app.close();
+      }
     });
   });
 });

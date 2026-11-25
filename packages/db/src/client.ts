@@ -59,14 +59,55 @@ export function createDb(connectionString: string, opts: { role?: string } = {})
 
 export type Db = ReturnType<typeof createDb>["db"];
 
-/** Refuses to run when the connection's role would skip row-level security. */
+/** Tables whose rows row-level security protects (migration 0008). */
+export const PROTECTED_TABLES = [
+  "recipes",
+  "recipe_versions",
+  "batches",
+  "batch_status_changes",
+  "readings",
+  "reminders",
+  "notes",
+  "inventory_items",
+  "inventory_reservations",
+  "equipment_items",
+  "equipment_profiles",
+  "shares",
+  "integrations",
+  "activity_events",
+] as const;
+
+/**
+ * Refuses to run unless row-level security really applies: the connection acts as brew_app,
+ * which isn't a superuser, can't bypass it and owns none of the protected tables (owners skip
+ * policies), and every protected table has it turned on.
+ */
 export async function checkRowSecurity(db: Db) {
-  const { rows } = await db.$client.query<{ name: string; bypass: boolean }>(
-    "SELECT current_user AS name, rolsuper OR rolbypassrls AS bypass FROM pg_roles WHERE rolname = current_user",
+  const { rows } = await db.$client.query<{
+    name: string;
+    bypass: boolean;
+    unprotected: string[];
+  }>(
+    `SELECT current_user AS name,
+       (SELECT rolsuper OR rolbypassrls FROM pg_roles WHERE rolname = current_user) AS bypass,
+       ARRAY(SELECT t FROM unnest($1::text[]) AS t
+         LEFT JOIN pg_class c ON c.oid = to_regclass('public.' || t)
+         WHERE c.oid IS NULL OR NOT c.relrowsecurity OR pg_has_role(c.relowner, 'USAGE')
+       ) AS unprotected`,
+    [PROTECTED_TABLES],
   );
-  if (rows[0]?.bypass !== false) {
+  const row = rows[0];
+  const problem =
+    row?.name !== APP_ROLE
+      ? `runs as ${row?.name ?? "?"}, not ${APP_ROLE}`
+      : row.bypass
+        ? "can bypass row-level security"
+        : row.unprotected.length
+          ? `isn't held to row-level security on ${row.unprotected.join(", ")}`
+          : null;
+  if (problem) {
     throw new Error(
-      `The server's database role ${rows[0]?.name ?? "?"} bypasses row-level security. Connect as ${APP_ROLE} (APP_DATABASE_URL).`,
+      `The server's database connection ${problem}. Connect as ${APP_ROLE} (APP_DATABASE_URL) and run the migrations.`,
     );
   }
 }

@@ -11,7 +11,8 @@ Run the commands below from that checkout's root.
    `openssl rand -hex 24`. Keep a protected copy of this file.
    Set `POSTGRES_APP_PASSWORD` to a different random URL-safe password. The server signs in to
    PostgreSQL as `brew_app` with it, a role that row-level security applies to; migrations use the
-   `brew` owner. If it is left unset, `brew_app` uses `POSTGRES_PASSWORD`.
+   `brew` owner. If it is left unset, the server signs in as `brew` and switches to `brew_app`,
+   which is still enforced but keeps the owner's password in the app.
 3. Set `BASE_URL` to the address users will open. Use `http://localhost:8080` for a local evaluation.
 4. Set `BREW_BRUVS_IMAGE` to the full version tag published for your release. For example, Git tag
    `v1.0.0` publishes `ghcr.io/ironbeard21/brew-bruvs:1.0.0`. The Phase 1 prerelease uses
@@ -90,15 +91,19 @@ From this release, PostgreSQL enforces who can see and change each recipe, batch
 item and piece of equipment, alongside the server's own checks (ADR-0011). The upgrade does this on
 its own:
 
-- The migration creates the `brew_app` role and its policies. The `brew` role needs to be able to
-  create roles. It can in the Compose PostgreSQL; on a managed database, grant `CREATEROLE` or create
-  `brew_app` yourself first.
-- The release's Compose file gives the server `APP_DATABASE_URL`, and the app sets `brew_app`'s
-  password from `POSTGRES_APP_PASSWORD` (or `POSTGRES_PASSWORD`) each time it starts. Add
-  `POSTGRES_APP_PASSWORD` to `.env` to give it its own password.
-- With an older or hand-written Compose file that only sets `DATABASE_URL`, the server still runs
-  under row-level security: it signs in as `brew` and switches to `brew_app`.
-- The server refuses to start if its database role bypasses row-level security.
+- The migration creates the `brew_app` role and its policies. Creating a role needs
+  `CREATEROLE`, which `brew` has in the Compose PostgreSQL. On a managed database, have an
+  administrator run `CREATE ROLE brew_app LOGIN PASSWORD '…'` before upgrading; the migration then
+  only adds its grants and policies, and you set `APP_DATABASE_URL` to sign in as `brew_app` with
+  that password.
+- With `POSTGRES_APP_PASSWORD` in `.env`, the release's Compose file gives the server
+  `APP_DATABASE_URL`, and the app sets `brew_app`'s password at each start. It sends a SCRAM
+  verifier, not the password, so PostgreSQL never logs it. Without `CREATEROLE` it leaves the
+  password an administrator set.
+- Without `POSTGRES_APP_PASSWORD`, or with an older Compose file that only sets `DATABASE_URL`, the
+  server still runs under row-level security: it signs in as `brew` and switches to `brew_app`.
+- The server refuses to start unless it acts as `brew_app`, can't bypass row-level security, owns
+  none of the protected tables, and finds row-level security turned on for every one of them.
 
 A restore with `--no-privileges`, as above, drops the grants to `brew_app`; the app puts them back
 when it starts.
