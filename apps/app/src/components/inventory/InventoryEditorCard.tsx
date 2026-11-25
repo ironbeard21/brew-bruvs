@@ -151,7 +151,13 @@ export function InventoryEditorCard({
       targetUnit = unitSystem === "us" ? "oz" : "g";
     }
     if (targetUnit) {
-      handleSelectUnit(targetUnit);
+      const sameDimension = siUnitOf(targetUnit) === siUnitOf(displayUnit);
+      const isBlankNewItem = !item && !quantityText.trim() && !thresholdText.trim();
+      // Only auto-switch unit when converting within the same physical dimension (e.g. lb -> oz)
+      // or when starting a blank new item; never silently reinterpret a volume/count as mass.
+      if (sameDimension || isBlankNewItem) {
+        handleSelectUnit(targetUnit);
+      }
     }
     setShowCatalogPicker(false);
     setError(null);

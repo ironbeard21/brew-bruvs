@@ -485,6 +485,77 @@ describe("InventoryEditorCard", () => {
     expect(created?.quantityUnit).toBe("kg");
     expect(created?.quantity).toBeCloseTo(0.45359237, 5);
   });
+
+  it("preserves unit and amount when linking an existing 1 L liquid item to a catalog entry", async () => {
+    const liquidItem: InventoryItem = {
+      ...MALT_ITEM,
+      id: "dddddddd-dddd-7ddd-8ddd-dddddddddddd",
+      name: "Apple Juice",
+      catalogId: null,
+      quantity: 1,
+      quantityUnit: "l",
+      reserved: 0,
+      available: 1,
+      lowStockThreshold: 0.5,
+      lot: null,
+      location: "Fridge",
+    };
+    const onUpdate = vi.fn(async () => {});
+    const customFetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const req = input instanceof Request ? input : new Request(input, init);
+      const url = new URL(req.url);
+      if (url.pathname === "/api/catalog/miscs") {
+        return jsonResponse({
+          items: [
+            {
+              id: "misc-pectic-enzyme",
+              catalog: "miscs",
+              name: "Apple Juice",
+              aliases: [],
+              sources: ["bt001"],
+              licenses: ["GPL-3.0"],
+              notes: null,
+              miscType: "fining",
+              useFor: "clarity",
+              beverages: ["cider"],
+            },
+          ],
+          nextOffset: null,
+        });
+      }
+      return jsonResponse({ items: [], nextOffset: null });
+    }) as unknown as typeof fetch;
+
+    renderWithProviders(
+      <InventoryEditorCard
+        serverUrl={SERVER_URL}
+        authToken="tok"
+        breweryId={BREWERY_ID}
+        workspaceLabel="Northside Brew Club"
+        item={liquidItem}
+        onUpdate={onUpdate}
+        customFetch={customFetch}
+      />,
+      "metric",
+    );
+
+    fireEvent.click(screen.getByTestId("inventory-toggle-catalog-picker"));
+    fireEvent.click(screen.getByText("Misc"));
+    fireEvent.change(screen.getByTestId("inv-catalog-search-input"), {
+      target: { value: "Apple Juice" },
+    });
+    await waitFor(() => {
+      expect(screen.getByTestId("inv-catalog-option-misc-pectic-enzyme")).toBeTruthy();
+    });
+    fireEvent.click(screen.getByTestId("inv-catalog-option-misc-pectic-enzyme"));
+
+    fireEvent.click(screen.getByTestId("inventory-editor-submit"));
+    await waitFor(() => {
+      expect(onUpdate).toHaveBeenCalledTimes(1);
+    });
+    // Must only patch catalogId — never rewrite 1 L into 0.001 kg
+    expect(onUpdate).toHaveBeenCalledWith(liquidItem.id, { catalogId: "misc-pectic-enzyme" });
+  });
 });
 
 describe("InventoryPanel and ShoppingListPanel", () => {
