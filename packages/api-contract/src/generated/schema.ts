@@ -1690,6 +1690,59 @@ export interface paths {
         patch: operations["updateNote"];
         trace?: never;
     };
+    "/api/equipment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List personal and brewery equipment you can read */
+        get: operations["listEquipmentItems"];
+        put?: never;
+        /** Add a personal or brewery-owned equipment item */
+        post: operations["createEquipmentItem"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/equipment/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete an equipment item */
+        delete: operations["deleteEquipmentItem"];
+        options?: never;
+        head?: never;
+        /** Edit an equipment item */
+        patch: operations["updateEquipmentItem"];
+        trace?: never;
+    };
+    "/api/equipment/{id}/holder": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Lend brewery equipment to a member or mark it returned */
+        put: operations["setEquipmentHolder"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -2515,6 +2568,83 @@ export interface components {
         NotePatch: {
             body?: string;
             scores?: components["schemas"]["TastingScores"];
+        };
+        EquipmentItemPage: {
+            items: components["schemas"]["EquipmentItem"][];
+            nextOffset: number | null;
+        };
+        EquipmentItem: {
+            batchSizeL: number | null;
+            boilSizeL: number | null;
+            kettleVolumeL: number | null;
+            kettleLossL: number | null;
+            boilRateLPerHr: number | null;
+            mashTunVolumeL: number | null;
+            grainAbsorptionLPerKg: number | null;
+            /** Format: uuid */
+            id: string;
+            uri: string;
+            catalogId: string | null;
+            owner: {
+                /** @enum {string} */
+                type: "user" | "brewery";
+                /** Format: uuid */
+                id: string;
+            };
+            /**
+             * @description private: owner, brewery and shares only. unlisted: anyone with the link, never listed. server: every signed-in user here. public: anyone.
+             * @enum {string}
+             */
+            visibility: "private" | "unlisted" | "server" | "public";
+            name: string;
+            type: string | null;
+            /** @enum {string|null} */
+            condition: "new" | "good" | "worn" | "needs_repair" | "retired" | null;
+            notes: string | null;
+            /** Format: uuid */
+            heldByUserId: string | null;
+            createdAt: string;
+            updatedAt: string;
+        };
+        EquipmentItemInput: {
+            /** @description Volume into the fermenter */
+            batchSizeL?: number | null;
+            boilSizeL?: number | null;
+            kettleVolumeL?: number | null;
+            kettleLossL?: number | null;
+            boilRateLPerHr?: number | null;
+            mashTunVolumeL?: number | null;
+            grainAbsorptionLPerKg?: number | null;
+            name?: string;
+            type?: string | null;
+            /** @enum {string|null} */
+            condition?: "new" | "good" | "worn" | "needs_repair" | "retired" | null;
+            notes?: string | null;
+            catalogId?: string;
+            /** Format: uuid */
+            breweryId?: string;
+        };
+        EquipmentItemPatch: {
+            /** @description Volume into the fermenter */
+            batchSizeL?: number | null;
+            boilSizeL?: number | null;
+            kettleVolumeL?: number | null;
+            kettleLossL?: number | null;
+            boilRateLPerHr?: number | null;
+            mashTunVolumeL?: number | null;
+            grainAbsorptionLPerKg?: number | null;
+            name?: string;
+            type?: string | null;
+            /** @enum {string|null} */
+            condition?: "new" | "good" | "worn" | "needs_repair" | "retired" | null;
+            notes?: string | null;
+        };
+        EquipmentHolderInput: {
+            /**
+             * Format: uuid
+             * @description Null returns the item
+             */
+            heldByUserId: string | null;
         };
     };
     responses: never;
@@ -4665,6 +4795,297 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Note"];
+                };
+            };
+            /** @description Error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listEquipmentItems: {
+        parameters: {
+            query?: {
+                breweryId?: string;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Equipment items */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EquipmentItemPage"];
+                };
+            };
+            /** @description Error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    createEquipmentItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EquipmentItemInput"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EquipmentItem"];
+                };
+            };
+            /** @description Error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    deleteEquipmentItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    updateEquipmentItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EquipmentItemPatch"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EquipmentItem"];
+                };
+            };
+            /** @description Error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Error */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    setEquipmentHolder: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EquipmentHolderInput"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EquipmentItem"];
                 };
             };
             /** @description Error */

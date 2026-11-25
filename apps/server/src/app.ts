@@ -11,11 +11,13 @@ import { registerAdminRoutes } from "./routes/admin.ts";
 import { type AuthRouteDeps, registerAuthRoutes } from "./routes/auth.ts";
 import { registerBatchRoutes } from "./routes/batches.ts";
 import { registerCatalogRoutes } from "./routes/catalog.ts";
+import { registerEquipmentItemRoutes } from "./routes/equipment-items.ts";
 import { registerHealthRoutes } from "./routes/health.ts";
 import { registerRecipeFileRoutes } from "./routes/recipe-files.ts";
 import { registerRecipeRoutes } from "./routes/recipes.ts";
 import type { BatchService } from "./services/batches.ts";
 import type { CatalogService } from "./services/catalog.ts";
+import type { EquipmentItemService } from "./services/equipment-items.ts";
 import type { EquipmentProfileService } from "./services/equipment-profiles.ts";
 import type { NoteService } from "./services/notes.ts";
 import type { RecipeFileService } from "./services/recipe-files.ts";
@@ -41,6 +43,7 @@ export interface AppDeps {
   recipes: RecipeService;
   recipeFiles: RecipeFileService;
   profiles: EquipmentProfileService;
+  equipmentItems: EquipmentItemService;
   batches: BatchService;
   notes: NoteService;
 }
@@ -80,6 +83,7 @@ export function createApp(deps: AppDeps) {
   registerRecipeRoutes(app, { recipes, profiles });
   registerRecipeFileRoutes(app, recipes, recipeFiles, { trustProxy: auth.trustProxy });
   registerBatchRoutes(app, { batches, notes });
+  registerEquipmentItemRoutes(app, deps.equipmentItems);
   app.doc31(OPENAPI_PATH, OPENAPI_INFO);
 
   if (webDir) {

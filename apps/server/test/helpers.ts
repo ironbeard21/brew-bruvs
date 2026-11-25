@@ -10,6 +10,7 @@ import { createLogger } from "../src/logger.ts";
 import { createAuthService } from "../src/services/auth.ts";
 import { createBatchService } from "../src/services/batches.ts";
 import { createCatalogService } from "../src/services/catalog.ts";
+import { createEquipmentItemService } from "../src/services/equipment-items.ts";
 import { createEquipmentProfileService } from "../src/services/equipment-profiles.ts";
 import { createNoteService } from "../src/services/notes.ts";
 import { createRecipeFileService } from "../src/services/recipe-files.ts";
@@ -30,6 +31,7 @@ function deps(
     webDir: undefined,
     catalog: createCatalogService(db),
     profiles,
+    equipmentItems: createEquipmentItemService(db, { baseUrl: BASE_URL }),
     recipes: createRecipeService(db, { baseUrl: BASE_URL, profiles }),
     recipeFiles: createRecipeFileService(db, readRecipeUrl),
     batches: createBatchService(db, { baseUrl: BASE_URL, profiles }),
