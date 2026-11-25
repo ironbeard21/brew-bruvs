@@ -220,6 +220,13 @@ export function useLogin(
     onSuccess: async (res) => {
       await onSignedIn(res);
       queryClient.setQueryData(["auth-me", serverUrl], res.user);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["breweries", serverUrl] }),
+        queryClient.invalidateQueries({ queryKey: ["my-brewery-invites", serverUrl] }),
+        queryClient.invalidateQueries({ queryKey: ["recipes", serverUrl] }),
+        queryClient.invalidateQueries({ queryKey: ["batches", serverUrl] }),
+        queryClient.invalidateQueries({ queryKey: ["inventory", serverUrl] }),
+      ]);
     },
   });
 }
@@ -235,6 +242,13 @@ export function useSignup(
     onSuccess: async (res) => {
       await onSignedIn(res);
       queryClient.setQueryData(["auth-me", serverUrl], res.user);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["breweries", serverUrl] }),
+        queryClient.invalidateQueries({ queryKey: ["my-brewery-invites", serverUrl] }),
+        queryClient.invalidateQueries({ queryKey: ["recipes", serverUrl] }),
+        queryClient.invalidateQueries({ queryKey: ["batches", serverUrl] }),
+        queryClient.invalidateQueries({ queryKey: ["inventory", serverUrl] }),
+      ]);
     },
   });
 }
@@ -251,6 +265,11 @@ export function useLogout(
     onSuccess: async () => {
       await onSignedOut();
       queryClient.setQueryData(["auth-me", serverUrl], null);
+      queryClient.removeQueries({ queryKey: ["breweries", serverUrl] });
+      queryClient.removeQueries({ queryKey: ["brewery-detail", serverUrl] });
+      queryClient.removeQueries({ queryKey: ["brewery-invites", serverUrl] });
+      queryClient.removeQueries({ queryKey: ["my-brewery-invites", serverUrl] });
+      queryClient.removeQueries({ queryKey: ["inventory", serverUrl] });
     },
   });
 }

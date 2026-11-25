@@ -16,6 +16,7 @@ export interface ReadingsSectionProps {
   readings: readonly Reading[];
   loading?: boolean;
   canEdit: boolean;
+  canContribute?: boolean;
   onAddReading: (input: ReadingInput) => Promise<void>;
   onUpdateReading: (readingId: string, patch: ReadingPatch) => Promise<void>;
   onDeleteReading: (readingId: string) => Promise<void>;
@@ -27,11 +28,13 @@ export function ReadingsSection({
   readings,
   loading = false,
   canEdit,
+  canContribute: canContributeProp,
   onAddReading,
   onUpdateReading,
   onDeleteReading,
   saving = false,
 }: ReadingsSectionProps) {
+  const canContribute = canContributeProp ?? canEdit;
   const { unitSystem } = useUnits();
   const { width } = useWindowDimensions();
   const isDesktop = width >= DESKTOP_BREAKPOINT;
@@ -169,7 +172,7 @@ export function ReadingsSection({
 
       <View style={[styles.layout, isDesktop && styles.layoutDesktop]}>
         {/* Log Reading Form */}
-        {canEdit ? (
+        {canContribute ? (
           <Card style={isDesktop ? styles.column : undefined}>
             <Text style={styles.sectionTitle}>{editingId ? "Edit Reading" : "Log a Reading"}</Text>
             <Text style={styles.muted}>

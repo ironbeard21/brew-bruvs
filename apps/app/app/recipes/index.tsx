@@ -1,15 +1,19 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useCurrentUser } from "../../src/api/auth";
 import { type Beverage, useDeleteRecipe, useForkRecipe, useRecipes } from "../../src/api/recipes";
 import { AppShell } from "../../src/components/AppShell";
+import { OwnerBadge } from "../../src/components/OwnerBadge";
 import { Banner, Button, Card, SegmentedControl, TextField } from "../../src/components/ui";
+import { useOptionalBrewery } from "../../src/state/brewery";
+import { canPerformOnOwner, canWriteBrewery, ROLE_LABELS } from "../../src/state/permissions";
 import { useServer } from "../../src/state/server";
 import { colors, radii, spacing } from "../../src/theme";
 
 type BeverageFilter = "all" | Beverage;
+type RecipeScope = "all" | "mine" | "workspace";
 
 const BEVERAGE_FILTERS: readonly { value: BeverageFilter; label: string }[] = [
   { value: "all", label: "All" },
@@ -19,7 +23,7 @@ const BEVERAGE_FILTERS: readonly { value: BeverageFilter; label: string }[] = [
   { value: "cider", label: "Cider" },
 ];
 
-const SCOPE_OPTIONS = [
+const ME_SCOPE_OPTIONS = [
   { value: "all", label: "All visible" },
   { value: "mine", label: "Mine only" },
 ] as const;
@@ -28,25 +32,42 @@ export default function RecipeLibraryScreen() {
   const router = useRouter();
   const { serverUrl, authToken } = useServer();
   const currentUser = useCurrentUser(serverUrl, authToken);
+  const { activeBrewery, activeBreweryId, breweries } = useOptionalBrewery();
 
   const [query, setQuery] = useState("");
   const [beverage, setBeverage] = useState<BeverageFilter>("all");
-  const [scope, setScope] = useState<"all" | "mine">("all");
+  const [scope, setScope] = useState<RecipeScope>(activeBreweryId ? "workspace" : "all");
   const [actionError, setActionError] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
+  useEffect(() => {
+    setScope(activeBreweryId ? "workspace" : "all");
+  }, [activeBreweryId]);
+
   const recipesQuery = useRecipes(serverUrl, authToken, {
     q: query,
-    mine: scope === "mine",
+    mine: !activeBreweryId && scope === "mine",
     enabled: Boolean(serverUrl),
   });
   const forkMutation = useForkRecipe(serverUrl, authToken);
   const deleteMutation = useDeleteRecipe(serverUrl, authToken);
 
   const signedIn = Boolean(currentUser.data);
+  const canCreateInWorkspace = signedIn && (!activeBrewery || canWriteBrewery(activeBrewery.role));
   const allItems = recipesQuery.data ?? [];
+  const workspaceItems =
+    activeBrewery && scope === "workspace"
+      ? allItems.filter((r) => r.owner.type === "brewery" && r.owner.id === activeBrewery.id)
+      : allItems;
   const filteredItems =
-    beverage === "all" ? allItems : allItems.filter((r) => r.beverage === beverage);
+    beverage === "all" ? workspaceItems : workspaceItems.filter((r) => r.beverage === beverage);
+
+  const scopeOptions = activeBrewery
+    ? ([
+        { value: "workspace", label: activeBrewery.name },
+        { value: "all", label: "All visible" },
+      ] as const)
+    : ME_SCOPE_OPTIONS;
 
   const handleFork = async (recipeId: string) => {
     setActionError(null);
@@ -102,7 +123,7 @@ export default function RecipeLibraryScreen() {
                 testID="recipe-library-search"
               />
             </View>
-            {signedIn ? (
+            {canCreateInWorkspace ? (
               <View style={styles.headerButtons}>
                 <Button
                   label="Import recipe"
@@ -111,20 +132,28 @@ export default function RecipeLibraryScreen() {
                   testID="import-recipe-button"
                 />
                 <Button
-                  label="New recipe"
+                  label={activeBrewery ? `New ${activeBrewery.name} recipe` : "New recipe"}
                   onPress={() => router.push("/recipes/new")}
                   testID="new-recipe-button"
                 />
               </View>
-            ) : (
+            ) : !signedIn ? (
               <Button
                 label="Sign in to create"
                 variant="secondary"
                 onPress={() => router.push("/login")}
                 testID="sign-in-for-recipes-button"
               />
-            )}
+            ) : null}
           </View>
+
+          {signedIn && activeBrewery && !canCreateInWorkspace ? (
+            <Banner
+              tone="info"
+              message={`Viewing ${activeBrewery.name} as ${ROLE_LABELS[activeBrewery.role]}. Only Owners and Brewers can add brewery recipes.`}
+              testID="recipes-readonly-role-banner"
+            />
+          ) : null}
 
           <View style={styles.filtersRow}>
             <View style={styles.filterGroup}>
@@ -139,7 +168,7 @@ export default function RecipeLibraryScreen() {
             {signedIn ? (
               <View style={styles.scopeGroup}>
                 <SegmentedControl
-                  options={SCOPE_OPTIONS}
+                  options={scopeOptions}
                   value={scope}
                   onChange={setScope}
                   accessibilityLabel="Filter recipes by ownership"
@@ -175,7 +204,7 @@ export default function RecipeLibraryScreen() {
                 ? "Create your first recipe to start tracking ingredients, live stats, and versions."
                 : "Sign in to view your private recipes or create a new one."}
             </Text>
-            {signedIn ? (
+            {canCreateInWorkspace ? (
               <Button
                 label="Create recipe"
                 onPress={() => router.push("/recipes/new")}
@@ -186,7 +215,12 @@ export default function RecipeLibraryScreen() {
         ) : (
           <View style={styles.list} testID="recipe-list">
             {filteredItems.map((recipe) => {
-              const isOwner = currentUser.data?.id === recipe.owner.id;
+              const canDelete = canPerformOnOwner(
+                currentUser.data?.id,
+                breweries,
+                recipe.owner,
+                "delete",
+              );
               return (
                 <Card key={recipe.id} style={styles.recipeCard}>
                   <Pressable
@@ -197,7 +231,14 @@ export default function RecipeLibraryScreen() {
                     style={styles.cardHeader}
                   >
                     <View style={styles.cardTitleCol}>
-                      <Text style={styles.recipeName}>{recipe.name}</Text>
+                      <View style={styles.titleRow}>
+                        <Text style={styles.recipeName}>{recipe.name}</Text>
+                        <OwnerBadge
+                          owner={recipe.owner}
+                          currentUserId={currentUser.data?.id ?? null}
+                          testID={`recipe-owner-badge-${recipe.id}`}
+                        />
+                      </View>
                       <Text style={styles.recipeMeta}>
                         {recipe.beverage.toUpperCase()} · v{recipe.latestVersion} ·{" "}
                         {recipe.visibility}
@@ -225,7 +266,7 @@ export default function RecipeLibraryScreen() {
                         testID={`fork-recipe-${recipe.id}`}
                       />
                     ) : null}
-                    {isOwner ? (
+                    {canDelete ? (
                       confirmDeleteId === recipe.id ? (
                         <Button
                           label="Confirm delete"
@@ -270,6 +311,7 @@ const styles = StyleSheet.create({
   recipeCard: { gap: spacing.sm },
   cardHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   cardTitleCol: { flex: 1, gap: 4 },
+  titleRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: spacing.xs },
   recipeName: { fontSize: 17, fontWeight: "700", color: colors.text },
   recipeMeta: {
     fontSize: 13,

@@ -19,6 +19,7 @@ import {
   useDeleteReading,
   useUpdateReading,
 } from "../../src/api/batches";
+import { useMoveBatchToBrewery } from "../../src/api/breweries";
 import { useRecipeVersion } from "../../src/api/recipes";
 import { AppShell } from "../../src/components/AppShell";
 import { BatchNotesSection } from "../../src/components/batches/BatchNotesSection";
@@ -32,7 +33,11 @@ import {
 import { PackagingStepCard } from "../../src/components/batches/PackagingStepCard";
 import { ReadingsSection } from "../../src/components/batches/ReadingsSection";
 import { RemindersSection } from "../../src/components/batches/RemindersSection";
+import { MoveToBreweryBar } from "../../src/components/breweries/OwnerPickerCard";
+import { OwnerBadge } from "../../src/components/OwnerBadge";
 import { Banner, Button, Card, SegmentedControl } from "../../src/components/ui";
+import { useOptionalBrewery } from "../../src/state/brewery";
+import { canPerformOnOwner } from "../../src/state/permissions";
 import { useServer } from "../../src/state/server";
 import { useUnits } from "../../src/state/units";
 import { colors, radii, spacing } from "../../src/theme";
@@ -54,10 +59,12 @@ export default function BatchDetailScreen() {
 
   const { serverUrl, authToken } = useServer();
   const { unitSystem } = useUnits();
+  const { breweries, writableBreweries } = useOptionalBrewery();
 
   const [tab, setTab] = useState<BatchTab>("readings");
   const [statusNotice, setStatusNotice] = useState<string | null>(null);
   const [statusError, setStatusError] = useState<string | null>(null);
+  const [moveNotice, setMoveNotice] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const currentUser = useCurrentUser(serverUrl, authToken);
@@ -76,6 +83,7 @@ export default function BatchDetailScreen() {
 
   const changeStatus = useChangeBatchStatus(serverUrl, authToken, batchId);
   const deleteBatch = useDeleteBatch(serverUrl, authToken);
+  const moveBatch = useMoveBatchToBrewery(serverUrl, authToken);
   const addReading = useAddReading(serverUrl, authToken, batchId);
   const updateReading = useUpdateReading(serverUrl, authToken, batchId);
   const deleteReading = useDeleteReading(serverUrl, authToken, batchId);
@@ -127,11 +135,21 @@ export default function BatchDetailScreen() {
     );
   }
 
-  const canEdit = Boolean(
-    currentUser.data && (currentUser.data.id === batch.owner.id || currentUser.data.isAdmin),
-  );
+  const userId = currentUser.data?.id ?? null;
+  const canContribute = canPerformOnOwner(userId, breweries, batch.owner, "contribute");
+  const canEdit = canPerformOnOwner(userId, breweries, batch.owner, "edit");
+  const canDelete = canPerformOnOwner(userId, breweries, batch.owner, "delete");
+  const canMoveToBrewery =
+    batch.owner.type === "user" && batch.owner.id === userId && writableBreweries.length > 0;
   const flow = getStatusFlow(batch.beverage);
   const currentIdx = flow.indexOf(batch.status);
+
+  const handleMoveToBrewery = async (breweryId: string) => {
+    setMoveNotice(null);
+    await moveBatch.mutateAsync({ batchId: batch.id, breweryId });
+    const target = writableBreweries.find((b) => b.id === breweryId);
+    setMoveNotice(`Moved batch to ${target?.name ?? "brewery"}.`);
+  };
 
   const handleChangeStatus = async (nextStatus: BatchStatus) => {
     setStatusError(null);
@@ -166,11 +184,14 @@ export default function BatchDetailScreen() {
       <Card>
         <View style={styles.headerRow}>
           <View style={styles.headerMeta}>
-            <Text style={styles.sectionTitle}>
-              {batch.beverage === "beer"
-                ? "Beer Workflow"
-                : `${batch.beverage.toUpperCase()} Workflow`}
-            </Text>
+            <View style={styles.titleRow}>
+              <Text style={styles.sectionTitle}>
+                {batch.beverage === "beer"
+                  ? "Beer Workflow"
+                  : `${batch.beverage.toUpperCase()} Workflow`}
+              </Text>
+              <OwnerBadge owner={batch.owner} currentUserId={userId} testID="batch-owner-badge" />
+            </View>
             <Text style={styles.muted} testID="batch-current-status">
               Current stage: {formatBatchStatus(batch.status)}
               {batch.brewedAt ? ` · Started ${formatDateTime(batch.brewedAt)}` : ""}
@@ -183,7 +204,16 @@ export default function BatchDetailScreen() {
               onPress={() => router.push(`/recipes/${batch.recipe.id}`)}
               testID="batch-open-recipe-button"
             />
-            {canEdit ? (
+            {canMoveToBrewery ? (
+              <MoveToBreweryBar
+                itemLabel="batch"
+                writableBreweries={writableBreweries}
+                moving={moveBatch.isPending}
+                onMove={handleMoveToBrewery}
+                testID="move-batch"
+              />
+            ) : null}
+            {canDelete ? (
               confirmDelete ? (
                 <>
                   <Button
@@ -206,6 +236,9 @@ export default function BatchDetailScreen() {
             ) : null}
           </View>
         </View>
+        {moveNotice ? (
+          <Banner tone="success" message={moveNotice} testID="move-batch-notice" />
+        ) : null}
 
         <View style={styles.flowTrack} testID="batch-status-flow">
           {flow.map((stage, idx) => {
@@ -279,6 +312,7 @@ export default function BatchDetailScreen() {
           readings={readingsQuery.data ?? []}
           loading={readingsQuery.isPending}
           canEdit={canEdit}
+          canContribute={canContribute}
           saving={addReading.isPending || updateReading.isPending || deleteReading.isPending}
           onAddReading={async (input) => {
             await addReading.mutateAsync(input);
@@ -333,6 +367,8 @@ export default function BatchDetailScreen() {
           notes={notesQuery.data ?? []}
           loading={notesQuery.isPending}
           canEdit={canEdit}
+          canContribute={canContribute}
+          canDeleteNote={(note) => canPerformOnOwner(userId, breweries, note.owner, "delete")}
           saving={createNote.isPending || deleteNote.isPending}
           onCreateNote={async (input) => {
             await createNote.mutateAsync(input);
@@ -355,6 +391,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   headerMeta: { flex: 1, minWidth: 200, gap: 2 },
+  titleRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: spacing.xs },
   headerActions: { flexDirection: "row", alignItems: "center", gap: spacing.xs, flexWrap: "wrap" },
   sectionTitle: { fontSize: 18, fontWeight: "700", color: colors.text },
   muted: { fontSize: 13, color: colors.textMuted },

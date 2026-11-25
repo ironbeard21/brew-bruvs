@@ -16,6 +16,7 @@ export type Share = components["schemas"]["Share"];
 export type ShareInput = components["schemas"]["ShareInput"];
 export type EquipmentProfile = components["schemas"]["EquipmentProfile"];
 export type EquipmentProfileInput = components["schemas"]["EquipmentProfileInput"];
+export type CreateEquipmentProfileInput = components["schemas"]["CreateEquipmentProfile"];
 export type ImportedRecipeDraft = components["schemas"]["ImportedRecipeDraft"];
 export type CreditInput = components["schemas"]["CreditInput"];
 export type RecipeFileFormat = "beerxml" | "beerjson";
@@ -515,7 +516,7 @@ export function useCreateEquipmentProfile(
 ) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (input: EquipmentProfileInput): Promise<EquipmentProfile> => {
+    mutationFn: async (input: CreateEquipmentProfileInput): Promise<EquipmentProfile> => {
       if (!serverUrl) throw new Error("Not connected to a server.");
       const client = getApiClient(serverUrl, {
         token,
