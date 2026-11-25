@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { createHmac } from "node:crypto";
+import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 import { createApp } from "../src/app.ts";
 import type { Address } from "../src/integrations/public-target.ts";
@@ -93,6 +94,23 @@ describe.skipIf(!TEST_DATABASE_URL)("webhook API and durable worker", () => {
           })
         ).status,
       ).toBe(201);
+      const device = await post("/api/integrations/devices", {
+        batchId: batch.json.id,
+        kind: "ispindel",
+        name: "Fermentation sensor",
+      });
+      expect(device.status).toBe(201);
+      const upload = new URL(device.json.url as string);
+      const payload = readFileSync(
+        new URL("./fixtures/devices/ispindel.json", import.meta.url),
+        "utf8",
+      );
+      const reading = await app.request(upload.pathname + upload.search, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: payload,
+      });
+      expect(reading.status).toBe(200);
       expect(
         (
           await post(`${batchPath}/reminders`, {
@@ -106,14 +124,23 @@ describe.skipIf(!TEST_DATABASE_URL)("webhook API and durable worker", () => {
       expect((await post(`${target}/test`)).status).toBe(202);
       expect((await post(`${target}/test`)).status).toBe(202);
       const afterEnqueue = new Date(Date.now() + 1_000);
-      for (let i = 0; i < 4; i++) expect(await worker.deliverOne(afterEnqueue)).toBe(true);
+      for (let i = 0; i < 5; i++) expect(await worker.deliverOne(afterEnqueue)).toBe(true);
       expect(await worker.deliverOne()).toBe(false);
-      expect(events.map((event) => JSON.parse(event.body).type).sort()).toEqual([
+      const bodies = events.map((event) => JSON.parse(event.body));
+      expect(bodies.map((event) => event.type).sort()).toEqual([
         "batch.status_changed",
+        "reading.logged",
         "reading.logged",
         "reminder.due",
         "webhook.test",
       ]);
+      expect(bodies).toContainEqual(
+        expect.objectContaining({
+          type: "reading.logged",
+          batchId: batch.json.id,
+          data: expect.objectContaining({ source: "device", temperatureC: 19.375 }),
+        }),
+      );
       for (const event of events) {
         expect(JSON.parse(event.body).deliveryId).toBe(event.id);
         expect(event.signature).toBe(
@@ -121,6 +148,7 @@ describe.skipIf(!TEST_DATABASE_URL)("webhook API and durable worker", () => {
         );
       }
 
+      const initialDeliveries = events.length;
       status = 500;
       expect((await post(`${target}/test`)).status).toBe(202);
       let now = new Date(Date.now() + 1_000);
@@ -131,7 +159,7 @@ describe.skipIf(!TEST_DATABASE_URL)("webhook API and durable worker", () => {
         expect(await worker.deliverOne(now)).toBe(true);
       }
       expect(await worker.deliverOne(now)).toBe(false);
-      expect(new Set(events.slice(4).map((event) => event.id)).size).toBe(1);
+      expect(new Set(events.slice(initialDeliveries).map((event) => event.id)).size).toBe(1);
       const list = await call(app, "GET", path, { token });
       expect(list.json.items).toMatchObject([
         { id: created.json.id, failing: true, lastDeliveredAt: expect.any(String) },
