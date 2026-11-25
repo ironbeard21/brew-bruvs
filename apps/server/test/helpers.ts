@@ -79,13 +79,15 @@ export async function withApp(
     fetchBrewfather?: Parameters<typeof createBrewfatherService>[1];
     webhookSender?: Parameters<typeof createWebhookService>[1];
   },
-  run: (app: TestApp, sql: Client, db: ReturnType<typeof createDb>["db"]) => Promise<void>,
+  run: (app: TestApp, sql: Client, jobs: ReturnType<typeof createDb>["db"]) => Promise<void>,
 ): Promise<void> {
   if (!TEST_DATABASE_URL) throw new Error("TEST_DATABASE_URL is not set");
   await withTestDatabase(TEST_DATABASE_URL, async (url) => {
     const sql = new Client({ connectionString: url });
-    // As the server runs: brew_app, under row-level security.
+    // As the server runs: brew_app, under row-level security. Jobs (the webhook worker) get the
+    // owner connection, as in the server.
     const { db, close } = createDb(url, { role: APP_ROLE });
+    const jobs = createDb(url);
     try {
       await sql.connect();
       await migrateUp(sql);
@@ -101,10 +103,11 @@ export async function withApp(
           ),
         ),
         sql,
-        db,
+        jobs.db,
       );
     } finally {
       await close();
+      await jobs.close();
       await sql.end();
     }
   });

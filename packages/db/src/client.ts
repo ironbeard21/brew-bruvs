@@ -75,6 +75,7 @@ export const PROTECTED_TABLES = [
   "shares",
   "integrations",
   "activity_events",
+  "webhook_jobs",
 ] as const;
 
 /**

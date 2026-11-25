@@ -5,6 +5,7 @@
 import { APP_ROLE, checkRowSecurity, createDb } from "@brew-bruvs/db";
 import type { Client } from "pg";
 import { describe, expect, it } from "vitest";
+import { createWebhookSender } from "../src/integrations/send-webhook.ts";
 import {
   type Action,
   type BreweryRole,
@@ -432,6 +433,65 @@ describe.skipIf(!TEST_DATABASE_URL)("row-level security on PostgreSQL", () => {
         await owner.close();
         await app.close();
       }
+    });
+  });
+  it("queues a brewery webhook for a Member's reading without showing them the webhook", async () => {
+    const sender = createWebhookSender(
+      async () => [{ address: "93.184.216.34", family: 4 }],
+      async () => 204,
+    );
+    await withApp({ webhookSender: sender }, async (app, sql) => {
+      const owner = await setupAdmin(app);
+      const signup = await call(app, "POST", "/api/auth/signup", {
+        body: {
+          email: "member@brew.test",
+          password: "member-password",
+          displayName: "Member",
+          inviteCode: await invite(app, owner),
+          client: "app",
+        },
+      });
+      const member = signup.json.token as string;
+      const post = (path: string, body: object, token = owner) =>
+        call(app, "POST", path, { token, body });
+      const brewery = await post("/api/breweries", { name: "Hops Co" });
+      const breweryId = brewery.json.id as string;
+      const sent = await post(`/api/breweries/${breweryId}/invites`, {
+        role: "member",
+        email: "member@brew.test",
+      });
+      await post("/api/brewery-invites/accept", { id: sent.json.id }, member);
+      const hook = await post("/api/integrations/webhooks", {
+        name: "Brewery log",
+        url: "https://hooks.example.com/brew",
+        breweryId,
+      });
+      expect(hook.status).toBe(201);
+      const recipe = await post("/api/recipes", { ...beer, breweryId });
+      const batch = await post("/api/batches", { recipeId: recipe.json.id, breweryId });
+
+      const reading = await post(
+        `/api/batches/${batch.json.id}/readings`,
+        { takenAt: "2026-11-25T12:00:00Z", gravitySg: 1.05 },
+        member,
+      );
+      expect(reading.status).toBe(201);
+      const queued = await sql.query(
+        "SELECT event->>'type' AS type, event->'data'->>'id' AS reading FROM webhook_jobs",
+      );
+      expect(queued.rows).toEqual([{ type: "reading.logged", reading: reading.json.id }]);
+
+      // The Member can't see the webhook or its queue.
+      const list = await call(app, "GET", `/api/integrations/webhooks?breweryId=${breweryId}`, {
+        token: member,
+      });
+      expect(list.status).toBe(403);
+      const me = await call(app, "GET", "/api/me", { token: member });
+      const seen = await asApp(sql, me.json.id as string, async () => ({
+        hooks: (await sql.query("SELECT 1 FROM integrations")).rowCount,
+        jobs: (await sql.query("SELECT 1 FROM webhook_jobs")).rowCount,
+      }));
+      expect(seen).toEqual({ hooks: 0, jobs: 0 });
     });
   });
 });
