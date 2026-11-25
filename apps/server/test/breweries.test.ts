@@ -593,4 +593,30 @@ describe.skipIf(!TEST_DATABASE_URL)("breweries API on PostgreSQL", () => {
       }
     });
   });
+  it("gives back a member's borrowed equipment when they leave", async () => {
+    await withBrewery(async ({ app, brewery, people }) => {
+      const kettle = await call(app, "POST", "/api/equipment", {
+        token: people.owner.token,
+        body: { name: "Kettle", breweryId: brewery },
+      });
+      const item = `/api/equipment/${kettle.json.id}`;
+      const lent = await call(app, "PUT", `${item}/holder`, {
+        token: people.owner.token,
+        body: { heldByUserId: people.member.id },
+      });
+      expect(lent.json.heldByUserId).toBe(people.member.id);
+      // Members can't edit brewery equipment, but leaving still returns it.
+      const left = await call(
+        app,
+        "DELETE",
+        `/api/breweries/${brewery}/members/${people.member.id}`,
+        {
+          token: people.member.token,
+        },
+      );
+      expect(left.status).toBe(204);
+      const after = await call(app, "GET", item, { token: people.owner.token });
+      expect(after.json.heldByUserId).toBeNull();
+    });
+  });
 });

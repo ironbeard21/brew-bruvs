@@ -165,6 +165,9 @@ export function createNoteService(db: Db, opts: { baseUrl: string }) {
     async remove(viewer: User | null, id: string) {
       await db.transaction(async (tx) => {
         await authorize(tx, viewer, "delete", id);
+        // Lock the row first: sharing holds it while adding a share, so one can't slip in
+        // between removing the shares and removing the row.
+        await tx.select({ id: notes.id }).from(notes).where(eq(notes.id, id)).for("update");
         await tx
           .delete(shares)
           .where(and(eq(shares.resourceType, "note"), eq(shares.resourceId, id)));
