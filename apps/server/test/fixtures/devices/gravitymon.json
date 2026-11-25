@@ -1,0 +1,9 @@
+{
+  "name": "gravmon",
+  "temperature": 20.5,
+  "temp-units": "C",
+  "gravity": 1.004,
+  "angle": 45.34,
+  "corr-gravity": 1.005,
+  "gravity-unit": "G"
+}
