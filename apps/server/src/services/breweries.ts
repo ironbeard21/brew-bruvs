@@ -14,6 +14,7 @@ import type {
 import { ApiError, pgCode } from "../errors.ts";
 import type { BreweryRole, User } from "../permissions.ts";
 import { moveToBrewery, newId, signedIn, type Tx } from "./access.ts";
+import { recordActivity } from "./activity.ts";
 import { reserveForNewOwner } from "./inventory.ts";
 
 const { breweries, memberships, breweryInvites, users } = schema;
@@ -367,6 +368,13 @@ export function createBreweryService(db: Db, opts: { baseUrl: string }) {
         await tx
           .insert(memberships)
           .values({ breweryId: invite.breweryId, userId: user.id, role: invite.role });
+        await recordActivity(tx, {
+          breweryId: invite.breweryId,
+          actorUserId: user.id,
+          verb: "member_joined",
+          objectType: "user",
+          objectId: user.id,
+        });
         const [brewery] = await tx
           .select()
           .from(breweries)

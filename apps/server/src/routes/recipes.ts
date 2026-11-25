@@ -8,7 +8,6 @@ import {
   CreateEquipmentProfile,
   CreateRecipe,
   EquipmentProfile,
-  EquipmentProfileInput,
   EquipmentProfilePatch,
   ForkInput,
   Recipe,

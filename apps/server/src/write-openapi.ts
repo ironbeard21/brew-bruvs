@@ -7,6 +7,7 @@ import { createDb } from "@brew-bruvs/db";
 import { createApp, OPENAPI_INFO } from "./app.ts";
 import { recipeContentJsonSchema } from "./contracts/recipe-content.ts";
 import { createLogger } from "./logger.ts";
+import { createActivityService } from "./services/activity.ts";
 import { createAuthService } from "./services/auth.ts";
 import { createBatchService } from "./services/batches.ts";
 import { createBreweryService } from "./services/breweries.ts";
@@ -16,6 +17,7 @@ import { createInventoryService } from "./services/inventory.ts";
 import { createNoteService } from "./services/notes.ts";
 import { createRecipeFileService } from "./services/recipe-files.ts";
 import { createRecipeService } from "./services/recipes.ts";
+import { createSharingService } from "./services/sharing.ts";
 
 const out = process.argv[2];
 if (!out) throw new Error("usage: node src/write-openapi.ts <output.json>");
@@ -35,6 +37,8 @@ const app = createApp({
   notes: createNoteService(db, { baseUrl }),
   breweries: createBreweryService(db, { baseUrl }),
   inventory: createInventoryService(db, { baseUrl }),
+  sharing: createSharingService(db),
+  activity: createActivityService(db),
   auth: {
     auth: createAuthService(db, { baseUrl, signupMode: "invite" }),
     oidc: undefined,
