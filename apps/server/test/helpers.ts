@@ -21,6 +21,7 @@ import { createNoteService } from "../src/services/notes.ts";
 import { createRecipeFileService } from "../src/services/recipe-files.ts";
 import { createRecipeService } from "../src/services/recipes.ts";
 import { createSharingService } from "../src/services/sharing.ts";
+import { createWebhookService } from "../src/services/webhooks.ts";
 
 export const BASE_URL = "http://brew.test";
 export const TEST_DATABASE_URL = process.env.TEST_DATABASE_URL;
@@ -31,6 +32,7 @@ function deps(
   oidc?: Oidc,
   readRecipeUrl?: Parameters<typeof createRecipeFileService>[1],
   fetchBrewfather?: Parameters<typeof createBrewfatherService>[1],
+  webhookSender?: Parameters<typeof createWebhookService>[1],
 ): AppDeps {
   const profiles = createEquipmentProfileService(db, { baseUrl: BASE_URL });
   return {
@@ -47,6 +49,7 @@ function deps(
     breweries: createBreweryService(db, { baseUrl: BASE_URL }),
     brewfather: createBrewfatherService(db, fetchBrewfather),
     inventory: createInventoryService(db, { baseUrl: BASE_URL }),
+    webhooks: createWebhookService(db, webhookSender),
     sharing: createSharingService(db),
     activity: createActivityService(db),
     auth: {
@@ -74,8 +77,9 @@ export async function withApp(
     oidc?: Oidc;
     readRecipeUrl?: Parameters<typeof createRecipeFileService>[1];
     fetchBrewfather?: Parameters<typeof createBrewfatherService>[1];
+    webhookSender?: Parameters<typeof createWebhookService>[1];
   },
-  run: (app: TestApp, sql: Client) => Promise<void>,
+  run: (app: TestApp, sql: Client, db: ReturnType<typeof createDb>["db"]) => Promise<void>,
 ): Promise<void> {
   if (!TEST_DATABASE_URL) throw new Error("TEST_DATABASE_URL is not set");
   await withTestDatabase(TEST_DATABASE_URL, async (url) => {
@@ -92,9 +96,11 @@ export async function withApp(
             opts.oidc,
             opts.readRecipeUrl,
             opts.fetchBrewfather,
+            opts.webhookSender,
           ),
         ),
         sql,
+        db,
       );
     } finally {
       await close();

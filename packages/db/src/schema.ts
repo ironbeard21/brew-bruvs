@@ -583,6 +583,7 @@ export const reminders = pgTable(
     kind: reminderKind("kind").notNull(),
     dueAt: timestamp("due_at", { withTimezone: true }).notNull(),
     note: text("note"),
+    webhookQueuedAt: timestamp("webhook_queued_at", { withTimezone: true }),
     doneAt: timestamp("done_at", { withTimezone: true }),
     createdByUserId: uuid("created_by_user_id").references(() => users.id, {
       onDelete: "set null",
@@ -760,6 +761,21 @@ export const integrations = pgTable(
     index("integrations_owner_brewery_idx").on(t.ownerBreweryId),
     index().on(t.batchId),
   ],
+);
+
+export const webhookJobs = pgTable(
+  "webhook_jobs",
+  {
+    id: id(),
+    integrationId: uuid("integration_id")
+      .notNull()
+      .references(() => integrations.id, { onDelete: "cascade" }),
+    event: jsonb("event").notNull(),
+    attempts: integer("attempts").notNull().default(0),
+    dueAt: timestamp("due_at", { withTimezone: true }).notNull().defaultNow(),
+    failedAt: timestamp("failed_at", { withTimezone: true }),
+  },
+  (t) => [index().on(t.dueAt).where(sql`${t.failedAt} IS NULL`), index().on(t.integrationId)],
 );
 
 // A brewery's feed: "Ann moved Pale Ale to fermenting". Verbs are free text so tasks can add them.

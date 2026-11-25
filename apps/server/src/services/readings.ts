@@ -4,12 +4,13 @@ import type { z } from "zod";
 import type { ReadingInput } from "../contracts/batches.ts";
 import type { Tx } from "./access.ts";
 import { recordActivity } from "./activity.ts";
+import { enqueueBatchWebhook } from "./webhooks.ts";
 
 const { readings } = schema;
 
 export async function recordReading(
   tx: Tx,
-  batch: { id: string; ownerBreweryId: string | null },
+  batch: { id: string; ownerUserId: string | null; ownerBreweryId: string | null },
   input: z.infer<typeof ReadingInput>,
   actorUserId: string | null,
 ) {
@@ -29,6 +30,13 @@ export async function recordReading(
     verb: "reading_logged",
     objectType: "reading",
     objectId: row.id,
+  });
+  await enqueueBatchWebhook(tx, batch, "reading.logged", row.takenAt, {
+    id: row.id,
+    takenAt: row.takenAt.toISOString(),
+    gravitySg: row.gravitySg,
+    temperatureC: row.temperatureC,
+    source: row.source,
   });
   return row;
 }
