@@ -97,7 +97,11 @@ export function createNoteService(db: Db, opts: { baseUrl: string }) {
       };
     },
 
-    /** A note about something needs read access to it; the note itself is yours and private. */
+    /**
+     * A note about something needs read access to it, and the note is yours and private. A note on
+     * a brewery's batch goes in the batch log instead: it needs "contribute" (so not viewers),
+     * stays yours to edit, and the brewery can read it.
+     */
     async create(viewer: User | null, input: z.infer<typeof NoteInput>) {
       const user = signedIn(viewer);
       const owner = newOwner(user, input.breweryId);
@@ -107,10 +111,13 @@ export function createNoteService(db: Db, opts: { baseUrl: string }) {
           if (!recipe) throw new ApiError(404, "not_found", "Recipe not found");
           await authorizeRow(tx, user, "read", "recipe", recipe, "Recipe");
         }
+        let batchLog: string | null = null;
         if (input.batchId) {
           const [batch] = await tx.select().from(batches).where(eq(batches.id, input.batchId));
           if (!batch) throw new ApiError(404, "not_found", "Batch not found");
-          await authorizeRow(tx, user, "read", "batch", batch, "Batch");
+          batchLog = batch.ownerBreweryId;
+          const action = batchLog ? "contribute" : "read";
+          await authorizeRow(tx, user, action, "batch", batch, "Batch");
         }
         const id = await newId(tx);
         const [row] = await tx
@@ -126,6 +133,11 @@ export function createNoteService(db: Db, opts: { baseUrl: string }) {
             ...scoreColumns(input.scores),
           })
           .returning();
+        if (batchLog && owner.ownerBreweryId !== batchLog) {
+          await tx
+            .insert(shares)
+            .values({ resourceType: "note", resourceId: id, toBreweryId: batchLog, level: "read" });
+        }
         return view(row as NoteRow);
       });
     },

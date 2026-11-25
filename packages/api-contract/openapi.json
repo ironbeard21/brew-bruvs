@@ -2971,18 +2971,8 @@
               }
             ]
           },
-          "to": {
-            "type": ["object", "null"],
-            "properties": {
-              "userId": {
-                "type": "string",
-                "format": "uuid"
-              },
-              "displayName": {
-                "type": "string"
-              }
-            },
-            "required": ["userId", "displayName"],
+          "email": {
+            "type": ["string", "null"],
             "description": "Null for a code invite"
           },
           "createdAt": {
@@ -2998,7 +2988,7 @@
             "description": "A code invite's code. Shown once, when it is created"
           }
         },
-        "required": ["id", "brewery", "role", "to", "createdAt", "expiresAt"]
+        "required": ["id", "brewery", "role", "email", "createdAt", "expiresAt"]
       },
       "BreweryInviteInput": {
         "type": "object",
@@ -3017,7 +3007,7 @@
             "type": "string",
             "maxLength": 320,
             "format": "email",
-            "description": "Invite someone with an account on this server; leave out for a one-time code"
+            "description": "Whoever signs in here with this email sees the invite. The reply is the same whether or not an account has it. Leave out for a one-time code"
           }
         },
         "required": ["role"],

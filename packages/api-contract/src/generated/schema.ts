@@ -2851,11 +2851,7 @@ export interface components {
             };
             role: components["schemas"]["BreweryRole"] & unknown;
             /** @description Null for a code invite */
-            to: {
-                /** Format: uuid */
-                userId: string;
-                displayName: string;
-            } | null;
+            email: string | null;
             /** Format: date-time */
             createdAt: string;
             /** Format: date-time */
@@ -2867,7 +2863,7 @@ export interface components {
             role: components["schemas"]["BreweryRole"] & unknown;
             /**
              * Format: email
-             * @description Invite someone with an account on this server; leave out for a one-time code
+             * @description Whoever signs in here with this email sees the invite. The reply is the same whether or not an account has it. Leave out for a one-time code
              */
             email?: string;
         };

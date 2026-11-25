@@ -224,7 +224,9 @@ export const memberships = pgTable(
   (t) => [primaryKey({ columns: [t.breweryId, t.userId] }), index().on(t.userId)],
 );
 
-// An invitation into a brewery: to a user on this server, or a one-time code (hash only).
+// An invitation into a brewery: to an email address, or a one-time code (hash only). The email is
+// never matched to an account when the invite is made, so inviting doesn't reveal who has one;
+// whoever signs in with that email sees it.
 export const breweryInvites = pgTable(
   "brewery_invites",
   {
@@ -233,7 +235,8 @@ export const breweryInvites = pgTable(
       .notNull()
       .references(() => breweries.id, { onDelete: "cascade" }),
     role: breweryRole("role").notNull(),
-    toUserId: uuid("to_user_id").references(() => users.id, { onDelete: "cascade" }),
+    // Stored lower-case.
+    email: text("email"),
     codeHash: text("code_hash").unique(),
     createdByUserId: uuid("created_by_user_id").references(() => users.id, {
       onDelete: "set null",
@@ -243,9 +246,9 @@ export const breweryInvites = pgTable(
     usedAt: timestamp("used_at", { withTimezone: true }),
   },
   (t) => [
-    check("brewery_invites_one_target", sql`num_nonnulls(${t.toUserId}, ${t.codeHash}) = 1`),
+    check("brewery_invites_one_target", sql`num_nonnulls(${t.email}, ${t.codeHash}) = 1`),
     index().on(t.breweryId),
-    index().on(t.toUserId),
+    index().on(t.email),
   ],
 );
 

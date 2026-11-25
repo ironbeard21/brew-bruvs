@@ -89,20 +89,20 @@ export function createBreweryService(db: Db, opts: { baseUrl: string }) {
     return { role: target.role, lastOwner: target.role === "owner" && owners === 1 };
   }
 
+  async function emailOf(tx: Tx, user: User) {
+    const [row] = await tx.select({ email: users.email }).from(users).where(eq(users.id, user.id));
+    return (row?.email ?? "").toLowerCase();
+  }
+
   const lastOwner = () =>
     new ApiError(409, "last_owner", "A brewery needs an owner: make someone else an owner first");
 
-  function viewInvite(
-    row: InviteRow,
-    brewery: { id: string; name: string },
-    to: { userId: string; displayName: string } | null,
-    code?: string,
-  ) {
+  function viewInvite(row: InviteRow, brewery: { id: string; name: string }, code?: string) {
     return {
       id: row.id,
       brewery,
       role: row.role,
-      to,
+      email: row.email,
       createdAt: row.createdAt.toISOString(),
       expiresAt: row.expiresAt.toISOString(),
       ...(code ? { code } : {}),
@@ -114,20 +114,13 @@ export function createBreweryService(db: Db, opts: { baseUrl: string }) {
 
   async function inviteList(tx: Tx, where: ReturnType<typeof and>) {
     const rows = await tx
-      .select({ invite: breweryInvites, breweryName: breweries.name, toName: users.displayName })
+      .select({ invite: breweryInvites, breweryName: breweries.name })
       .from(breweryInvites)
       .innerJoin(breweries, eq(breweries.id, breweryInvites.breweryId))
-      .leftJoin(users, eq(users.id, breweryInvites.toUserId))
       .where(and(pending(), where))
       .orderBy(asc(breweryInvites.createdAt));
     return {
-      items: rows.map((r) =>
-        viewInvite(
-          r.invite,
-          { id: r.invite.breweryId, name: r.breweryName },
-          r.invite.toUserId ? { userId: r.invite.toUserId, displayName: r.toName ?? "" } : null,
-        ),
-      ),
+      items: rows.map((r) => viewInvite(r.invite, { id: r.invite.breweryId, name: r.breweryName })),
     };
   }
 
@@ -248,8 +241,8 @@ export function createBreweryService(db: Db, opts: { baseUrl: string }) {
     },
 
     /**
-     * Invites a user on this server by email, or makes a one-time code. Invites last 7 days; a new
-     * invite to the same person replaces their pending one.
+     * Invites an email address, or makes a one-time code. Invites last 7 days; a new invite to the
+     * same email replaces its pending one.
      */
     async invite(viewer: User | null, id: string, input: z.infer<typeof InviteInput>) {
       const user = signedIn(viewer);
@@ -269,43 +262,24 @@ export function createBreweryService(db: Db, opts: { baseUrl: string }) {
               expiresAt,
             })
             .returning();
-          return viewInvite(row as InviteRow, target, null, code);
+          return viewInvite(row as InviteRow, target, code);
         }
-        const [invitee] = await tx
-          .select({ id: users.id, displayName: users.displayName })
-          .from(users)
-          .where(sql`lower(${users.email}) = lower(${input.email})`);
-        if (!invitee) {
-          throw new ApiError(404, "unknown_user", "No account with that email on this server");
-        }
-        const [already] = await tx
-          .select({ one: sql`1` })
-          .from(memberships)
-          .where(and(eq(memberships.breweryId, id), eq(memberships.userId, invitee.id)));
-        if (already) throw new ApiError(409, "already_member", "They are already a member");
+        // No account lookup here: the reply must not tell the inviter who has one.
+        const email = input.email.toLowerCase();
         await tx
           .delete(breweryInvites)
           .where(
             and(
               eq(breweryInvites.breweryId, id),
-              eq(breweryInvites.toUserId, invitee.id),
+              eq(breweryInvites.email, email),
               isNull(breweryInvites.usedAt),
             ),
           );
         const [row] = await tx
           .insert(breweryInvites)
-          .values({
-            breweryId: id,
-            role: input.role,
-            toUserId: invitee.id,
-            createdByUserId: user.id,
-            expiresAt,
-          })
+          .values({ breweryId: id, role: input.role, email, createdByUserId: user.id, expiresAt })
           .returning();
-        return viewInvite(row as InviteRow, target, {
-          userId: invitee.id,
-          displayName: invitee.displayName,
-        });
+        return viewInvite(row as InviteRow, target);
       });
     },
 
@@ -328,10 +302,10 @@ export function createBreweryService(db: Db, opts: { baseUrl: string }) {
       });
     },
 
-    /** Pending invites sent to the user. */
+    /** Pending invites sent to the user's email. */
     async myInvites(viewer: User | null) {
       const user = signedIn(viewer);
-      return inviteList(db, eq(breweryInvites.toUserId, user.id));
+      return inviteList(db, eq(breweryInvites.email, await emailOf(db, user)));
     },
 
     async decline(viewer: User | null, inviteId: string) {
@@ -341,7 +315,7 @@ export function createBreweryService(db: Db, opts: { baseUrl: string }) {
         .where(
           and(
             eq(breweryInvites.id, inviteId),
-            eq(breweryInvites.toUserId, user.id),
+            eq(breweryInvites.email, await emailOf(db, user)),
             isNull(breweryInvites.usedAt),
           ),
         )
@@ -361,7 +335,10 @@ export function createBreweryService(db: Db, opts: { baseUrl: string }) {
               pending(),
               "code" in input
                 ? eq(breweryInvites.codeHash, hashSecret(input.code))
-                : and(eq(breweryInvites.id, input.id), eq(breweryInvites.toUserId, user.id)),
+                : and(
+                    eq(breweryInvites.id, input.id),
+                    eq(breweryInvites.email, await emailOf(tx, user)),
+                  ),
             ),
           )
           .for("update");

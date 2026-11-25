@@ -1,5 +1,5 @@
 {
-  "id": "d8069114-e697-47fd-b45f-af4cbb9aa98b",
+  "id": "f96fd438-5cb4-4505-a546-6e9d38e912ed",
   "prevId": "28cdc8a9-4716-4fb2-b83d-14fee57ba197",
   "version": "7",
   "dialect": "postgresql",
@@ -601,9 +601,9 @@
           "primaryKey": false,
           "notNull": true
         },
-        "to_user_id": {
-          "name": "to_user_id",
-          "type": "uuid",
+        "email": {
+          "name": "email",
+          "type": "text",
           "primaryKey": false,
           "notNull": false
         },
@@ -655,11 +655,11 @@
           "method": "btree",
           "with": {}
         },
-        "brewery_invites_to_user_id_index": {
-          "name": "brewery_invites_to_user_id_index",
+        "brewery_invites_email_index": {
+          "name": "brewery_invites_email_index",
           "columns": [
             {
-              "expression": "to_user_id",
+              "expression": "email",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -677,15 +677,6 @@
           "tableFrom": "brewery_invites",
           "tableTo": "breweries",
           "columnsFrom": ["brewery_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "brewery_invites_to_user_id_users_id_fk": {
-          "name": "brewery_invites_to_user_id_users_id_fk",
-          "tableFrom": "brewery_invites",
-          "tableTo": "users",
-          "columnsFrom": ["to_user_id"],
           "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
@@ -712,7 +703,7 @@
       "checkConstraints": {
         "brewery_invites_one_target": {
           "name": "brewery_invites_one_target",
-          "value": "num_nonnulls(\"brewery_invites\".\"to_user_id\", \"brewery_invites\".\"code_hash\") = 1"
+          "value": "num_nonnulls(\"brewery_invites\".\"email\", \"brewery_invites\".\"code_hash\") = 1"
         }
       },
       "isRLSEnabled": false

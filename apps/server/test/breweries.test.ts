@@ -172,16 +172,30 @@ describe.skipIf(!TEST_DATABASE_URL)("breweries API on PostgreSQL", () => {
         });
         expect(r.status, role).toBe(403);
       }
+      // The reply never tells the inviter whether an account has the email.
+      const shape = (r: { status: number; json: Json }) => [
+        r.status,
+        Object.keys(r.json).sort(),
+        r.json.email,
+      ];
       const unknown = await call(app, "POST", path, {
         token: owner,
         body: { role: "member", email: "nobody@brew.test" },
       });
-      expect([unknown.status, code(unknown)]).toEqual([404, "unknown_user"]);
-      const member = await call(app, "POST", path, {
+      const known = await call(app, "POST", path, {
         token: owner,
         body: { role: "brewer", email: people.member.email },
       });
-      expect([member.status, code(member)]).toEqual([409, "already_member"]);
+      expect(shape(unknown)).toEqual([201, Object.keys(known.json).sort(), "nobody@brew.test"]);
+      expect(shape(known)).toEqual([201, Object.keys(unknown.json).sort(), "member@brew.test"]);
+      const pending = await call(app, "GET", path, { token: owner });
+      expect(JSON.stringify(pending.json)).not.toMatch(new RegExp(people.member.id));
+      // Already a member: refused when they try to accept, not when invited.
+      const twice = await call(app, "POST", "/api/brewery-invites/accept", {
+        token: people.member.token,
+        body: { id: known.json.id },
+      });
+      expect([twice.status, code(twice)]).toEqual([409, "already_member"]);
       expect((await call(app, "POST", path, { token: owner, body: { role: "boss" } })).status).toBe(
         400,
       );
@@ -191,7 +205,7 @@ describe.skipIf(!TEST_DATABASE_URL)("breweries API on PostgreSQL", () => {
         token: owner,
         body: { role: "viewer", email: people.outsider.email.toUpperCase() },
       });
-      expect(first.json).toMatchObject({ role: "viewer", to: { displayName: "outsider" } });
+      expect(first.json).toMatchObject({ role: "viewer", email: "outsider@brew.test" });
       expect(first.json.code).toBeUndefined();
       const mine = await call(app, "GET", "/api/brewery-invites", { token: people.outsider.token });
       expect(mine.json.items).toMatchObject([{ id: first.json.id, brewery: { name: "Hops Co" } }]);
@@ -226,10 +240,12 @@ describe.skipIf(!TEST_DATABASE_URL)("breweries API on PostgreSQL", () => {
 
       // A code invite: shown once, works once, and owners can see and revoke pending ones.
       const made = await call(app, "POST", path, { token: owner, body: { role: "brewer" } });
-      expect(made.json).toMatchObject({ role: "brewer", to: null });
+      expect(made.json).toMatchObject({ role: "brewer", email: null });
       const pendingList = await call(app, "GET", path, { token: owner });
-      expect(pendingList.json.items).toEqual([expect.objectContaining({ id: made.json.id })]);
-      expect((pendingList.json.items as Json[])[0]?.code).toBeUndefined();
+      const listed = pendingList.json.items as Json[];
+      expect(listed.map((i) => i.email)).toEqual(["nobody@brew.test", "member@brew.test", null]);
+      expect(listed.at(-1)?.id).toBe(made.json.id);
+      expect(listed.every((i) => i.code === undefined)).toBe(true);
       expect((await call(app, "GET", path, { token: people.brewer.token })).status).toBe(403);
 
       const signup = await call(app, "POST", "/api/auth/signup", {
@@ -409,7 +425,7 @@ describe.skipIf(!TEST_DATABASE_URL)("breweries API on PostgreSQL", () => {
         owner: { read: 200, reading: 201, note: 201, recipe: 201, status: 200 },
         brewer: { read: 200, reading: 201, note: 201, recipe: 201, status: 200 },
         member: { read: 200, reading: 201, note: 201, recipe: 403, status: 403 },
-        viewer: { read: 200, reading: 403, note: 201, recipe: 403, status: 403 },
+        viewer: { read: 200, reading: 403, note: 403, recipe: 403, status: 403 },
         outsider: { read: 404, reading: 404, note: 404, recipe: 404, status: 404 },
       };
       for (const [who, want] of Object.entries(expected)) {
@@ -440,6 +456,39 @@ describe.skipIf(!TEST_DATABASE_URL)("breweries API on PostgreSQL", () => {
         };
         expect(got, who).toEqual(want);
       }
+    });
+  });
+
+  it("puts members' notes on a brewery batch in the batch log the brewery can read", async () => {
+    await withBrewery(async ({ app, brewery, people }) => {
+      const recipe = await call(app, "POST", "/api/recipes", {
+        token: people.owner.token,
+        body: { ...beer, breweryId: brewery },
+      });
+      const batch = await call(app, "POST", "/api/batches", {
+        token: people.owner.token,
+        body: { recipeId: recipe.json.id, breweryId: brewery },
+      });
+      const note = await call(app, "POST", "/api/notes", {
+        token: people.member.token,
+        body: { body: "Krausen is up", batchId: batch.json.id },
+      });
+      expect(note.json.owner).toEqual({ type: "user", id: people.member.id });
+      for (const role of ["owner", "brewer", "viewer"] as const) {
+        const log = await call(app, "GET", `/api/notes?batchId=${batch.json.id}`, {
+          token: people[role].token,
+        });
+        expect(
+          (log.json.items as Json[]).map((n) => n.body),
+          role,
+        ).toEqual(["Krausen is up"]);
+      }
+      const path = `/api/notes/${note.json.id}`;
+      const edit = (token: string) =>
+        call(app, "PATCH", path, { token, body: { body: "Krausen fell" } });
+      expect((await edit(people.member.token)).status).toBe(200);
+      expect((await edit(people.owner.token)).status).toBe(403);
+      expect((await call(app, "GET", path, { token: people.outsider.token })).status).toBe(404);
     });
   });
 

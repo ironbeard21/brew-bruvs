@@ -56,7 +56,8 @@ export const InviteInput = z
   .strictObject({
     role: BreweryRole,
     email: z.email().max(320).optional().openapi({
-      description: "Invite someone with an account on this server; leave out for a one-time code",
+      description:
+        "Whoever signs in here with this email sees the invite. The reply is the same whether or not an account has it. Leave out for a one-time code",
     }),
   })
   .openapi("BreweryInviteInput");
@@ -66,10 +67,7 @@ export const Invite = z
     id: z.uuid(),
     brewery: z.object({ id: z.uuid(), name: z.string() }),
     role: BreweryRole,
-    to: z
-      .object({ userId: z.uuid(), displayName: z.string() })
-      .nullable()
-      .openapi({ description: "Null for a code invite" }),
+    email: z.string().nullable().openapi({ description: "Null for a code invite" }),
     createdAt: time,
     expiresAt: time,
     code: z.string().optional().openapi({
