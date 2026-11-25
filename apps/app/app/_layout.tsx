@@ -5,6 +5,7 @@ import { StatusBar } from "expo-status-bar";
 import { useEffect, useRef, useState } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { useCurrentUser } from "../src/api/auth";
+import { BreweryProvider } from "../src/state/brewery";
 import { ServerProvider, useServer } from "../src/state/server";
 import { UnitsProvider, useUnits } from "../src/state/units";
 
@@ -49,9 +50,11 @@ export default function RootLayout() {
       <QueryClientProvider client={queryClient}>
         <UnitsProvider>
           <ServerProvider>
-            <ServerUnitSync />
-            <StatusBar style="dark" />
-            <Slot />
+            <BreweryProvider>
+              <ServerUnitSync />
+              <StatusBar style="dark" />
+              <Slot />
+            </BreweryProvider>
           </ServerProvider>
         </UnitsProvider>
       </QueryClientProvider>

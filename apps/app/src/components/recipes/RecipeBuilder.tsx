@@ -149,6 +149,10 @@ export interface RecipeBuilderProps {
   initialImport?: ImportedRecipeDraft | null;
   importExcerpt?: string | null;
   canManage?: boolean;
+  canEdit?: boolean;
+  canDelete?: boolean;
+  canShare?: boolean;
+  activeBreweryId?: string | null;
   onSaveNew?: (input: CreateRecipeInput) => Promise<void>;
   onSaveVersion?: (input: RecipeVersionInput) => Promise<void>;
   onFork?: () => Promise<void>;
@@ -166,6 +170,10 @@ export function RecipeBuilder({
   initialImport = null,
   importExcerpt = null,
   canManage = true,
+  canEdit: canEditProp,
+  canDelete: canDeleteProp,
+  canShare: canShareProp,
+  activeBreweryId = null,
   onSaveNew,
   onSaveVersion,
   onFork,
@@ -175,6 +183,9 @@ export function RecipeBuilder({
   saving = false,
   customFetch,
 }: RecipeBuilderProps) {
+  const canEdit = canEditProp ?? canManage;
+  const canDelete = canDeleteProp ?? canManage;
+  const canShare = canShareProp ?? canManage;
   const { unitSystem } = useUnits();
   const { width } = useWindowDimensions();
   const isDesktop = width >= DESKTOP_BREAKPOINT;
@@ -333,6 +344,7 @@ export function RecipeBuilder({
         name: profileName.trim(),
         batchSizeL: unitSystem === "us" ? units.gallonsToLiters(batchVal) : batchVal,
         ...(effVal !== null && effVal > 0 && effVal <= 100 ? { efficiencyPct: effVal } : {}),
+        ...(activeBreweryId ? { breweryId: activeBreweryId } : {}),
       });
       setProfileName("");
       setShowNewProfile(false);
@@ -584,7 +596,7 @@ export function RecipeBuilder({
           serverUrl={serverUrl}
           authToken={authToken}
           recipe={recipe}
-          canManage={canManage}
+          canManage={canShare}
           {...(customFetch ? { customFetch } : {})}
         />
       ) : null}
@@ -1550,7 +1562,7 @@ export function RecipeBuilder({
           ) : null}
 
           <View style={styles.actionRow}>
-            {canManage ? (
+            {canEdit ? (
               <Button
                 label={saving ? "Saving..." : recipe ? "Save new version" : "Create recipe"}
                 disabled={saving}
@@ -1569,7 +1581,7 @@ export function RecipeBuilder({
               />
             ) : null}
 
-            {recipe && canManage && onDelete ? (
+            {recipe && canDelete && onDelete ? (
               confirmDelete ? (
                 <Button
                   label="Confirm delete"

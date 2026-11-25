@@ -310,6 +310,37 @@ test.describe("Brew-Bruvs app shell", () => {
       sourceUrl ?? "https://github.com/ironbeard21/brew-bruvs",
     );
     await expect(page.getByTestId("about-catalog-sources")).toContainText("MIT");
+
+    // P2-11: Create a brewery, generate a one-time invite code, switch workspace,
+    // and verify brewery ownership badge on a brewery recipe.
+    const breweryName = `Northside Brew Club (${test.info().project.name})`;
+    await page.getByTestId("nav-breweries").click();
+    await expect(page).toHaveURL(/\/breweries$/);
+    await expect(page.getByTestId("brewery-hub")).toBeVisible();
+
+    await page.getByTestId("create-brewery-name-input").fill(breweryName);
+    await page.getByTestId("create-brewery-city-input").fill("Portland");
+    await page.getByTestId("create-brewery-state-input").fill("OR");
+    await page.getByTestId("create-brewery-submit").click();
+    await expect(page).toHaveURL(/\/breweries\/[0-9a-f-]+$/);
+    await expect(page.getByTestId("my-brewery-role-badge")).toHaveText("Owner");
+    await expect(page.getByTestId("leave-blocked-sole-owner")).toBeVisible();
+
+    await page.getByTestId("create-brewery-invite-button").click();
+    await expect(page.getByTestId("brewery-invite-code-value")).not.toBeEmpty();
+
+    // Workspace switched to the new brewery; create a brewery-owned recipe and verify owner badge
+    await page.getByTestId("nav-recipes").click();
+    await expect(page).toHaveURL(/\/recipes$/);
+    await page.getByTestId("new-recipe-button").click();
+    await expect(page).toHaveURL(/\/recipes\/new$/);
+    await page.getByTestId("recipe-name-input").fill("Club House Pale");
+    await page.getByTestId("recipe-save-button").click();
+    await expect(page).toHaveURL(/\/recipes\/[0-9a-f-]+$/);
+    await expect(page.getByTestId("recipe-owner-badge")).toContainText(breweryName);
+
+    // Switch back to personal ("Me") workspace
+    await page.getByTestId("workspace-switch-me").click();
   });
 
   test("calculators work completely offline without a server", async ({ page, context }) => {

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { useCurrentUser } from "../../src/api/auth";
 import { useCreateBatch } from "../../src/api/batches";
+import { useMoveRecipeToBrewery } from "../../src/api/breweries";
 import {
   type RecipeFileFormat,
   type RecipeVersionInput,
@@ -14,9 +15,13 @@ import {
   useSaveRecipeVersion,
 } from "../../src/api/recipes";
 import { AppShell } from "../../src/components/AppShell";
+import { MoveToBreweryBar } from "../../src/components/breweries/OwnerPickerCard";
+import { OwnerBadge } from "../../src/components/OwnerBadge";
 import { deliverExportedFile } from "../../src/components/recipes/fileIO";
 import { RecipeBuilder } from "../../src/components/recipes/RecipeBuilder";
 import { Banner, Button, Card } from "../../src/components/ui";
+import { useOptionalBrewery } from "../../src/state/brewery";
+import { canPerformOnOwner, canWriteBrewery } from "../../src/state/permissions";
 import { useServer } from "../../src/state/server";
 import { spacing } from "../../src/theme";
 
@@ -27,16 +32,19 @@ export default function RecipeDetailScreen() {
 
   const { serverUrl, authToken } = useServer();
   const currentUser = useCurrentUser(serverUrl, authToken);
+  const { activeBrewery, breweries, writableBreweries } = useOptionalBrewery();
   const detailQuery = useRecipeDetail(serverUrl, authToken, recipeId || null);
   const saveVersion = useSaveRecipeVersion(serverUrl, authToken, recipeId);
   const forkMutation = useForkRecipe(serverUrl, authToken);
   const deleteMutation = useDeleteRecipe(serverUrl, authToken);
   const createBatch = useCreateBatch(serverUrl, authToken);
   const exportMutation = useExportRecipeVersion(serverUrl, authToken);
+  const moveRecipe = useMoveRecipeToBrewery(serverUrl, authToken);
   const [selectedVersion, setSelectedVersion] = useState<number | null>(null);
   const [batchError, setBatchError] = useState<string | null>(null);
   const [exportNotice, setExportNotice] = useState<string | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
+  const [moveNotice, setMoveNotice] = useState<string | null>(null);
 
   if (!serverUrl) {
     return (
@@ -82,9 +90,17 @@ export default function RecipeDetailScreen() {
   }
 
   const recipe = detailQuery.data;
-  const canManage = Boolean(
-    currentUser.data && (currentUser.data.id === recipe.owner.id || currentUser.data.isAdmin),
+  const userId = currentUser.data?.id ?? null;
+  const canEdit = canPerformOnOwner(userId, breweries, recipe.owner, "edit");
+  const canDelete = canPerformOnOwner(userId, breweries, recipe.owner, "delete");
+  const canShare = canPerformOnOwner(userId, breweries, recipe.owner, "share");
+  const canStartBatchInWorkspace = Boolean(
+    userId && (!activeBrewery || canWriteBrewery(activeBrewery.role)),
   );
+  const canMoveToBrewery =
+    recipe.owner.type === "user" && recipe.owner.id === userId && writableBreweries.length > 0;
+  const targetBreweryIdForBatch =
+    activeBrewery && canWriteBrewery(activeBrewery.role) ? activeBrewery.id : undefined;
 
   const handleSaveVersion = async (input: RecipeVersionInput) => {
     await saveVersion.mutateAsync(input);
@@ -108,11 +124,19 @@ export default function RecipeDetailScreen() {
       const batch = await createBatch.mutateAsync({
         recipeId: recipe.id,
         version: activeVersion,
+        ...(targetBreweryIdForBatch ? { breweryId: targetBreweryIdForBatch } : {}),
       });
       router.push(`/batches/${batch.id}`);
     } catch (err) {
       setBatchError(err instanceof Error ? err.message : "Could not start batch.");
     }
+  };
+
+  const handleMoveToBrewery = async (breweryId: string) => {
+    setMoveNotice(null);
+    await moveRecipe.mutateAsync({ recipeId: recipe.id, breweryId });
+    const target = writableBreweries.find((b) => b.id === breweryId);
+    setMoveNotice(`Moved recipe to ${target?.name ?? "brewery"}.`);
   };
 
   const handleExport = async (format: RecipeFileFormat) => {
@@ -138,9 +162,16 @@ export default function RecipeDetailScreen() {
     >
       <View style={styles.actionStack}>
         <View style={styles.batchBar}>
-          {currentUser.data ? (
+          <OwnerBadge owner={recipe.owner} currentUserId={userId} testID="recipe-owner-badge" />
+          {canStartBatchInWorkspace ? (
             <Button
-              label={createBatch.isPending ? "Starting batch..." : "Start batch from this recipe"}
+              label={
+                createBatch.isPending
+                  ? "Starting batch..."
+                  : activeBrewery
+                    ? `Start batch in ${activeBrewery.name}`
+                    : "Start batch from this recipe"
+              }
               disabled={createBatch.isPending}
               onPress={() => void handleStartBatch()}
               testID="start-batch-button"
@@ -168,7 +199,19 @@ export default function RecipeDetailScreen() {
             onPress={() => void handleExport("beerjson")}
             testID="export-beerjson-button"
           />
+          {canMoveToBrewery ? (
+            <MoveToBreweryBar
+              itemLabel="recipe"
+              writableBreweries={writableBreweries}
+              moving={moveRecipe.isPending}
+              onMove={handleMoveToBrewery}
+              testID="move-recipe"
+            />
+          ) : null}
         </View>
+        {moveNotice ? (
+          <Banner tone="success" message={moveNotice} testID="move-recipe-notice" />
+        ) : null}
         {batchError ? <Banner tone="error" message={batchError} /> : null}
         {exportNotice ? (
           <Banner tone="success" message={exportNotice} testID="export-success-banner" />
@@ -180,7 +223,10 @@ export default function RecipeDetailScreen() {
         serverUrl={serverUrl}
         authToken={authToken}
         recipe={recipe}
-        canManage={canManage}
+        canEdit={canEdit}
+        canDelete={canDelete}
+        canShare={canShare}
+        activeBreweryId={recipe.owner.type === "brewery" ? recipe.owner.id : null}
         onSaveVersion={handleSaveVersion}
         {...(currentUser.data ? { onFork: handleFork } : {})}
         onDelete={handleDelete}

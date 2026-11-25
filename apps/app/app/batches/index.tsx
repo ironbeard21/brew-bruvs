@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useCurrentUser } from "../../src/api/auth";
 import { type BatchStatus, useBatches, useCreateBatch } from "../../src/api/batches";
@@ -11,15 +11,18 @@ import {
   formatShortDate,
   formatVolume,
 } from "../../src/components/batches/batchFlows";
+import { OwnerBadge } from "../../src/components/OwnerBadge";
 import { Banner, Button, Card, SegmentedControl, TextField } from "../../src/components/ui";
+import { useOptionalBrewery } from "../../src/state/brewery";
+import { canWriteBrewery, ROLE_LABELS } from "../../src/state/permissions";
 import { useServer } from "../../src/state/server";
 import { useUnits } from "../../src/state/units";
 import { colors, radii, spacing } from "../../src/theme";
 
-type ScopeFilter = "all" | "mine";
+type ScopeFilter = "all" | "mine" | "workspace";
 type StatusFilter = "all" | "planned" | "brewing" | "fermenting" | "primary" | "finished";
 
-const SCOPE_OPTIONS: readonly { value: ScopeFilter; label: string }[] = [
+const ME_SCOPE_OPTIONS: readonly { value: ScopeFilter; label: string }[] = [
   { value: "all", label: "All Visible" },
   { value: "mine", label: "My Batches" },
 ];
@@ -37,23 +40,43 @@ export default function BatchesScreen() {
   const router = useRouter();
   const { serverUrl, authToken } = useServer();
   const { unitSystem } = useUnits();
+  const { activeBrewery, activeBreweryId } = useOptionalBrewery();
 
-  const [scope, setScope] = useState<ScopeFilter>("all");
+  const [scope, setScope] = useState<ScopeFilter>(activeBreweryId ? "workspace" : "all");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [showStartForm, setShowStartForm] = useState(false);
   const [selectedRecipeId, setSelectedRecipeId] = useState<string | null>(null);
   const [batchName, setBatchName] = useState("");
   const [createError, setCreateError] = useState<string | null>(null);
 
+  useEffect(() => {
+    setScope(activeBreweryId ? "workspace" : "all");
+  }, [activeBreweryId]);
+
   const currentUser = useCurrentUser(serverUrl, authToken);
   const batchesQuery = useBatches(serverUrl, authToken, {
-    mine: scope === "mine",
+    mine: !activeBreweryId && scope === "mine",
     ...(statusFilter !== "all" ? { status: statusFilter as BatchStatus } : {}),
   });
   const recipesQuery = useRecipes(serverUrl, authToken, {
     enabled: Boolean(serverUrl && showStartForm),
   });
   const createBatch = useCreateBatch(serverUrl, authToken);
+
+  const signedIn = Boolean(currentUser.data);
+  const canStartInWorkspace = signedIn && (!activeBrewery || canWriteBrewery(activeBrewery.role));
+  const allBatches = batchesQuery.data ?? [];
+  const visibleBatches =
+    activeBrewery && scope === "workspace"
+      ? allBatches.filter((b) => b.owner.type === "brewery" && b.owner.id === activeBrewery.id)
+      : allBatches;
+
+  const scopeOptions: readonly { value: ScopeFilter; label: string }[] = activeBrewery
+    ? [
+        { value: "workspace", label: activeBrewery.name },
+        { value: "all", label: "All Visible" },
+      ]
+    : ME_SCOPE_OPTIONS;
 
   if (!serverUrl) {
     return (
@@ -83,10 +106,13 @@ export default function BatchesScreen() {
       return;
     }
     const trimmedName = batchName.trim();
+    const targetBreweryId =
+      activeBrewery && canWriteBrewery(activeBrewery.role) ? activeBrewery.id : undefined;
     try {
       const created = await createBatch.mutateAsync({
         recipeId: selectedRecipeId,
         ...(trimmedName ? { name: trimmedName } : {}),
+        ...(targetBreweryId ? { breweryId: targetBreweryId } : {}),
       });
       setShowStartForm(false);
       setBatchName("");
@@ -105,9 +131,9 @@ export default function BatchesScreen() {
       <Card>
         <View style={styles.toolbar}>
           <View style={styles.toolbarLeft}>
-            {currentUser.data ? (
+            {signedIn ? (
               <SegmentedControl
-                options={SCOPE_OPTIONS}
+                options={scopeOptions}
                 value={scope}
                 onChange={setScope}
                 accessibilityLabel="Batch ownership filter"
@@ -115,21 +141,35 @@ export default function BatchesScreen() {
               />
             ) : null}
           </View>
-          {currentUser.data ? (
+          {canStartInWorkspace ? (
             <Button
-              label={showStartForm ? "Close" : "+ Start Batch"}
+              label={
+                showStartForm
+                  ? "Close"
+                  : activeBrewery
+                    ? `+ Start ${activeBrewery.name} Batch`
+                    : "+ Start Batch"
+              }
               variant={showStartForm ? "secondary" : "primary"}
               onPress={() => setShowStartForm((v) => !v)}
               testID="new-batch-button"
             />
-          ) : (
+          ) : !signedIn ? (
             <Button
               label="Sign in to brew"
               variant="secondary"
               onPress={() => router.push("/login")}
             />
-          )}
+          ) : null}
         </View>
+
+        {signedIn && activeBrewery && !canStartInWorkspace ? (
+          <Banner
+            tone="info"
+            message={`Viewing ${activeBrewery.name} as ${ROLE_LABELS[activeBrewery.role]}. Only Owners and Brewers can start brewery batches.`}
+            testID="batches-readonly-role-banner"
+          />
+        ) : null}
 
         <SegmentedControl
           options={STATUS_FILTER_OPTIONS}
@@ -138,9 +178,13 @@ export default function BatchesScreen() {
           accessibilityLabel="Filter batches by status"
         />
 
-        {showStartForm ? (
+        {showStartForm && canStartInWorkspace ? (
           <View style={styles.startBox} testID="start-batch-panel">
-            <Text style={styles.startTitle}>Start a Batch from a Recipe</Text>
+            <Text style={styles.startTitle}>
+              {activeBrewery
+                ? `Start a Batch for ${activeBrewery.name}`
+                : "Start a Batch from a Recipe"}
+            </Text>
             {recipesQuery.isPending ? (
               <Banner tone="info" message="Loading recipes..." />
             ) : recipesQuery.isError ? (
@@ -226,7 +270,7 @@ export default function BatchesScreen() {
             }
           />
         </Card>
-      ) : (batchesQuery.data?.length ?? 0) === 0 ? (
+      ) : visibleBatches.length === 0 ? (
         <Card>
           <Text style={styles.emptyTitle}>No batches yet</Text>
           <Text style={styles.muted}>
@@ -236,7 +280,7 @@ export default function BatchesScreen() {
         </Card>
       ) : (
         <View style={styles.list}>
-          {(batchesQuery.data ?? []).map((batch) => (
+          {visibleBatches.map((batch) => (
             <Pressable
               key={batch.id}
               onPress={() => router.push(`/batches/${batch.id}`)}
@@ -248,6 +292,11 @@ export default function BatchesScreen() {
               <View style={styles.batchHeader}>
                 <Text style={styles.batchName}>{batch.name}</Text>
                 <View style={styles.badges}>
+                  <OwnerBadge
+                    owner={batch.owner}
+                    currentUserId={currentUser.data?.id ?? null}
+                    testID={`batch-owner-badge-${batch.id}`}
+                  />
                   <View style={styles.bevBadge}>
                     <Text style={styles.bevBadgeText}>{batch.beverage.toUpperCase()}</Text>
                   </View>

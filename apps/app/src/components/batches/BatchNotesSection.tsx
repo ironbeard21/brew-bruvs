@@ -11,6 +11,8 @@ export interface BatchNotesSectionProps {
   notes: readonly Note[];
   loading?: boolean;
   canEdit: boolean;
+  canContribute?: boolean;
+  canDeleteNote?: (note: Note) => boolean;
   onCreateNote: (input: NoteInput) => Promise<void>;
   onDeleteNote: (noteId: string) => Promise<void>;
   saving?: boolean;
@@ -48,10 +50,14 @@ export function BatchNotesSection({
   notes,
   loading = false,
   canEdit,
+  canContribute: canContributeProp,
+  canDeleteNote,
   onCreateNote,
   onDeleteNote,
   saving = false,
 }: BatchNotesSectionProps) {
+  const canContribute = canContributeProp ?? canEdit;
+  const allowDeleteNote = canDeleteNote ?? (() => canEdit);
   const { width } = useWindowDimensions();
   const isDesktop = width >= DESKTOP_BREAKPOINT;
 
@@ -120,7 +126,7 @@ export function BatchNotesSection({
   return (
     <View style={[styles.layout, isDesktop && styles.layoutDesktop]} testID="batch-notes-section">
       {/* Note Composer */}
-      {canEdit ? (
+      {canContribute ? (
         <Card style={isDesktop ? styles.column : undefined}>
           <Text style={styles.sectionTitle}>Add Note</Text>
           <SegmentedControl
@@ -228,7 +234,7 @@ export function BatchNotesSection({
                   </View>
                 ) : null}
 
-                {canEdit ? (
+                {allowDeleteNote(n) ? (
                   <View style={styles.noteActions}>
                     <Button
                       label="Delete"

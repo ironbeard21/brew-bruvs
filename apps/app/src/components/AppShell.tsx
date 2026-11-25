@@ -4,9 +4,11 @@ import type { ReactNode } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useCurrentUser, useUpdateMe } from "../api/auth";
+import { useOptionalBrewery } from "../state/brewery";
 import { useServer } from "../state/server";
 import { colors, DESKTOP_BREAKPOINT, radii, spacing } from "../theme";
 import { UnitToggle } from "./UnitToggle";
+import { WorkspaceSwitcher } from "./WorkspaceSwitcher";
 
 export interface AppShellProps {
   children: ReactNode;
@@ -30,10 +32,12 @@ export function AppShell({ children, title, subtitle }: AppShellProps) {
   const { serverUrl, authToken, offlineMode } = useServer();
   const currentUser = useCurrentUser(serverUrl, authToken);
   const updateMe = useUpdateMe(serverUrl, authToken);
+  const { myInvitesCount } = useOptionalBrewery();
 
   const onCalculators = pathname === "/calculators";
   const onRecipes = pathname === "/recipes" || pathname.startsWith("/recipes/");
   const onBatches = pathname === "/batches" || pathname.startsWith("/batches/");
+  const onBreweries = pathname === "/breweries" || pathname.startsWith("/breweries/");
   const onSettings = pathname === "/settings" || pathname === "/admin";
   const onAbout = pathname === "/about";
   const onServer = pathname === "/connect" || pathname === "/login";
@@ -114,6 +118,21 @@ export function AppShell({ children, title, subtitle }: AppShellProps) {
               </Pressable>
 
               <Pressable
+                onPress={() => router.push("/breweries")}
+                accessibilityRole="tab"
+                accessibilityLabel={
+                  myInvitesCount > 0 ? `Breweries (${myInvitesCount} invites)` : "Breweries"
+                }
+                accessibilityState={{ selected: onBreweries }}
+                testID="nav-breweries"
+                style={[styles.navLink, onBreweries && styles.navLinkActive]}
+              >
+                <Text style={[styles.navLinkText, onBreweries && styles.navLinkTextActive]}>
+                  {myInvitesCount > 0 ? `Breweries (${myInvitesCount})` : "Breweries"}
+                </Text>
+              </Pressable>
+
+              <Pressable
                 onPress={() => router.push("/settings")}
                 accessibilityRole="tab"
                 accessibilityLabel="Settings"
@@ -160,6 +179,7 @@ export function AppShell({ children, title, subtitle }: AppShellProps) {
             />
           </View>
         </View>
+        <WorkspaceSwitcher signedIn={Boolean(serverUrl && currentUser.data)} />
       </View>
 
       <ScrollView

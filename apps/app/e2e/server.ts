@@ -55,7 +55,7 @@ interface StoredRecipe {
   name: string;
   beverage: "beer" | "mead" | "wine" | "cider";
   visibility: "private" | "unlisted" | "server" | "public";
-  owner: { type: "user"; id: string };
+  owner: { type: "user" | "brewery"; id: string };
   credit: {
     sourceUrl: string | null;
     site: string | null;
@@ -84,7 +84,7 @@ interface StoredBatch {
   beverage: "beer" | "mead" | "wine" | "cider";
   status: string;
   visibility: "private" | "unlisted" | "server" | "public";
-  owner: { type: "user"; id: string };
+  owner: { type: "user" | "brewery"; id: string };
   recipe: { id: string; version: number; versionId: string };
   batchSizeL: number | null;
   equipmentProfileId: string | null;
@@ -139,7 +139,7 @@ interface StoredNote {
     total: number | null;
   } | null;
   visibility: "private" | "unlisted" | "server" | "public";
-  owner: { type: "user"; id: string };
+  owner: { type: "user" | "brewery"; id: string };
   createdAt: string;
   updatedAt: string;
 }
@@ -192,12 +192,39 @@ function batchDetail(b: StoredBatch) {
   };
 }
 
+type BreweryRole = "owner" | "brewer" | "member" | "viewer";
+
+interface StoredBrewery {
+  id: string;
+  uri: string;
+  name: string;
+  description: string | null;
+  city: string | null;
+  state: string | null;
+  createdAt: string;
+  updatedAt: string;
+  members: { userId: string; displayName: string; role: BreweryRole; joinedAt: string }[];
+}
+
+interface StoredBreweryInvite {
+  id: string;
+  breweryId: string;
+  breweryName: string;
+  role: BreweryRole;
+  email: string | null;
+  code: string | null;
+  createdAt: string;
+  expiresAt: string;
+}
+
 const users = new Map<string, StoredUser>();
 const sessions = new Map<string, string>();
 const tokens = new Map<string, StoredToken>();
 const recipes = new Map<string, StoredRecipe>();
 const batches = new Map<string, StoredBatch>();
 const notes = new Map<string, StoredNote>();
+const breweries = new Map<string, StoredBrewery>();
+const breweryInvites = new Map<string, StoredBreweryInvite>();
 const equipmentProfiles: Record<string, unknown>[] = [];
 
 const SEEDED_CATALOG: Record<string, Record<string, unknown>[]> = {
@@ -932,6 +959,7 @@ const server = createServer(async (req, res) => {
         license?: string;
         publicSharingBlocked?: boolean;
       };
+      breweryId?: string;
       content: Record<string, unknown>;
     };
     const id = randomUUID();
@@ -956,7 +984,9 @@ const server = createServer(async (req, res) => {
       name: data.name,
       beverage: data.beverage,
       visibility: data.visibility ?? "private",
-      owner: { type: "user", id: user.id },
+      owner: data.breweryId
+        ? { type: "brewery", id: data.breweryId }
+        : { type: "user", id: user.id },
       credit: data.credit
         ? {
             sourceUrl: data.credit.sourceUrl ?? null,
@@ -1143,6 +1173,7 @@ const server = createServer(async (req, res) => {
       name?: string;
       batchSizeL?: number;
       equipmentProfileId?: string | null;
+      breweryId?: string;
     };
     const recipe = recipes.get(data.recipeId);
     if (!recipe)
@@ -1162,7 +1193,9 @@ const server = createServer(async (req, res) => {
       beverage: ver.beverage,
       status: "planned",
       visibility: "private",
-      owner: { type: "user", id: user.id },
+      owner: data.breweryId
+        ? { type: "brewery", id: data.breweryId }
+        : { type: "user", id: user.id },
       recipe: { id: recipe.id, version: ver.version, versionId: ver.id },
       batchSizeL: data.batchSizeL ?? ver.batchSizeL,
       equipmentProfileId: data.equipmentProfileId ?? ver.equipmentProfileId,
@@ -1366,6 +1399,272 @@ const server = createServer(async (req, res) => {
     res.writeHead(204);
     res.end();
     return;
+  }
+
+  // Move recipe/batch to brewery (P2-03)
+  const moveMatch = pathname.match(/^\/api\/(recipes|batches)\/([^/]+)\/move$/);
+  if (moveMatch && method === "POST") {
+    const user = getUserForRequest(req);
+    if (!user)
+      return sendJson(res, 401, { error: { code: "unauthorized", message: "Sign in first" } });
+    const data = JSON.parse(await readBody(req)) as { breweryId: string };
+    const targetOwner = { type: "brewery" as const, id: data.breweryId };
+    if (moveMatch[1] === "recipes") {
+      const r = recipes.get(moveMatch[2] ?? "");
+      if (!r)
+        return sendJson(res, 404, { error: { code: "not_found", message: "Recipe not found" } });
+      r.owner = targetOwner;
+      return sendJson(res, 200, { owner: targetOwner });
+    }
+    const b = batches.get(moveMatch[2] ?? "");
+    if (!b) return sendJson(res, 404, { error: { code: "not_found", message: "Batch not found" } });
+    b.owner = targetOwner;
+    return sendJson(res, 200, { owner: targetOwner });
+  }
+
+  // Inventory list (P2-04 read-only preview support for P2-11)
+  if (pathname === "/api/inventory" && method === "GET") {
+    const user = getUserForRequest(req);
+    if (!user)
+      return sendJson(res, 401, { error: { code: "unauthorized", message: "Sign in first" } });
+    return sendJson(res, 200, { items: [], nextOffset: null });
+  }
+
+  // Breweries & invites (P2-03)
+  const breweryView = (b: StoredBrewery, role: BreweryRole) => ({
+    id: b.id,
+    uri: b.uri,
+    name: b.name,
+    description: b.description,
+    city: b.city,
+    state: b.state,
+    role,
+    createdAt: b.createdAt,
+    updatedAt: b.updatedAt,
+  });
+  const breweryDetailView = (b: StoredBrewery, role: BreweryRole) => ({
+    ...breweryView(b, role),
+    members: b.members,
+  });
+
+  if (pathname === "/api/breweries" && method === "GET") {
+    const user = getUserForRequest(req);
+    if (!user)
+      return sendJson(res, 401, { error: { code: "unauthorized", message: "Sign in first" } });
+    const items = [...breweries.values()]
+      .map((b) => {
+        const m = b.members.find((x) => x.userId === user.id);
+        return m ? breweryView(b, m.role) : null;
+      })
+      .filter((x): x is ReturnType<typeof breweryView> => x !== null);
+    return sendJson(res, 200, { items });
+  }
+
+  if (pathname === "/api/breweries" && method === "POST") {
+    const user = getUserForRequest(req);
+    if (!user)
+      return sendJson(res, 401, { error: { code: "unauthorized", message: "Sign in first" } });
+    const data = JSON.parse(await readBody(req)) as {
+      name?: string;
+      description?: string | null;
+      city?: string | null;
+      state?: string | null;
+    };
+    const name = data.name?.trim();
+    if (!name) {
+      return sendJson(res, 400, {
+        error: { code: "validation_error", message: "Brewery name required" },
+      });
+    }
+    const id = randomUUID();
+    const now = new Date().toISOString();
+    const b: StoredBrewery = {
+      id,
+      uri: `http://127.0.0.1:${PORT}/breweries/${id}`,
+      name,
+      description: data.description?.trim() || null,
+      city: data.city?.trim() || null,
+      state: data.state?.trim() || null,
+      createdAt: now,
+      updatedAt: now,
+      members: [{ userId: user.id, displayName: user.displayName, role: "owner", joinedAt: now }],
+    };
+    breweries.set(id, b);
+    return sendJson(res, 201, breweryDetailView(b, "owner"));
+  }
+
+  if (pathname === "/api/brewery-invites" && method === "GET") {
+    const user = getUserForRequest(req);
+    if (!user)
+      return sendJson(res, 401, { error: { code: "unauthorized", message: "Sign in first" } });
+    const items = [...breweryInvites.values()]
+      .filter((inv) => inv.email?.toLowerCase() === user.email.toLowerCase())
+      .map((inv) => ({
+        id: inv.id,
+        brewery: { id: inv.breweryId, name: inv.breweryName },
+        role: inv.role,
+        email: inv.email,
+        createdAt: inv.createdAt,
+        expiresAt: inv.expiresAt,
+      }));
+    return sendJson(res, 200, { items });
+  }
+
+  if (pathname === "/api/brewery-invites/accept" && method === "POST") {
+    const user = getUserForRequest(req);
+    if (!user)
+      return sendJson(res, 401, { error: { code: "unauthorized", message: "Sign in first" } });
+    const data = JSON.parse(await readBody(req)) as { id?: string; code?: string };
+    const found = [...breweryInvites.values()].find((inv) =>
+      data.code ? inv.code === data.code : inv.id === data.id,
+    );
+    if (!found) {
+      return sendJson(res, 404, {
+        error: { code: "invalid_invite", message: "That invite is not valid or has expired" },
+      });
+    }
+    const b = breweries.get(found.breweryId);
+    if (!b)
+      return sendJson(res, 404, { error: { code: "not_found", message: "Brewery not found" } });
+    if (b.members.some((m) => m.userId === user.id)) {
+      return sendJson(res, 409, {
+        error: { code: "already_member", message: "You are already a member" },
+      });
+    }
+    b.members.push({
+      userId: user.id,
+      displayName: user.displayName,
+      role: found.role,
+      joinedAt: new Date().toISOString(),
+    });
+    breweryInvites.delete(found.id);
+    return sendJson(res, 200, breweryDetailView(b, found.role));
+  }
+
+  const declineInviteMatch = pathname.match(/^\/api\/brewery-invites\/([^/]+)$/);
+  if (declineInviteMatch && method === "DELETE") {
+    breweryInvites.delete(declineInviteMatch[1] ?? "");
+    res.writeHead(204);
+    res.end();
+    return;
+  }
+
+  const brewerySub = pathname.match(
+    /^\/api\/breweries\/([^/]+)(?:\/(invites|members|transfer)(?:\/([^/]+)(?:\/(role))?)?)?$/,
+  );
+  if (brewerySub) {
+    const user = getUserForRequest(req);
+    if (!user)
+      return sendJson(res, 401, { error: { code: "unauthorized", message: "Sign in first" } });
+    const bId = brewerySub[1] ?? "";
+    const sub = brewerySub[2];
+    const subId = brewerySub[3];
+    const subAction = brewerySub[4];
+    const b = breweries.get(bId);
+    const me = b?.members.find((m) => m.userId === user.id);
+    if (!b || !me) {
+      return sendJson(res, 404, { error: { code: "not_found", message: "Brewery not found" } });
+    }
+    if (!sub && method === "GET") return sendJson(res, 200, breweryDetailView(b, me.role));
+    if (!sub && method === "PATCH") {
+      if (me.role !== "owner")
+        return sendJson(res, 403, { error: { code: "forbidden", message: "Owners only" } });
+      const data = JSON.parse(await readBody(req)) as Partial<
+        Pick<StoredBrewery, "name" | "description" | "city" | "state">
+      >;
+      if (data.name !== undefined) b.name = data.name.trim();
+      if (data.description !== undefined) b.description = data.description;
+      if (data.city !== undefined) b.city = data.city;
+      if (data.state !== undefined) b.state = data.state;
+      b.updatedAt = new Date().toISOString();
+      return sendJson(res, 200, breweryDetailView(b, me.role));
+    }
+    if (!sub && method === "DELETE") {
+      if (me.role !== "owner")
+        return sendJson(res, 403, { error: { code: "forbidden", message: "Owners only" } });
+      breweries.delete(bId);
+      res.writeHead(204);
+      res.end();
+      return;
+    }
+    if (sub === "invites" && !subId && method === "GET") {
+      if (me.role !== "owner")
+        return sendJson(res, 403, { error: { code: "forbidden", message: "Owners only" } });
+      const items = [...breweryInvites.values()]
+        .filter((inv) => inv.breweryId === bId)
+        .map((inv) => ({
+          id: inv.id,
+          brewery: { id: b.id, name: b.name },
+          role: inv.role,
+          email: inv.email,
+          createdAt: inv.createdAt,
+          expiresAt: inv.expiresAt,
+        }));
+      return sendJson(res, 200, { items });
+    }
+    if (sub === "invites" && !subId && method === "POST") {
+      if (me.role !== "owner")
+        return sendJson(res, 403, { error: { code: "forbidden", message: "Owners only" } });
+      const data = JSON.parse(await readBody(req)) as { role: BreweryRole; email?: string };
+      const now = new Date();
+      const inv: StoredBreweryInvite = {
+        id: randomUUID(),
+        breweryId: b.id,
+        breweryName: b.name,
+        role: data.role,
+        email: data.email?.trim().toLowerCase() ?? null,
+        code: data.email ? null : randomBytes(12).toString("hex"),
+        createdAt: now.toISOString(),
+        expiresAt: new Date(now.getTime() + 7 * 86_400_000).toISOString(),
+      };
+      breweryInvites.set(inv.id, inv);
+      return sendJson(res, 201, {
+        id: inv.id,
+        brewery: { id: b.id, name: b.name },
+        role: inv.role,
+        email: inv.email,
+        createdAt: inv.createdAt,
+        expiresAt: inv.expiresAt,
+        ...(inv.code ? { code: inv.code } : {}),
+      });
+    }
+    if (sub === "invites" && subId && method === "DELETE") {
+      if (me.role !== "owner")
+        return sendJson(res, 403, { error: { code: "forbidden", message: "Owners only" } });
+      breweryInvites.delete(subId);
+      res.writeHead(204);
+      res.end();
+      return;
+    }
+    if (sub === "members" && subId && subAction === "role" && method === "PUT") {
+      if (me.role !== "owner")
+        return sendJson(res, 403, { error: { code: "forbidden", message: "Owners only" } });
+      const data = JSON.parse(await readBody(req)) as { role: BreweryRole };
+      const target = b.members.find((m) => m.userId === subId);
+      if (!target)
+        return sendJson(res, 404, { error: { code: "not_found", message: "Member not found" } });
+      target.role = data.role;
+      return sendJson(res, 200, breweryDetailView(b, subId === user.id ? data.role : me.role));
+    }
+    if (sub === "members" && subId && !subAction && method === "DELETE") {
+      if (subId !== user.id && me.role !== "owner")
+        return sendJson(res, 403, { error: { code: "forbidden", message: "Owners only" } });
+      b.members = b.members.filter((m) => m.userId !== subId);
+      res.writeHead(204);
+      res.end();
+      return;
+    }
+    if (sub === "transfer" && method === "POST") {
+      if (me.role !== "owner")
+        return sendJson(res, 403, { error: { code: "forbidden", message: "Owners only" } });
+      const data = JSON.parse(await readBody(req)) as { userId: string };
+      const target = b.members.find((m) => m.userId === data.userId);
+      if (!target)
+        return sendJson(res, 404, { error: { code: "not_found", message: "Member not found" } });
+      target.role = "owner";
+      me.role = "brewer";
+      return sendJson(res, 200, breweryDetailView(b, "brewer"));
+    }
   }
 
   if (pathname === "/api" || pathname.startsWith("/api/")) {
