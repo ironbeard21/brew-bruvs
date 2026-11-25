@@ -23,6 +23,11 @@ function scope(owner: Owner) {
     : eq(integrations.ownerUserId, owner.ownerUserId as string);
 }
 
+/**
+ * Queues a batch event for the batch owner's webhooks. Through app.queue_batch_webhooks
+ * (migration 0009): webhook settings are private to their managers, but anyone who may
+ * contribute to the batch can still report on it.
+ */
 export async function enqueueBatchWebhook(
   tx: Tx,
   batch: Batch,
@@ -30,30 +35,9 @@ export async function enqueueBatchWebhook(
   occurredAt: Date,
   data: Record<string, unknown>,
 ) {
-  const targets = await tx
-    .select({ id: integrations.id })
-    .from(integrations)
-    .where(
-      and(
-        eq(integrations.kind, kind),
-        scope(batch),
-        or(
-          and(
-            isNull(integrations.batchId),
-            sql`${integrations.config}->>'batchScoped' IS DISTINCT FROM 'true'`,
-          ),
-          eq(integrations.batchId, batch.id),
-        ),
-      ),
-    )
-    .for("key share");
-  if (targets.length)
-    await tx.insert(webhookJobs).values(
-      targets.map(({ id }) => ({
-        integrationId: id,
-        event: { type, batchId: batch.id, occurredAt: occurredAt.toISOString(), data },
-      })),
-    );
+  await tx.execute(
+    sql`SELECT app.queue_batch_webhooks(${batch.id}, ${type}, ${occurredAt.toISOString()}, ${JSON.stringify(data)}::jsonb)`,
+  );
 }
 
 const failed = sql<boolean>`exists (
@@ -92,7 +76,11 @@ async function manage(tx: Tx, user: User, id: string) {
   return row;
 }
 
-export function createWebhookService(db: Db, sender = createWebhookSender()) {
+/**
+ * `jobs` runs the worker (due reminders, deliveries). It acts for no user, so in the server it
+ * is the owner connection, as ADR-0011 has jobs do.
+ */
+export function createWebhookService(db: Db, sender = createWebhookSender(), jobs: Db = db) {
   return {
     async list(viewer: User | null, breweryId?: string) {
       const user = signedIn(viewer);
@@ -177,7 +165,7 @@ export function createWebhookService(db: Db, sender = createWebhookSender()) {
     },
 
     async enqueueDue(now = new Date()) {
-      await db.transaction(async (tx) => {
+      await jobs.transaction(async (tx) => {
         const due = await tx
           .select({ reminder: reminders, batch: batches })
           .from(reminders)
@@ -207,7 +195,7 @@ export function createWebhookService(db: Db, sender = createWebhookSender()) {
     },
 
     async deliverOne(now = new Date()) {
-      return db.transaction(async (tx) => {
+      return jobs.transaction(async (tx) => {
         const [item] = await tx
           .select({ job: webhookJobs, integration: integrations })
           .from(webhookJobs)

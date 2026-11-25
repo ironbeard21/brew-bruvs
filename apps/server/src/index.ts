@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Start-up: config, logger, database, routes. Jobs join in later tasks.
-import { createDb } from "@brew-bruvs/db";
+import { APP_ROLE, checkRowSecurity, createDb } from "@brew-bruvs/db";
 import { serve } from "@hono/node-server";
 import { createApp } from "./app.ts";
 import { createOidc } from "./auth/oidc.ts";
@@ -24,8 +24,14 @@ import { createWebhookService } from "./services/webhooks.ts";
 
 const config = loadConfig(process.env);
 const logger = createLogger(config.logLevel);
-const { db } = createDb(config.databaseUrl);
-const webhooks = createWebhookService(db);
+// Row-level security: run as brew_app, through its own login or by switching role.
+const { db } = config.appDatabaseUrl
+  ? createDb(config.appDatabaseUrl)
+  : createDb(config.databaseUrl, { role: APP_ROLE });
+await checkRowSecurity(db);
+// Jobs (the webhook worker) act for no user, so they run as the owner (ADR-0011).
+const jobs = createDb(config.databaseUrl);
+const webhooks = createWebhookService(db, undefined, jobs.db);
 const profiles = createEquipmentProfileService(db, { baseUrl: config.baseUrl });
 const app = createApp({
   logger,

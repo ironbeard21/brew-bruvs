@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { type Db, schema } from "@brew-bruvs/db";
-import { and, asc, eq, inArray, or } from "drizzle-orm";
+import { and, asc, eq, inArray, or, sql } from "drizzle-orm";
 import { hashSecret, newSecret } from "../auth/secrets.ts";
 import { type DeviceInput, DeviceKind, TiltColor } from "../contracts/device-readings.ts";
 import { ApiError } from "../errors.ts";
 import { matchesTilt, parseDeviceReading } from "../integrations/device-payload.ts";
 import type { User } from "../permissions.ts";
 import { denied, ownerOf, signedIn, type Tx } from "./access.ts";
-import { recordReading } from "./readings.ts";
 
 const { batches, integrations } = schema;
 const storedDeviceKinds = ["ispindel", "tilt", "rapt"] as const;
@@ -20,14 +19,14 @@ export async function moveBatchDevices(tx: Tx, batchId: string, breweryId: strin
     .where(and(eq(integrations.batchId, batchId), inArray(integrations.kind, storedDeviceKinds)));
 }
 
-function kindOf(row: Integration) {
+function kindOf(row: Pick<Integration, "kind" | "config">) {
   return DeviceKind.parse(
     row.kind === "ispindel" && (row.config as { gravitymon?: boolean }).gravitymon
       ? "gravitymon"
       : row.kind,
   );
 }
-function colorOf(row: Integration) {
+function colorOf(row: Pick<Integration, "config">) {
   const color = TiltColor.safeParse((row.config as { tiltColor?: unknown }).tiltColor);
   return color.success ? color.data : null;
 }
@@ -142,42 +141,27 @@ export function createDeviceService(db: Db, { baseUrl }: { baseUrl: string }) {
       });
     },
 
+    /**
+     * A device posts with its token and no user. Under row-level security the token's whole
+     * reach is two database functions (migration 0008): see its own device, and add a reading
+     * to the batch it is linked to while both still have the same owner.
+     */
     async ingest(token: string, payload: unknown, count: (tokenHash: string) => void) {
       const tokenHash = hashSecret(token);
-      const identity = and(
-        eq(integrations.tokenHash, tokenHash),
-        inArray(integrations.kind, storedDeviceKinds),
+      const { rows } = await db.execute<Pick<Integration, "kind" | "config">>(
+        sql`SELECT kind, config FROM app.device_for_token(${tokenHash})`,
       );
-      const [link] = await db
-        .select({ batchId: integrations.batchId })
-        .from(integrations)
-        .where(identity);
-      if (!link?.batchId) invalidToken();
-      const batchId = link.batchId;
-
-      await db.transaction(async (tx) => {
-        // Lock the batch first so its ownership cannot change during delivery.
-        const [batch] = await tx.select().from(batches).where(eq(batches.id, batchId)).for("share");
-        const [device] = await tx.select().from(integrations).where(identity).for("update");
-        if (
-          !batch ||
-          !device ||
-          device.batchId !== batch.id ||
-          device.ownerUserId !== batch.ownerUserId ||
-          device.ownerBreweryId !== batch.ownerBreweryId
-        ) {
-          invalidToken();
-        }
-        count(tokenHash);
-        const color = colorOf(device);
-        if (color && !matchesTilt(payload, color)) return;
-        const now = new Date();
-        await recordReading(tx, batch, parseDeviceReading(kindOf(device), payload, now), null);
-        await tx
-          .update(integrations)
-          .set({ lastSeenAt: now })
-          .where(eq(integrations.id, device.id));
-      });
+      const device = rows[0];
+      if (!device) invalidToken();
+      count(tokenHash);
+      const color = colorOf(device);
+      if (color && !matchesTilt(payload, color)) return;
+      const now = new Date();
+      const reading = parseDeviceReading(kindOf(device), payload, now);
+      const saved = await db.execute<{ id: string | null }>(
+        sql`SELECT app.record_device_reading(${tokenHash}, ${reading.gravitySg ?? null}, ${reading.temperatureC ?? null}, ${now.toISOString()}) AS id`,
+      );
+      if (!saved.rows[0]?.id) invalidToken();
     },
   };
 }

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Applies Drizzle migrations, and rolls back the latest one using its hand-written down file
 // in drizzle/down/<tag>.sql.
+import { createHash, createHmac, pbkdf2Sync, randomBytes } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { drizzle } from "drizzle-orm/node-postgres";
@@ -53,4 +54,57 @@ export async function rollbackLatest(client: Client): Promise<string | null> {
     throw err;
   }
   return entry.tag;
+}
+
+/**
+ * A SCRAM-SHA-256 verifier for `password` (RFC 5802/7677), the form Postgres stores. Setting
+ * a role's password with it keeps the password itself out of server logs.
+ */
+export function scramVerifier(password: string, salt = randomBytes(16), iterations = 4096) {
+  const salted = pbkdf2Sync(password.normalize("NFKC"), salt, iterations, 32, "sha256");
+  const hmac = (key: Buffer, text: string) => createHmac("sha256", key).update(text).digest();
+  const storedKey = createHash("sha256").update(hmac(salted, "Client Key")).digest();
+  const serverKey = hmac(salted, "Server Key");
+  const b64 = (b: Buffer) => b.toString("base64");
+  return `SCRAM-SHA-256$${iterations}:${b64(salt)}$${b64(storedKey)}:${b64(serverKey)}`;
+}
+
+/**
+ * Makes sure the server's role (brew_app) exists with its grants, which a restore made with
+ * `pg_restore --no-privileges` leaves out. With `password`, it can sign in with it
+ * (APP_DATABASE_URL). Runs at every start, after the migrations. When an administrator
+ * created brew_app and manages its password, the steps that need CREATEROLE are skipped.
+ */
+export async function ensureAppRole(
+  client: Client,
+  password?: string,
+  warn: (message: string) => void = console.warn,
+): Promise<void> {
+  await client.query(`
+    DO $$ BEGIN
+      IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'brew_app') THEN
+        CREATE ROLE brew_app NOLOGIN;
+      END IF;
+    EXCEPTION WHEN duplicate_object OR unique_violation THEN NULL;
+    END $$;
+    DO $$ BEGIN
+      IF NOT pg_has_role(current_user, 'brew_app', 'MEMBER') THEN
+        EXECUTE format('GRANT brew_app TO %I', current_user);
+      END IF;
+    EXCEPTION WHEN insufficient_privilege THEN NULL;
+    END $$;
+    GRANT USAGE ON SCHEMA public, app TO brew_app;
+    GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO brew_app;
+    ALTER DEFAULT PRIVILEGES IN SCHEMA public
+      GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO brew_app;
+  `);
+  if (password === undefined) return;
+  try {
+    await client.query(
+      `ALTER ROLE brew_app WITH LOGIN PASSWORD ${client.escapeLiteral(scramVerifier(password))}`,
+    );
+  } catch (err) {
+    if ((err as { code?: string }).code !== "42501") throw err;
+    warn("Can't set brew_app's password (needs CREATEROLE); keeping the one it has");
+  }
 }

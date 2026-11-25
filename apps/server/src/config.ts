@@ -17,6 +17,8 @@ const schema = z
     // Folder holding the static web build of the app. Unset: the server only serves the API.
     WEB_DIR: z.string().min(1).optional(),
     DATABASE_URL: z.string().min(1),
+    // Compose passes an empty value when POSTGRES_APP_PASSWORD is unset.
+    APP_DATABASE_URL: z.preprocess((v) => (v === "" ? undefined : v), z.string().min(1).optional()),
     BASE_URL: z.url().transform((v) => v.replace(/\/+$/, "")),
     SOURCE_URL: z.url({ protocol: /^https?$/ }).default(DEFAULT_SOURCE_URL),
     SIGNUP_MODE: z.enum(["open", "invite"]).default("invite"),
@@ -46,6 +48,8 @@ export interface Config {
   /** Absolute path, resolved from the working directory. */
   webDir: string | undefined;
   databaseUrl: string;
+  /** The server's own login, without BYPASSRLS. Unset: connect with DATABASE_URL, then SET ROLE. */
+  appDatabaseUrl: string | undefined;
   /** Public address without a trailing slash. */
   baseUrl: string;
   sourceUrl: string;
@@ -67,6 +71,7 @@ export function loadConfig(env: Record<string, string | undefined>): Config {
     logLevel: e.LOG_LEVEL,
     webDir: e.WEB_DIR ? resolve(e.WEB_DIR) : undefined,
     databaseUrl: e.DATABASE_URL,
+    appDatabaseUrl: e.APP_DATABASE_URL,
     baseUrl: e.BASE_URL,
     sourceUrl: e.SOURCE_URL,
     signupMode: e.SIGNUP_MODE,
