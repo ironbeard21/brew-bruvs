@@ -7,9 +7,37 @@ import { call, TEST_DATABASE_URL, twoUsers, withApp } from "./helpers.ts";
 const path = "/api/equipment";
 
 describe.skipIf(!TEST_DATABASE_URL)("equipment API on PostgreSQL", () => {
+  it("reads an item by ID with an owner or read share", async () => {
+    await withApp({}, async (app, sql) => {
+      const { adminToken, annToken, annId } = await twoUsers(app);
+      const created = await call(app, "POST", path, {
+        token: adminToken,
+        body: { name: "Keg" },
+      });
+      expect(created.status).toBe(201);
+      const item = `${path}/${created.json.id}`;
+
+      expect((await call(app, "GET", item)).status).toBe(401);
+      expect((await call(app, "GET", `${path}/bad-id`, { token: adminToken })).status).toBe(400);
+      expect((await call(app, "GET", item, { token: annToken })).status).toBe(404);
+      const owned = await call(app, "GET", item, { token: adminToken });
+      expect(owned.status).toBe(200);
+      expect(owned.json).toEqual(created.json);
+
+      await sql.query(
+        "INSERT INTO shares (resource_type, resource_id, to_user_id, level) VALUES ('equipment_item', $1, $2, 'read')",
+        [created.json.id, annId],
+      );
+      const shared = await call(app, "GET", item, { token: annToken });
+      expect(shared.status).toBe(200);
+      expect(shared.json).toEqual(owned.json);
+      expect((await call(app, "DELETE", item, { token: annToken })).status).toBe(403);
+    });
+  }, 15_000);
+
   it("creates from the catalog, pages and edits personal items, and deletes them", async () => {
     await withApp({}, async (app, sql) => {
-      const { adminToken, annToken } = await twoUsers(app);
+      const { adminToken, annToken, annId } = await twoUsers(app);
       await importCatalog(drizzle(sql));
       const [catalog] = (
         await sql.query(
@@ -61,7 +89,15 @@ describe.skipIf(!TEST_DATABASE_URL)("equipment API on PostgreSQL", () => {
       });
       expect((await call(app, "DELETE", `${path}/bad-id`, { token: adminToken })).status).toBe(400);
       expect((await call(app, "DELETE", item, { token: annToken })).status).toBe(404);
+      await sql.query(
+        "INSERT INTO shares (resource_type, resource_id, to_user_id, level) VALUES ('equipment_item', $1, $2, 'read'), ('recipe', $1, $2, 'read')",
+        [created.json.id, annId],
+      );
       expect((await call(app, "DELETE", item, { token: adminToken })).status).toBe(204);
+      const remaining = await sql.query("SELECT resource_type FROM shares WHERE resource_id = $1", [
+        created.json.id,
+      ]);
+      expect(remaining.rows).toEqual([{ resource_type: "recipe" }]);
       expect((await patch({ name: "Gone" })).status).toBe(404);
     });
   }, 15_000);
@@ -148,6 +184,22 @@ describe.skipIf(!TEST_DATABASE_URL)("equipment API on PostgreSQL", () => {
           object_id: created.json.id,
         })),
       );
+
+      await sql.query(
+        "UPDATE memberships SET role = 'brewer' WHERE brewery_id = $1 AND user_id = $2",
+        [breweryId, annId],
+      );
+      expect((await create(annToken)).status).toBe(201);
+      const updated = await call(app, "PATCH", item, {
+        token: annToken,
+        body: { name: "Clean keg" },
+      });
+      expect(updated.status).toBe(200);
+      expect(updated.json.name).toBe("Clean keg");
+      const brewerLoan = await holder({ heldByUserId: admin.json.id }, annToken);
+      expect(brewerLoan.status).toBe(200);
+      expect(brewerLoan.json.heldByUserId).toBe(admin.json.id);
+      expect((await call(app, "DELETE", item, { token: annToken })).status).toBe(403);
     });
   }, 15_000);
 });

@@ -6,16 +6,35 @@ import { ApiError } from "../errors.ts";
 import type { Action, User } from "../permissions.ts";
 import { authorizeRow, denied, newId, ownerOf, readableBy, signedIn, type Tx } from "./access.ts";
 
-const { activityEvents, equipment, equipmentItems, memberships } = schema;
+const { activityEvents, equipment, equipmentItems, memberships, shares } = schema;
 const shareableType = "equipment_item";
 const label = "Equipment item";
 type Item = typeof equipmentItems.$inferSelect;
 
 function view(row: Item) {
-  const { ownerUserId, ownerBreweryId, createdAt, updatedAt, ...item } = row;
-  const owner = ownerOf({ ownerUserId, ownerBreweryId });
+  const owner = ownerOf(row);
   if (!owner) throw new Error("Equipment item has no owner");
-  return { ...item, owner, createdAt: createdAt.toISOString(), updatedAt: updatedAt.toISOString() };
+  return {
+    id: row.id,
+    uri: row.uri,
+    catalogId: row.catalogId,
+    owner,
+    visibility: row.visibility,
+    name: row.name,
+    type: row.type,
+    condition: row.condition,
+    notes: row.notes,
+    heldByUserId: row.heldByUserId,
+    batchSizeL: row.batchSizeL,
+    boilSizeL: row.boilSizeL,
+    kettleVolumeL: row.kettleVolumeL,
+    kettleLossL: row.kettleLossL,
+    boilRateLPerHr: row.boilRateLPerHr,
+    mashTunVolumeL: row.mashTunVolumeL,
+    grainAbsorptionLPerKg: row.grainAbsorptionLPerKg,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+  };
 }
 
 async function catalogDefaults(tx: Tx, id: string) {
@@ -38,12 +57,9 @@ async function catalogDefaults(tx: Tx, id: string) {
   return row;
 }
 
-async function lockedItem(tx: Tx, user: User, action: Action, id: string) {
-  const [row] = await tx
-    .select()
-    .from(equipmentItems)
-    .where(eq(equipmentItems.id, id))
-    .for("update");
+async function authorizeItem(tx: Tx, user: User, action: Action, id: string) {
+  const query = tx.select().from(equipmentItems).where(eq(equipmentItems.id, id));
+  const [row] = await (action === "read" ? query : query.for("update"));
   if (!row) throw new ApiError(404, "not_found", "Equipment item not found");
   await authorizeRow(tx, user, action, shareableType, row, label);
   return row;
@@ -120,10 +136,14 @@ export function createEquipmentItemService(db: Db, { baseUrl }: { baseUrl: strin
       });
     },
 
+    async get(viewer: User | null, id: string) {
+      return view(await authorizeItem(db, signedIn(viewer), "read", id));
+    },
+
     async update(viewer: User | null, id: string, patch: EquipmentItemPatch) {
       const user = signedIn(viewer);
       return db.transaction(async (tx) => {
-        const item = await lockedItem(tx, user, "edit", id);
+        const item = await authorizeItem(tx, user, "edit", id);
         if (Object.keys(patch).length === 0) return view(item);
         const [row] = await tx
           .update(equipmentItems)
@@ -137,7 +157,10 @@ export function createEquipmentItemService(db: Db, { baseUrl }: { baseUrl: strin
     async remove(viewer: User | null, id: string) {
       const user = signedIn(viewer);
       await db.transaction(async (tx) => {
-        await lockedItem(tx, user, "delete", id);
+        await authorizeItem(tx, user, "delete", id);
+        await tx
+          .delete(shares)
+          .where(and(eq(shares.resourceType, shareableType), eq(shares.resourceId, id)));
         await tx.delete(equipmentItems).where(eq(equipmentItems.id, id));
       });
     },
@@ -145,7 +168,7 @@ export function createEquipmentItemService(db: Db, { baseUrl }: { baseUrl: strin
     async setHolder(viewer: User | null, id: string, heldByUserId: string | null) {
       const user = signedIn(viewer);
       return db.transaction(async (tx) => {
-        const item = await lockedItem(tx, user, "edit", id);
+        const item = await authorizeItem(tx, user, "edit", id);
         const breweryId = item.ownerBreweryId;
         if (!breweryId)
           throw new ApiError(

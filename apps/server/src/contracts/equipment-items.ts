@@ -59,7 +59,7 @@ export const EquipmentItem = EquipmentProfile.pick(dimensions)
   .openapi("EquipmentItem");
 
 export const EquipmentItemPage = z
-  .object({ items: z.array(EquipmentItem), nextOffset: z.number().nullable() })
+  .object({ items: z.array(EquipmentItem), nextOffset: z.int().nonnegative().nullable() })
   .openapi("EquipmentItemPage");
 
 export type EquipmentItemInput = z.infer<typeof EquipmentItemInput>;

@@ -49,6 +49,15 @@ const routes = {
     request: body(EquipmentItemInput),
     responses: { 201: json(EquipmentItem, "Created"), ...errorResponses(400, 401, 403, 404) },
   }),
+  get: createRoute({
+    ...common,
+    method: "get",
+    path: itemPath,
+    operationId: "getEquipmentItem",
+    summary: "Read an equipment item",
+    request: { params },
+    responses: { 200: json(EquipmentItem, "Equipment item"), ...errorResponses(400, 401, 404) },
+  }),
   patch: createRoute({
     ...common,
     method: "patch",
@@ -84,6 +93,9 @@ export function registerEquipmentItemRoutes(app: OpenAPIHono<AppEnv>, items: Equ
   );
   app.openapi(routes.create, async (c) =>
     c.json(await items.create(requireSession(c).user, c.req.valid("json")), 201),
+  );
+  app.openapi(routes.get, async (c) =>
+    c.json(await items.get(requireSession(c).user, c.req.valid("param").id), 200),
   );
   app.openapi(routes.patch, async (c) =>
     c.json(
