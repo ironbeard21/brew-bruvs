@@ -12,6 +12,7 @@ import { createBatchService } from "../src/services/batches.ts";
 import { createBreweryService } from "../src/services/breweries.ts";
 import { createCatalogService } from "../src/services/catalog.ts";
 import { createEquipmentProfileService } from "../src/services/equipment-profiles.ts";
+import { createInventoryService } from "../src/services/inventory.ts";
 import { createNoteService } from "../src/services/notes.ts";
 import { createRecipeFileService } from "../src/services/recipe-files.ts";
 import { createRecipeService } from "../src/services/recipes.ts";
@@ -36,6 +37,7 @@ function deps(
     batches: createBatchService(db, { baseUrl: BASE_URL, profiles }),
     notes: createNoteService(db, { baseUrl: BASE_URL }),
     breweries: createBreweryService(db, { baseUrl: BASE_URL }),
+    inventory: createInventoryService(db, { baseUrl: BASE_URL }),
     auth: {
       auth: createAuthService(db, { baseUrl: BASE_URL, signupMode }),
       oidc,

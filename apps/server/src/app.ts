@@ -13,12 +13,14 @@ import { registerBatchRoutes } from "./routes/batches.ts";
 import { registerBreweryRoutes } from "./routes/breweries.ts";
 import { registerCatalogRoutes } from "./routes/catalog.ts";
 import { registerHealthRoutes } from "./routes/health.ts";
+import { registerInventoryRoutes } from "./routes/inventory.ts";
 import { registerRecipeFileRoutes } from "./routes/recipe-files.ts";
 import { registerRecipeRoutes } from "./routes/recipes.ts";
 import type { BatchService } from "./services/batches.ts";
 import type { BreweryService } from "./services/breweries.ts";
 import type { CatalogService } from "./services/catalog.ts";
 import type { EquipmentProfileService } from "./services/equipment-profiles.ts";
+import type { InventoryService } from "./services/inventory.ts";
 import type { NoteService } from "./services/notes.ts";
 import type { RecipeFileService } from "./services/recipe-files.ts";
 import type { RecipeService } from "./services/recipes.ts";
@@ -46,6 +48,7 @@ export interface AppDeps {
   batches: BatchService;
   notes: NoteService;
   breweries: BreweryService;
+  inventory: InventoryService;
 }
 
 export function createApp(deps: AppDeps) {
@@ -60,6 +63,7 @@ export function createApp(deps: AppDeps) {
     batches,
     notes,
     breweries,
+    inventory,
   } = deps;
   const app = new OpenAPIHono<AppEnv>({
     defaultHook: (result, c) => {
@@ -95,6 +99,7 @@ export function createApp(deps: AppDeps) {
   registerRecipeFileRoutes(app, recipes, recipeFiles, { trustProxy: auth.trustProxy });
   registerBatchRoutes(app, { batches, notes });
   registerBreweryRoutes(app, breweries);
+  registerInventoryRoutes(app, inventory);
   app.doc31(OPENAPI_PATH, OPENAPI_INFO);
 
   if (webDir) {

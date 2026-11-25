@@ -11,6 +11,7 @@ import { createBatchService } from "./services/batches.ts";
 import { createBreweryService } from "./services/breweries.ts";
 import { createCatalogService } from "./services/catalog.ts";
 import { createEquipmentProfileService } from "./services/equipment-profiles.ts";
+import { createInventoryService } from "./services/inventory.ts";
 import { createNoteService } from "./services/notes.ts";
 import { createRecipeFileService } from "./services/recipe-files.ts";
 import { createRecipeService } from "./services/recipes.ts";
@@ -29,6 +30,7 @@ const app = createApp({
   batches: createBatchService(db, { baseUrl: config.baseUrl, profiles }),
   notes: createNoteService(db, { baseUrl: config.baseUrl }),
   breweries: createBreweryService(db, { baseUrl: config.baseUrl }),
+  inventory: createInventoryService(db, { baseUrl: config.baseUrl }),
   auth: {
     auth: createAuthService(db, { baseUrl: config.baseUrl, signupMode: config.signupMode }),
     oidc:
