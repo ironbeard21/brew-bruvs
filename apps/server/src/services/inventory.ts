@@ -269,14 +269,27 @@ async function reserve(tx: Tx, batch: BatchRow) {
   return { reserved, short };
 }
 
+/** Whether any of the batch's holds are on stock its current owner doesn't own. */
+async function holdsOthersStock(tx: Tx, batch: BatchRow) {
+  const [row] = await tx
+    .select({ id: inventoryReservations.id })
+    .from(inventoryReservations)
+    .innerJoin(inventoryItems, eq(inventoryItems.id, inventoryReservations.inventoryItemId))
+    .where(and(ofBatch(batch.id, "reserved"), sql`(${ownerIs(batch)}) IS NOT TRUE`))
+    .limit(1);
+  return row !== undefined;
+}
+
 /**
- * After a started batch changes owner, its held stock comes from the new owner's inventory:
- * the old reservations are released and the batch reserves again. Used stock stays used.
+ * After a started batch changes owner, what it holds comes from the new owner's inventory: any
+ * old holds are released and it reserves again, even if it held nothing before. A planned batch
+ * holds nothing yet, and a packaged one has already used its stock.
  */
 export async function reserveForNewOwner(tx: Tx, batchId: string) {
-  if (!(await release(tx, batchId)).length) return;
   const [batch] = await tx.select().from(batches).where(eq(batches.id, batchId));
-  if (batch) await reserve(tx, batch);
+  if (!batch || stage(batch.status) !== 1) return;
+  await release(tx, batchId);
+  await reserve(tx, batch);
 }
 
 /**
@@ -298,7 +311,15 @@ export async function syncReservations(tx: Tx, batch: BatchRow, from: Status, to
     await useUp(tx, batch.id);
     change.used = true;
   }
-  if (a === 2 && b < 2) await putBack(tx, batch.id);
+  if (a === 2 && b < 2) {
+    // The used stock goes back where it came from. If the batch has changed owner since, that
+    // was the old owner's: give it back to them and reserve from the current owner instead.
+    await putBack(tx, batch.id);
+    if (await holdsOthersStock(tx, batch)) {
+      await release(tx, batch.id);
+      Object.assign(change, await reserve(tx, batch));
+    }
+  }
   if (b === 0) {
     await release(tx, batch.id);
     change.released = true;

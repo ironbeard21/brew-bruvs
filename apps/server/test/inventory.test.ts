@@ -265,6 +265,71 @@ describe.skipIf(!TEST_DATABASE_URL)("inventory API on PostgreSQL", () => {
     });
   });
 
+  it("reserves from the new owner when a batch that started short moves", async () => {
+    await withInventory(async (ctx) => {
+      const brewery = await call(ctx.app, "POST", "/api/breweries", {
+        token: ctx.me,
+        body: { name: "Hops Co" },
+      });
+      const breweryId = brewery.json.id as string;
+      const theirs = await item(ctx, {
+        name: "Pale malt",
+        quantity: 5,
+        quantityUnit: "kg",
+        breweryId,
+      });
+      const id = await plannedBatch(ctx);
+      const started = await move(ctx, id, "brewing");
+      expect((started.json.inventory as Json).reserved).toEqual([]);
+      await call(ctx.app, "POST", `/api/batches/${id}/move`, {
+        token: ctx.me,
+        body: { breweryId },
+      });
+      expect((await stockOf(ctx, theirs.id)).reserved).toBe(4.5);
+      await move(ctx, id, "packaged");
+      expect((await stockOf(ctx, theirs.id)).quantity).toBe(0.5);
+    });
+  });
+
+  it("gives used stock back to the old owner and reserves from the new one on undo", async () => {
+    await withInventory(async (ctx) => {
+      const brewery = await call(ctx.app, "POST", "/api/breweries", {
+        token: ctx.me,
+        body: { name: "Hops Co" },
+      });
+      const breweryId = brewery.json.id as string;
+      const mine = await item(ctx, { name: "Pale malt", quantity: 5, quantityUnit: "kg" });
+      const theirs = await item(ctx, {
+        name: "Pale malt",
+        quantity: 10,
+        quantityUnit: "kg",
+        breweryId,
+      });
+      const id = await plannedBatch(ctx);
+      await move(ctx, id, "brewing");
+      await move(ctx, id, "packaged");
+      expect((await stockOf(ctx, mine.id)).quantity).toBe(0.5);
+
+      // Packaged batches keep what they used when they move.
+      await call(ctx.app, "POST", `/api/batches/${id}/move`, {
+        token: ctx.me,
+        body: { breweryId },
+      });
+      expect((await stockOf(ctx, mine.id)).quantity).toBe(0.5);
+      expect((await stockOf(ctx, theirs.id)).reserved).toBe(0);
+
+      const undone = await move(ctx, id, "conditioning");
+      expect(((undone.json.inventory as Json).reserved as Json[]).map((r) => r.itemId)).toEqual([
+        theirs.id,
+      ]);
+      expect(await stockOf(ctx, mine.id)).toEqual({ quantity: 5, reserved: 0, available: 5 });
+      expect((await stockOf(ctx, theirs.id)).reserved).toBe(4.5);
+      await move(ctx, id, "packaged");
+      expect((await stockOf(ctx, mine.id)).quantity).toBe(5);
+      expect((await stockOf(ctx, theirs.id)).quantity).toBe(5.5);
+    });
+  });
+
   it("drops reservations when the batch or the item is deleted", async () => {
     await withInventory(async (ctx) => {
       const malt = await item(ctx, { name: "Pale malt", quantity: 5, quantityUnit: "kg" });
