@@ -24,3 +24,12 @@ export async function withTestDatabase<T>(
     await admin.end();
   }
 }
+
+/** Rolls back newer migrations, then `tag` itself, so tests don't break when migrations are added. */
+export async function rollbackThrough(client: Client, tag: string): Promise<void> {
+  const { rollbackLatest } = await import("../src/migrations.ts");
+  for (let rolled = await rollbackLatest(client); rolled !== tag; ) {
+    if (!rolled) throw new Error(`Migration ${tag} was not applied`);
+    rolled = await rollbackLatest(client);
+  }
+}

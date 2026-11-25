@@ -34,6 +34,11 @@ const profileFields = {
 export const EquipmentProfileInput = z
   .strictObject({ name: z.string().trim().min(1).max(100), ...profileFields })
   .openapi("EquipmentProfileInput");
+export const CreateEquipmentProfile = EquipmentProfileInput.extend({
+  breweryId: z.uuid().optional().openapi({
+    description: "Create it as this brewery's. You must be one of its owners or brewers",
+  }),
+}).openapi("CreateEquipmentProfile");
 
 export const EquipmentProfilePatch =
   EquipmentProfileInput.partial().openapi("EquipmentProfilePatch");
@@ -44,6 +49,7 @@ export const EquipmentProfile = z
     id: z.uuid(),
     uri: z.string(),
     name: z.string(),
+    owner: z.object({ type: z.enum(["user", "brewery"]), id: z.uuid() }),
     catalogId: z.string().nullable(),
     batchSizeL: nullableNumber,
     boilSizeL: nullableNumber,
@@ -153,6 +159,9 @@ export const CreateRecipe = RecipeVersionInput.extend({
   visibility: Visibility.default("private"),
   credit: CreditInput.optional().openapi({
     description: "For imported recipes; permanent once saved",
+  }),
+  breweryId: z.uuid().optional().openapi({
+    description: "Create it as this brewery's. You must be one of its owners or brewers",
   }),
 })
   .refine((r) => !r.credit || r.visibility === "private", {

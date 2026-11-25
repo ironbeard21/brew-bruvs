@@ -3,10 +3,10 @@
 import { type Db, schema } from "@brew-bruvs/db";
 import { eq } from "drizzle-orm";
 import type { z } from "zod";
-import type { EquipmentProfileInput, EquipmentProfilePatch } from "../contracts/recipes.ts";
+import type { CreateEquipmentProfile, EquipmentProfilePatch } from "../contracts/recipes.ts";
 import { ApiError, pgCode } from "../errors.ts";
 import type { Action, User } from "../permissions.ts";
-import { denied, newId, ownerOf, signedIn, type Tx } from "./access.ts";
+import { denied, newId, newOwner, ownerOf, signedIn, type Tx } from "./access.ts";
 
 const { equipmentProfiles } = schema;
 type ProfileRow = typeof equipmentProfiles.$inferSelect;
@@ -16,6 +16,7 @@ function view(row: ProfileRow) {
     id: row.id,
     uri: row.uri,
     name: row.name,
+    owner: ownerOf(row) as NonNullable<ReturnType<typeof ownerOf>>,
     catalogId: row.catalogId,
     batchSizeL: row.batchSizeL,
     boilSizeL: row.boilSizeL,
@@ -78,18 +79,20 @@ export function createEquipmentProfileService(db: Db, opts: { baseUrl: string })
       return rows.map(view);
     },
 
-    async create(viewer: User | null, input: z.infer<typeof EquipmentProfileInput>) {
+    async create(viewer: User | null, input: z.infer<typeof CreateEquipmentProfile>) {
       const user = signedIn(viewer);
+      const { breweryId, ...fields } = input;
+      const owner = newOwner(user, breweryId);
       return catalogChecked(() =>
         db.transaction(async (tx) => {
           const id = await newId(tx);
           const [row] = await tx
             .insert(equipmentProfiles)
             .values({
-              ...input,
+              ...fields,
               id,
               uri: `${opts.baseUrl}/equipment-profiles/${id}`,
-              ownerUserId: user.id,
+              ...owner,
             })
             .returning();
           return view(row as ProfileRow);

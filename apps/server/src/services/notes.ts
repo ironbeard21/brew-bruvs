@@ -6,7 +6,7 @@ import type { z } from "zod";
 import type { NoteInput, NotePatch, TastingScores } from "../contracts/batches.ts";
 import { ApiError } from "../errors.ts";
 import type { Action, User } from "../permissions.ts";
-import { authorizeRow, newId, ownerOf, readableBy, signedIn, type Tx } from "./access.ts";
+import { authorizeRow, newId, newOwner, ownerOf, readableBy, signedIn, type Tx } from "./access.ts";
 
 const { notes, recipes, batches, shares } = schema;
 type NoteRow = typeof notes.$inferSelect;
@@ -100,6 +100,7 @@ export function createNoteService(db: Db, opts: { baseUrl: string }) {
     /** A note about something needs read access to it; the note itself is yours and private. */
     async create(viewer: User | null, input: z.infer<typeof NoteInput>) {
       const user = signedIn(viewer);
+      const owner = newOwner(user, input.breweryId);
       return db.transaction(async (tx) => {
         if (input.recipeId) {
           const [recipe] = await tx.select().from(recipes).where(eq(recipes.id, input.recipeId));
@@ -117,7 +118,7 @@ export function createNoteService(db: Db, opts: { baseUrl: string }) {
           .values({
             id,
             uri: `${opts.baseUrl}/notes/${id}`,
-            ownerUserId: user.id,
+            ...owner,
             kind: input.kind,
             body: input.body,
             recipeId: input.recipeId ?? null,

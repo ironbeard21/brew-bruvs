@@ -8,6 +8,7 @@ import { loadConfig } from "./config.ts";
 import { createLogger } from "./logger.ts";
 import { createAuthService } from "./services/auth.ts";
 import { createBatchService } from "./services/batches.ts";
+import { createBreweryService } from "./services/breweries.ts";
 import { createCatalogService } from "./services/catalog.ts";
 import { createEquipmentProfileService } from "./services/equipment-profiles.ts";
 import { createNoteService } from "./services/notes.ts";
@@ -27,6 +28,7 @@ const app = createApp({
   recipeFiles: createRecipeFileService(db),
   batches: createBatchService(db, { baseUrl: config.baseUrl, profiles }),
   notes: createNoteService(db, { baseUrl: config.baseUrl }),
+  breweries: createBreweryService(db, { baseUrl: config.baseUrl }),
   auth: {
     auth: createAuthService(db, { baseUrl: config.baseUrl, signupMode: config.signupMode }),
     oidc:

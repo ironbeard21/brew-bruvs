@@ -224,6 +224,31 @@ export const memberships = pgTable(
   (t) => [primaryKey({ columns: [t.breweryId, t.userId] }), index().on(t.userId)],
 );
 
+// An invitation into a brewery: to a user on this server, or a one-time code (hash only).
+export const breweryInvites = pgTable(
+  "brewery_invites",
+  {
+    id: id(),
+    breweryId: uuid("brewery_id")
+      .notNull()
+      .references(() => breweries.id, { onDelete: "cascade" }),
+    role: breweryRole("role").notNull(),
+    toUserId: uuid("to_user_id").references(() => users.id, { onDelete: "cascade" }),
+    codeHash: text("code_hash").unique(),
+    createdByUserId: uuid("created_by_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    createdAt: createdAt(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    usedAt: timestamp("used_at", { withTimezone: true }),
+  },
+  (t) => [
+    check("brewery_invites_one_target", sql`num_nonnulls(${t.toUserId}, ${t.codeHash}) = 1`),
+    index().on(t.breweryId),
+    index().on(t.toUserId),
+  ],
+);
+
 // Every shareable object has one owner (a user or a brewery), a global URI and a visibility.
 const shareableColumns = () => ({
   id: id(),

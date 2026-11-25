@@ -45,6 +45,9 @@ export const CreateBatch = z
     equipmentProfileId: z.uuid().nullable().optional().openapi({
       description: "Defaults to the version's, when you can read it",
     }),
+    breweryId: z.uuid().optional().openapi({
+      description: "Create it as this brewery's. You must be one of its owners or brewers",
+    }),
   })
   .openapi("CreateBatch");
 
@@ -202,6 +205,9 @@ export const NoteInput = z
     recipeId: z.uuid().optional(),
     batchId: z.uuid().optional(),
     scores: TastingScores.optional(),
+    breweryId: z.uuid().optional().openapi({
+      description: "Create it as this brewery's. You must be one of its owners or brewers",
+    }),
   })
   .refine((n) => !(n.recipeId && n.batchId), {
     message: "a note is about a recipe, a batch, or neither",
