@@ -18,6 +18,16 @@ export async function withTestDatabase<T>(
     try {
       return await run(databaseUrl.href);
     } finally {
+      // A pool can still be closing its connections when `run` returns. FORCE would kill them
+      // mid-shutdown and the client reports that as an unhandled error, so give them a moment.
+      for (let i = 0; i < 100; i++) {
+        const { rows } = await admin.query<{ n: number }>(
+          "SELECT count(*)::int AS n FROM pg_stat_activity WHERE datname = $1",
+          [name],
+        );
+        if (!rows[0]?.n) break;
+        await new Promise((resolve) => setTimeout(resolve, 20));
+      }
       await admin.query(`DROP DATABASE ${identifier} WITH (FORCE)`);
     }
   } finally {

@@ -3,6 +3,7 @@ CREATE TABLE "brewery_invites" (
 	"brewery_id" uuid NOT NULL,
 	"role" "brewery_role" NOT NULL,
 	"email" text,
+	"to_user_id" uuid,
 	"code_hash" text,
 	"created_by_user_id" uuid,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
@@ -13,6 +14,7 @@ CREATE TABLE "brewery_invites" (
 );
 --> statement-breakpoint
 ALTER TABLE "brewery_invites" ADD CONSTRAINT "brewery_invites_brewery_id_breweries_id_fk" FOREIGN KEY ("brewery_id") REFERENCES "public"."breweries"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "brewery_invites" ADD CONSTRAINT "brewery_invites_to_user_id_users_id_fk" FOREIGN KEY ("to_user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "brewery_invites" ADD CONSTRAINT "brewery_invites_created_by_user_id_users_id_fk" FOREIGN KEY ("created_by_user_id") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "brewery_invites_brewery_id_index" ON "brewery_invites" USING btree ("brewery_id");--> statement-breakpoint
-CREATE INDEX "brewery_invites_email_index" ON "brewery_invites" USING btree ("email");
+CREATE INDEX "brewery_invites_to_user_id_index" ON "brewery_invites" USING btree ("to_user_id");

@@ -190,6 +190,29 @@ describe.skipIf(!TEST_DATABASE_URL)("breweries API on PostgreSQL", () => {
       expect(shape(known)).toEqual([201, Object.keys(unknown.json).sort(), "member@brew.test"]);
       const pending = await call(app, "GET", path, { token: owner });
       expect(JSON.stringify(pending.json)).not.toMatch(new RegExp(people.member.id));
+      // Emails aren't verified, so whoever signs up with the address later can't take the invite.
+      const owned = await call(app, "POST", path, {
+        token: owner,
+        body: { role: "owner", email: "later@brew.test" },
+      });
+      const later = await call(app, "POST", "/api/auth/signup", {
+        body: {
+          email: "later@brew.test",
+          password: "later-password",
+          displayName: "Later",
+          inviteCode: await invite(app, owner),
+          client: "app",
+        },
+      });
+      const laterToken = later.json.token as string;
+      expect(
+        (await call(app, "GET", "/api/brewery-invites", { token: laterToken })).json.items,
+      ).toEqual([]);
+      const claimed = await call(app, "POST", "/api/brewery-invites/accept", {
+        token: laterToken,
+        body: { id: owned.json.id },
+      });
+      expect([claimed.status, code(claimed)]).toEqual([404, "invalid_invite"]);
       // Already a member: refused when they try to accept, not when invited.
       const twice = await call(app, "POST", "/api/brewery-invites/accept", {
         token: people.member.token,
@@ -243,7 +266,12 @@ describe.skipIf(!TEST_DATABASE_URL)("breweries API on PostgreSQL", () => {
       expect(made.json).toMatchObject({ role: "brewer", email: null });
       const pendingList = await call(app, "GET", path, { token: owner });
       const listed = pendingList.json.items as Json[];
-      expect(listed.map((i) => i.email)).toEqual(["nobody@brew.test", "member@brew.test", null]);
+      expect(listed.map((i) => i.email)).toEqual([
+        "nobody@brew.test",
+        "member@brew.test",
+        "later@brew.test",
+        null,
+      ]);
       expect(listed.at(-1)?.id).toBe(made.json.id);
       expect(listed.every((i) => i.code === undefined)).toBe(true);
       expect((await call(app, "GET", path, { token: people.brewer.token })).status).toBe(403);

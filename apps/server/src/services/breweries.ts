@@ -89,11 +89,6 @@ export function createBreweryService(db: Db, opts: { baseUrl: string }) {
     return { role: target.role, lastOwner: target.role === "owner" && owners === 1 };
   }
 
-  async function emailOf(tx: Tx, user: User) {
-    const [row] = await tx.select({ email: users.email }).from(users).where(eq(users.id, user.id));
-    return (row?.email ?? "").toLowerCase();
-  }
-
   const lastOwner = () =>
     new ApiError(409, "last_owner", "A brewery needs an owner: make someone else an owner first");
 
@@ -264,8 +259,13 @@ export function createBreweryService(db: Db, opts: { baseUrl: string }) {
             .returning();
           return viewInvite(row as InviteRow, target, code);
         }
-        // No account lookup here: the reply must not tell the inviter who has one.
+        // Bound to whoever has the email now. A later signup can't claim it (emails aren't
+        // verified). The reply is the same either way, so it doesn't reveal who has an account.
         const email = input.email.toLowerCase();
+        const [invitee] = await tx
+          .select({ id: users.id })
+          .from(users)
+          .where(sql`lower(${users.email}) = ${email}`);
         await tx
           .delete(breweryInvites)
           .where(
@@ -277,7 +277,14 @@ export function createBreweryService(db: Db, opts: { baseUrl: string }) {
           );
         const [row] = await tx
           .insert(breweryInvites)
-          .values({ breweryId: id, role: input.role, email, createdByUserId: user.id, expiresAt })
+          .values({
+            breweryId: id,
+            role: input.role,
+            email,
+            toUserId: invitee?.id ?? null,
+            createdByUserId: user.id,
+            expiresAt,
+          })
           .returning();
         return viewInvite(row as InviteRow, target);
       });
@@ -302,10 +309,10 @@ export function createBreweryService(db: Db, opts: { baseUrl: string }) {
       });
     },
 
-    /** Pending invites sent to the user's email. */
+    /** Pending invites sent to the user. */
     async myInvites(viewer: User | null) {
       const user = signedIn(viewer);
-      return inviteList(db, eq(breweryInvites.email, await emailOf(db, user)));
+      return inviteList(db, eq(breweryInvites.toUserId, user.id));
     },
 
     async decline(viewer: User | null, inviteId: string) {
@@ -315,7 +322,7 @@ export function createBreweryService(db: Db, opts: { baseUrl: string }) {
         .where(
           and(
             eq(breweryInvites.id, inviteId),
-            eq(breweryInvites.email, await emailOf(db, user)),
+            eq(breweryInvites.toUserId, user.id),
             isNull(breweryInvites.usedAt),
           ),
         )
@@ -335,10 +342,7 @@ export function createBreweryService(db: Db, opts: { baseUrl: string }) {
               pending(),
               "code" in input
                 ? eq(breweryInvites.codeHash, hashSecret(input.code))
-                : and(
-                    eq(breweryInvites.id, input.id),
-                    eq(breweryInvites.email, await emailOf(tx, user)),
-                  ),
+                : and(eq(breweryInvites.id, input.id), eq(breweryInvites.toUserId, user.id)),
             ),
           )
           .for("update");
