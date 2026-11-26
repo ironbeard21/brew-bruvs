@@ -665,4 +665,50 @@ describe.skipIf(!TEST_DATABASE_URL)("breweries API on PostgreSQL", () => {
       expect(item.json.heldByUserId).toBeNull();
     });
   });
+
+  it("never deadlocks when an item is handed to a member who is leaving", async () => {
+    await withBrewery(async ({ app, sql, brewery, people }) => {
+      // The deadlock needed the current holder's id to sort before the incoming holder's.
+      const [from, to] =
+        people.brewer.id < people.member.id
+          ? [people.brewer, people.member]
+          : [people.member, people.brewer];
+      const kettle = await call(app, "POST", "/api/equipment", {
+        token: people.owner.token,
+        body: { name: "Kettle", breweryId: brewery },
+      });
+      const holder = `/api/equipment/${kettle.json.id}/holder`;
+      const lend = (heldByUserId: string) =>
+        call(app, "PUT", holder, { token: people.owner.token, body: { heldByUserId } });
+      expect((await lend(from.id)).status).toBe(200);
+
+      // The incoming holder starts leaving, taking the same locks as removeMember.
+      await sql.query("BEGIN");
+      await sql.query(
+        "SELECT 1 FROM memberships WHERE brewery_id = $1 AND user_id = $2 FOR UPDATE",
+        [brewery, to.id],
+      );
+      const handing = lend(to.id);
+      await new Promise((done) => setTimeout(done, 300));
+      let leaveError: string | undefined;
+      try {
+        await sql.query("SELECT 1 FROM memberships WHERE brewery_id = $1 FOR UPDATE", [brewery]);
+        await sql.query("DELETE FROM memberships WHERE brewery_id = $1 AND user_id = $2", [
+          brewery,
+          to.id,
+        ]);
+        await sql.query("COMMIT");
+      } catch (err) {
+        leaveError = (err as { code?: string }).code;
+        await sql.query("ROLLBACK");
+      }
+      const handed = await handing;
+      expect(leaveError).toBeUndefined();
+      expect([handed.status, handed.json.error?.code]).toEqual([400, "unknown_brewery_member"]);
+      const item = await call(app, "GET", `/api/equipment/${kettle.json.id}`, {
+        token: people.owner.token,
+      });
+      expect(item.json.heldByUserId).toBe(from.id);
+    });
+  });
 });

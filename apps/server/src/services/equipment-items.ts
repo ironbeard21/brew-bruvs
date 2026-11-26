@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { type Db, schema } from "@brew-bruvs/db";
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import type { EquipmentItemInput, EquipmentItemPatch } from "../contracts/equipment-items.ts";
 import { ApiError } from "../errors.ts";
 import type { Action, User } from "../permissions.ts";
@@ -189,20 +189,19 @@ export function createEquipmentItemService(db: Db, { baseUrl }: { baseUrl: strin
           );
         checkBrewery(user, "edit", breweryId);
 
-        // Memberships first, then the item: leaving deletes the membership and its trigger then
-        // returns the item (migration 0010), so the same order here means the two can't deadlock.
-        const people = [...new Set([heldByUserId, found.heldByUserId])]
-          .filter((p): p is string => p !== null)
-          .sort();
-        const members = people.length
+        // The incoming holder's membership first, then the item: leaving locks memberships and its
+        // trigger then returns the item (migration 0010). Holding at most one membership lock
+        // before the item means a loan can't deadlock with anyone leaving.
+        const [member] = heldByUserId
           ? await tx
               .select({ userId: memberships.userId })
               .from(memberships)
-              .where(and(eq(memberships.breweryId, breweryId), inArray(memberships.userId, people)))
-              .orderBy(asc(memberships.userId))
+              .where(
+                and(eq(memberships.breweryId, breweryId), eq(memberships.userId, heldByUserId)),
+              )
               .for("key share")
           : [];
-        if (heldByUserId && !members.some((m) => m.userId === heldByUserId))
+        if (heldByUserId && !member)
           throw new ApiError(
             400,
             "unknown_brewery_member",
