@@ -16,7 +16,11 @@
       "supportsTablet": true,
       "bundleIdentifier": "org.brewbruvs.app",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSAppTransportSecurity": {
+          "NSAllowsLocalNetworking": true
+        },
+        "NSLocalNetworkUsageDescription": "Brew-Bruvs connects to your self-hosted Brew-Bruvs server when it runs on your local network."
       },
       "privacyManifests": {
         "NSPrivacyTracking": false,
@@ -53,7 +57,15 @@
           "color": "#B45309"
         }
       ],
-      "expo-document-picker"
+      "expo-document-picker",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
+      ]
     ]
   }
 }

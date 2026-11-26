@@ -152,6 +152,27 @@ describe("Store-ready config, assets, and listings (P2-15)", () => {
     expect(existsSync(resolve(APP_ROOT, notifPlugin?.[1]?.icon ?? ""))).toBe(true);
   });
 
+  it("lets release builds reach a self-hosted server over http:// on the local network", () => {
+    const appJson = JSON.parse(readFileSync(resolve(APP_ROOT, "app.json"), "utf8")) as {
+      expo: {
+        ios: { infoPlist: Record<string, unknown> };
+        plugins: (string | [string, Record<string, unknown>])[];
+      };
+    };
+    // iOS: HTTP only to local addresses and .local names; public servers stay HTTPS-only.
+    expect(appJson.expo.ios.infoPlist.NSAppTransportSecurity).toEqual({
+      NSAllowsLocalNetworking: true,
+    });
+    // iOS asks before talking to the local network; the prompt needs a reason.
+    expect(appJson.expo.ios.infoPlist.NSLocalNetworkUsageDescription).toMatch(/self-hosted/);
+    // Android blocks cleartext by default since API 28.
+    const buildProperties = appJson.expo.plugins.find(
+      (p): p is [string, Record<string, unknown>] =>
+        Array.isArray(p) && p[0] === "expo-build-properties",
+    );
+    expect(buildProperties?.[1]).toEqual({ android: { usesCleartextTraffic: true } });
+  });
+
   it("ships docs/privacy-policy.md, store listing copy, and all store screenshots", () => {
     const policy = readFileSync(resolve(REPO_ROOT, "docs/privacy-policy.md"), "utf8");
     expect(policy).toMatch(/no tracking/i);

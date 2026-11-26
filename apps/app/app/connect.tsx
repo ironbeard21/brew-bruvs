@@ -56,7 +56,7 @@ export default function ConnectScreen() {
               if (errorMessage) setErrorMessage(null);
             }}
             placeholder="https://brew.example.com"
-            helper="Include http:// or https:// (localhost defaults to http://)"
+            helper="Use https://, or http:// for a server on your local network (localhost defaults to http://)"
             keyboardType="url"
             autoCapitalize="none"
             autoCorrect={false}

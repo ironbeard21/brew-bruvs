@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { type ApiError, createApiClient } from "@brew-bruvs/api-contract";
+import { Platform } from "react-native";
+import { platformFetch } from "./transport";
 
 export type BrewBruvsApiClient = ReturnType<typeof createApiClient>;
 
@@ -14,10 +16,14 @@ export function getApiClient(
 ): BrewBruvsApiClient {
   const opts: ApiClientOptions =
     typeof options === "function" ? { customFetch: options } : (options ?? {});
-  const client = createApiClient(
-    baseUrl,
-    opts.customFetch ? { fetch: opts.customFetch } : undefined,
-  );
+  let transport = opts.customFetch;
+  if (Platform.OS !== "web") {
+    // Phone builds allow cleartext for home servers, so never follow a redirect: it could carry
+    // a password or token from https:// on to http://. Our API never redirects.
+    const base = transport ?? platformFetch;
+    transport = (input, init) => base(input, { ...init, redirect: "error" });
+  }
+  const client = createApiClient(baseUrl, transport ? { fetch: transport } : undefined);
   if (opts.token) {
     const bearer = opts.token;
     client.use({
