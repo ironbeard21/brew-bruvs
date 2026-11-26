@@ -34,10 +34,13 @@ export interface ExportRecipeResult {
   contents: string;
 }
 
+const PAGE_LIMIT = 100;
+const MAX_PAGES = 20;
+
 export async function fetchRecipes(
   serverUrl: string,
   token: string | null,
-  opts: { q?: string; mine?: boolean } = {},
+  opts: { q?: string; mine?: boolean; breweryId?: string | null } = {},
   customFetch?: typeof fetch,
 ): Promise<Recipe[]> {
   const client = getApiClient(serverUrl, {
@@ -45,20 +48,33 @@ export async function fetchRecipes(
     ...(customFetch ? { customFetch } : {}),
   });
   const trimmed = opts.q?.trim();
-  const { data, error } = await client.GET("/api/recipes", {
-    credentials: "include",
-    params: {
-      query: {
-        ...(trimmed ? { q: trimmed } : {}),
-        ...(opts.mine ? { mine: "true" } : {}),
-        limit: 100,
+  const breweryId = opts.breweryId ?? null;
+  const mine = !breweryId && Boolean(opts.mine);
+  const all: Recipe[] = [];
+  let offset = 0;
+  for (let page = 0; page < MAX_PAGES; page += 1) {
+    const { data, error } = await client.GET("/api/recipes", {
+      credentials: "include",
+      params: {
+        query: {
+          ...(trimmed ? { q: trimmed } : {}),
+          ...(mine ? { mine: "true" } : {}),
+          ...(breweryId ? { breweryId } : {}),
+          limit: PAGE_LIMIT,
+          offset,
+        },
       },
-    },
-  });
-  if (error || !data) {
-    throw new Error(formatApiError(error, "Could not load recipes."));
+    });
+    if (error || !data) {
+      throw new Error(formatApiError(error, "Could not load recipes."));
+    }
+    all.push(...data.items);
+    if (data.nextOffset == null || data.nextOffset <= offset) {
+      break;
+    }
+    offset = data.nextOffset;
   }
-  return data.items;
+  return all;
 }
 
 export async function fetchRecipeDetail(
@@ -163,16 +179,18 @@ export async function fetchEquipmentProfiles(
 export function useRecipes(
   serverUrl: string | null,
   token: string | null,
-  opts: { q?: string; mine?: boolean; enabled?: boolean } = {},
+  opts: { q?: string; mine?: boolean; breweryId?: string | null; enabled?: boolean } = {},
   customFetch?: typeof fetch,
 ) {
+  const breweryId = opts.breweryId ?? null;
+  const mine = !breweryId && Boolean(opts.mine);
   return useQuery({
-    queryKey: ["recipes", serverUrl, opts.q?.trim() ?? "", Boolean(opts.mine)],
+    queryKey: ["recipes", serverUrl, opts.q?.trim() ?? "", mine, breweryId],
     enabled: Boolean(serverUrl) && (opts.enabled ?? true),
     retry: false,
     queryFn: () => {
       if (!serverUrl) throw new Error("No server configured");
-      return fetchRecipes(serverUrl, token, opts, customFetch);
+      return fetchRecipes(serverUrl, token, { ...opts, mine, breweryId }, customFetch);
     },
   });
 }

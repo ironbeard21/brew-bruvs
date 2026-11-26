@@ -24,6 +24,7 @@ import {
 import { colors, DESKTOP_BREAKPOINT, radii, spacing } from "../../theme";
 import { RoleBadge } from "../OwnerBadge";
 import { Banner, Button, Card, SegmentedControl, TextField } from "../ui";
+import { BreweryActivityFeed } from "./BreweryActivityFeed";
 import { InventoryPreviewCard } from "./InventoryPreviewCard";
 
 const ROLE_OPTIONS = BREWERY_ROLES.map((role) => ({
@@ -57,6 +58,8 @@ export interface BreweryDetailViewProps {
   activeBreweryId?: string | null;
   onSelectWorkspace?: (breweryId: string | null) => void;
   onLeftOrDeleted?: () => void;
+  onOpenBatch?: (batchId: string) => void;
+  onOpenEquipment?: (breweryId: string) => void;
   customFetch?: typeof fetch;
 }
 
@@ -68,6 +71,8 @@ export function BreweryDetailView({
   activeBreweryId: activeBreweryIdProp,
   onSelectWorkspace,
   onLeftOrDeleted,
+  onOpenBatch,
+  onOpenEquipment,
   customFetch,
 }: BreweryDetailViewProps) {
   const { width } = useWindowDimensions();
@@ -270,6 +275,14 @@ export function BreweryDetailView({
             </Text>
           </View>
           <View style={styles.actionsRow}>
+            {onOpenEquipment ? (
+              <Button
+                label="Equipment"
+                variant="secondary"
+                onPress={() => onOpenEquipment(detail.id)}
+                testID="detail-open-equipment-button"
+              />
+            ) : null}
             {isActive ? (
               <Button
                 label="Switch back to Me"
@@ -456,200 +469,222 @@ export function BreweryDetailView({
           />
         </View>
 
-        {/* Right Column: Owner-Only Invites & Settings */}
-        {isOwner ? (
-          <View style={[styles.stack, isDesktop && styles.column]}>
-            <Card>
-              <Text style={styles.sectionTitle} testID="brewery-invites-section">
-                Invite Members
-              </Text>
-              <SegmentedControl
-                options={INVITE_MODE_OPTIONS}
-                value={inviteMode}
-                onChange={(next) => {
-                  setInviteMode(next);
-                  setInviteError(null);
-                  setInviteNotice(null);
-                }}
-                accessibilityLabel="Invite method"
-                compact
-              />
-              <Text style={styles.fieldLabel}>Role for invitee</Text>
-              <SegmentedControl
-                options={ROLE_OPTIONS}
-                value={inviteRole}
-                onChange={setInviteRole}
-                accessibilityLabel="Role for invited member"
-                compact
-              />
-              <Text style={styles.metaText}>{ROLE_DESCRIPTIONS[inviteRole]}</Text>
+        {/* Right Column: Activity Feed (all members) + Owner-Only Invites & Settings */}
+        <View style={[styles.stack, isDesktop && styles.column]}>
+          <BreweryActivityFeed
+            serverUrl={serverUrl}
+            authToken={authToken}
+            breweryId={detail.id}
+            breweryName={detail.name}
+            {...(onOpenBatch ? { onOpenBatch } : {})}
+            {...(onOpenEquipment ? { onOpenEquipment: () => onOpenEquipment(detail.id) } : {})}
+            {...(customFetch ? { customFetch } : {})}
+          />
 
-              {inviteMode === "email" ? (
-                <TextField
-                  label="Email address on this server"
-                  value={inviteEmail}
-                  onChangeText={setInviteEmail}
-                  placeholder="friend@example.com"
-                  keyboardType="email-address"
-                  testID="brewery-invite-email-input"
+          {isOwner ? (
+            <>
+              <Card>
+                <Text style={styles.sectionTitle} testID="brewery-invites-section">
+                  Invite Members
+                </Text>
+                <SegmentedControl
+                  options={INVITE_MODE_OPTIONS}
+                  value={inviteMode}
+                  onChange={(next) => {
+                    setInviteMode(next);
+                    setInviteError(null);
+                    setInviteNotice(null);
+                  }}
+                  accessibilityLabel="Invite method"
+                  compact
                 />
-              ) : null}
+                <Text style={styles.fieldLabel}>Role for invitee</Text>
+                <SegmentedControl
+                  options={ROLE_OPTIONS}
+                  value={inviteRole}
+                  onChange={setInviteRole}
+                  accessibilityLabel="Role for invited member"
+                  compact
+                />
+                <Text style={styles.metaText}>{ROLE_DESCRIPTIONS[inviteRole]}</Text>
 
-              {inviteError ? (
-                <Banner tone="error" message={inviteError} testID="brewery-invite-error" />
-              ) : null}
-              {inviteNotice ? (
-                <Banner tone="success" message={inviteNotice} testID="brewery-invite-notice" />
-              ) : null}
-
-              {generatedCode ? (
-                <View style={styles.secretBox} testID="brewery-invite-code-box">
-                  <Text style={styles.secretLabel}>One-time invite code (shown once)</Text>
-                  <Text selectable style={styles.secretValue} testID="brewery-invite-code-value">
-                    {generatedCode}
-                  </Text>
-                  <Button
-                    label="Copy code"
-                    variant="secondary"
-                    onPress={() => {
-                      void copyText(generatedCode, "Invite code").then(setInviteNotice);
-                    }}
-                    testID="copy-brewery-invite-code"
-                  />
-                </View>
-              ) : null}
-
-              <Button
-                label={
-                  createInvite.isPending
-                    ? "Creating invite..."
-                    : inviteMode === "code"
-                      ? "Create one-time invite code"
-                      : "Send email invite"
-                }
-                disabled={createInvite.isPending}
-                onPress={() => void handleCreateInvite()}
-                testID="create-brewery-invite-button"
-              />
-
-              <View style={styles.divider} />
-              <Text style={styles.subTitle}>Pending Invites ({pendingInvites.length})</Text>
-              {invitesQuery.isPending ? (
-                <Banner tone="info" message="Loading invites..." />
-              ) : pendingInvites.length === 0 ? (
-                <Text style={styles.muted}>No pending invites.</Text>
-              ) : (
-                <View style={styles.list} testID="brewery-pending-invites">
-                  {pendingInvites.map((inv) => (
-                    <View
-                      key={inv.id}
-                      style={styles.pendingInviteRow}
-                      testID={`pending-invite-${inv.id}`}
-                    >
-                      <View style={styles.flexCol}>
-                        <Text style={styles.memberName}>{inv.email ?? "One-time invite code"}</Text>
-                        <Text style={styles.metaText}>
-                          {ROLE_LABELS[inv.role]} · Expires{" "}
-                          {new Date(inv.expiresAt).toLocaleDateString()}
-                        </Text>
-                      </View>
-                      <Button
-                        label="Revoke"
-                        variant="ghost"
-                        disabled={revokeInvite.isPending}
-                        onPress={() => void handleRevokeInvite(inv.id)}
-                        accessibilityLabel={`Revoke invite ${inv.email ?? "code"}`}
-                        testID={`revoke-invite-${inv.id}`}
-                      />
-                    </View>
-                  ))}
-                </View>
-              )}
-            </Card>
-
-            <Card>
-              <Text style={styles.sectionTitle} testID="brewery-settings-section">
-                Brewery Settings
-              </Text>
-              <TextField
-                label="Brewery Name"
-                value={editName}
-                onChangeText={setEditName}
-                autoCapitalize="words"
-                testID="edit-brewery-name-input"
-              />
-              <TextField
-                label="Description"
-                value={editDescription}
-                onChangeText={setEditDescription}
-                placeholder="About this brewery"
-                autoCapitalize="sentences"
-                testID="edit-brewery-description-input"
-              />
-              <View style={styles.fieldRow}>
-                <View style={styles.halfField}>
+                {inviteMode === "email" ? (
                   <TextField
-                    label="City"
-                    value={editCity}
-                    onChangeText={setEditCity}
-                    placeholder="Portland"
-                    autoCapitalize="words"
-                    testID="edit-brewery-city-input"
+                    label="Email address on this server"
+                    value={inviteEmail}
+                    onChangeText={setInviteEmail}
+                    placeholder="friend@example.com"
+                    keyboardType="email-address"
+                    testID="brewery-invite-email-input"
                   />
-                </View>
-                <View style={styles.halfField}>
-                  <TextField
-                    label="State / Region"
-                    value={editState}
-                    onChangeText={setEditState}
-                    placeholder="OR"
-                    autoCapitalize="characters"
-                    testID="edit-brewery-state-input"
-                  />
-                </View>
-              </View>
+                ) : null}
 
-              {settingsError ? (
-                <Banner tone="error" message={settingsError} testID="brewery-settings-error" />
-              ) : null}
-              {settingsNotice ? (
-                <Banner tone="success" message={settingsNotice} testID="brewery-settings-notice" />
-              ) : null}
+                {inviteError ? (
+                  <Banner tone="error" message={inviteError} testID="brewery-invite-error" />
+                ) : null}
+                {inviteNotice ? (
+                  <Banner tone="success" message={inviteNotice} testID="brewery-invite-notice" />
+                ) : null}
 
-              <Button
-                label={updateBrewery.isPending ? "Saving..." : "Save changes"}
-                disabled={updateBrewery.isPending}
-                onPress={() => void handleSaveSettings()}
-                testID="save-brewery-settings-button"
-              />
+                {generatedCode ? (
+                  <View style={styles.secretBox} testID="brewery-invite-code-box">
+                    <Text style={styles.secretLabel}>One-time invite code (shown once)</Text>
+                    <Text selectable style={styles.secretValue} testID="brewery-invite-code-value">
+                      {generatedCode}
+                    </Text>
+                    <Button
+                      label="Copy code"
+                      variant="secondary"
+                      onPress={() => {
+                        void copyText(generatedCode, "Invite code").then(setInviteNotice);
+                      }}
+                      testID="copy-brewery-invite-code"
+                    />
+                  </View>
+                ) : null}
 
-              <View style={styles.divider} />
-              <Text style={styles.subTitle}>Delete Brewery</Text>
-              <Text style={styles.metaText}>
-                Only an empty brewery can be deleted. Delete or move its recipes, batches, and items
-                first.
-              </Text>
-              {confirmDelete ? (
-                <View style={styles.actionsRow}>
-                  <Button
-                    label={deleteBrewery.isPending ? "Deleting..." : "Confirm delete brewery"}
-                    disabled={deleteBrewery.isPending}
-                    onPress={() => void handleDeleteBrewery()}
-                    testID="confirm-delete-brewery-button"
-                  />
-                  <Button label="Cancel" variant="ghost" onPress={() => setConfirmDelete(false)} />
-                </View>
-              ) : (
                 <Button
-                  label="Delete brewery"
-                  variant="ghost"
-                  onPress={() => setConfirmDelete(true)}
-                  testID="delete-brewery-button"
+                  label={
+                    createInvite.isPending
+                      ? "Creating invite..."
+                      : inviteMode === "code"
+                        ? "Create one-time invite code"
+                        : "Send email invite"
+                  }
+                  disabled={createInvite.isPending}
+                  onPress={() => void handleCreateInvite()}
+                  testID="create-brewery-invite-button"
                 />
-              )}
-            </Card>
-          </View>
-        ) : null}
+
+                <View style={styles.divider} />
+                <Text style={styles.subTitle}>Pending Invites ({pendingInvites.length})</Text>
+                {invitesQuery.isPending ? (
+                  <Banner tone="info" message="Loading invites..." />
+                ) : pendingInvites.length === 0 ? (
+                  <Text style={styles.muted}>No pending invites.</Text>
+                ) : (
+                  <View style={styles.list} testID="brewery-pending-invites">
+                    {pendingInvites.map((inv) => (
+                      <View
+                        key={inv.id}
+                        style={styles.pendingInviteRow}
+                        testID={`pending-invite-${inv.id}`}
+                      >
+                        <View style={styles.flexCol}>
+                          <Text style={styles.memberName}>
+                            {inv.email ?? "One-time invite code"}
+                          </Text>
+                          <Text style={styles.metaText}>
+                            {ROLE_LABELS[inv.role]} · Expires{" "}
+                            {new Date(inv.expiresAt).toLocaleDateString()}
+                          </Text>
+                        </View>
+                        <Button
+                          label="Revoke"
+                          variant="ghost"
+                          disabled={revokeInvite.isPending}
+                          onPress={() => void handleRevokeInvite(inv.id)}
+                          accessibilityLabel={`Revoke invite ${inv.email ?? "code"}`}
+                          testID={`revoke-invite-${inv.id}`}
+                        />
+                      </View>
+                    ))}
+                  </View>
+                )}
+              </Card>
+
+              <Card>
+                <Text style={styles.sectionTitle} testID="brewery-settings-section">
+                  Brewery Settings
+                </Text>
+                <TextField
+                  label="Brewery Name"
+                  value={editName}
+                  onChangeText={setEditName}
+                  autoCapitalize="words"
+                  testID="edit-brewery-name-input"
+                />
+                <TextField
+                  label="Description"
+                  value={editDescription}
+                  onChangeText={setEditDescription}
+                  placeholder="About this brewery"
+                  autoCapitalize="sentences"
+                  testID="edit-brewery-description-input"
+                />
+                <View style={styles.fieldRow}>
+                  <View style={styles.halfField}>
+                    <TextField
+                      label="City"
+                      value={editCity}
+                      onChangeText={setEditCity}
+                      placeholder="Portland"
+                      autoCapitalize="words"
+                      testID="edit-brewery-city-input"
+                    />
+                  </View>
+                  <View style={styles.halfField}>
+                    <TextField
+                      label="State / Region"
+                      value={editState}
+                      onChangeText={setEditState}
+                      placeholder="OR"
+                      autoCapitalize="characters"
+                      testID="edit-brewery-state-input"
+                    />
+                  </View>
+                </View>
+
+                {settingsError ? (
+                  <Banner tone="error" message={settingsError} testID="brewery-settings-error" />
+                ) : null}
+                {settingsNotice ? (
+                  <Banner
+                    tone="success"
+                    message={settingsNotice}
+                    testID="brewery-settings-notice"
+                  />
+                ) : null}
+
+                <Button
+                  label={updateBrewery.isPending ? "Saving..." : "Save changes"}
+                  disabled={updateBrewery.isPending}
+                  onPress={() => void handleSaveSettings()}
+                  testID="save-brewery-settings-button"
+                />
+
+                <View style={styles.divider} />
+                <Text style={styles.subTitle}>Delete Brewery</Text>
+                <Text style={styles.metaText}>
+                  Only an empty brewery can be deleted. Delete or move its recipes, batches, and
+                  items first.
+                </Text>
+                {confirmDelete ? (
+                  <View style={styles.actionsRow}>
+                    <Button
+                      label={deleteBrewery.isPending ? "Deleting..." : "Confirm delete brewery"}
+                      disabled={deleteBrewery.isPending}
+                      onPress={() => void handleDeleteBrewery()}
+                      testID="confirm-delete-brewery-button"
+                    />
+                    <Button
+                      label="Cancel"
+                      variant="ghost"
+                      onPress={() => setConfirmDelete(false)}
+                    />
+                  </View>
+                ) : (
+                  <Button
+                    label="Delete brewery"
+                    variant="ghost"
+                    onPress={() => setConfirmDelete(true)}
+                    testID="delete-brewery-button"
+                  />
+                )}
+              </Card>
+            </>
+          ) : null}
+        </View>
       </View>
     </View>
   );

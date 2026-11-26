@@ -2,11 +2,13 @@
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { type CatalogItem, type CatalogKind, useCatalogSearch } from "../../api/catalog";
+import type { UnitSystem } from "../../state/units";
 import { colors, radii, spacing } from "../../theme";
 import { formatFixed } from "../calculators/parseNumber";
+import { formatEquipmentVolume } from "../equipment/equipmentUnits";
 import { Banner, Button, TextField } from "../ui";
 
-function summarizeItem(item: CatalogItem): string {
+function summarizeItem(item: CatalogItem, unitSystem: UnitSystem): string {
   const parts: string[] = [];
   if (item.aliases.length > 0) {
     parts.push(`aka ${item.aliases.slice(0, 3).join(", ")}`);
@@ -36,6 +38,11 @@ function summarizeItem(item: CatalogItem): string {
     case "miscs":
       if (item.miscType) parts.push(item.miscType);
       break;
+    case "equipment":
+      if (item.category) parts.push(item.category);
+      if (item.batchSizeL != null)
+        parts.push(`${formatEquipmentVolume(item.batchSizeL, unitSystem)} batch`);
+      break;
     default:
       break;
   }
@@ -51,6 +58,7 @@ export interface CatalogPickerProps {
   onSelect: (item: CatalogItem) => void;
   onAddCustom?: (name: string) => void;
   testIDPrefix: string;
+  unitSystem?: UnitSystem;
   customFetch?: typeof fetch;
 }
 
@@ -63,6 +71,7 @@ export function CatalogPicker({
   onSelect,
   onAddCustom,
   testIDPrefix,
+  unitSystem = "us",
   customFetch,
 }: CatalogPickerProps) {
   const [query, setQuery] = useState("");
@@ -129,7 +138,7 @@ export function CatalogPicker({
             </Text>
           ) : (
             items.slice(0, 12).map((item) => {
-              const summary = summarizeItem(item);
+              const summary = summarizeItem(item, unitSystem);
               return (
                 <Pressable
                   key={item.id}

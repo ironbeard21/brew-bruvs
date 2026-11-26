@@ -2,7 +2,9 @@
 import { useState } from "react";
 import { StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import type { Note, NoteInput, TastingScores } from "../../api/batches";
+import type { Brewery } from "../../api/breweries";
 import { colors, DESKTOP_BREAKPOINT, radii, spacing } from "../../theme";
+import { ShareDialog } from "../sharing/ShareDialog";
 import { Banner, Button, Card, SegmentedControl, TextField } from "../ui";
 import { formatDateTime } from "./batchFlows";
 
@@ -13,6 +15,11 @@ export interface BatchNotesSectionProps {
   canEdit: boolean;
   canContribute?: boolean;
   canDeleteNote?: (note: Note) => boolean;
+  canShareNote?: (note: Note) => boolean;
+  serverUrl?: string | null;
+  authToken?: string | null;
+  breweries?: readonly Pick<Brewery, "id" | "name">[];
+  customFetch?: typeof fetch;
   onCreateNote: (input: NoteInput) => Promise<void>;
   onDeleteNote: (noteId: string) => Promise<void>;
   saving?: boolean;
@@ -52,17 +59,25 @@ export function BatchNotesSection({
   canEdit,
   canContribute: canContributeProp,
   canDeleteNote,
+  canShareNote,
+  serverUrl = null,
+  authToken = null,
+  breweries,
+  customFetch,
   onCreateNote,
   onDeleteNote,
   saving = false,
 }: BatchNotesSectionProps) {
   const canContribute = canContributeProp ?? canEdit;
   const allowDeleteNote = canDeleteNote ?? (() => canEdit);
+  const allowShareNote = canShareNote ?? (() => false);
   const { width } = useWindowDimensions();
   const isDesktop = width >= DESKTOP_BREAKPOINT;
 
   const [kind, setKind] = useState<NoteKind>("general");
   const [body, setBody] = useState("");
+  const [sharingNoteId, setSharingNoteId] = useState<string | null>(null);
+  const sharingNote = sharingNoteId ? (notes.find((n) => n.id === sharingNoteId) ?? null) : null;
   const [scoresText, setScoresText] = useState<Record<ScoreKey, string>>({
     aroma: "",
     appearance: "",
@@ -234,14 +249,25 @@ export function BatchNotesSection({
                   </View>
                 ) : null}
 
-                {allowDeleteNote(n) ? (
+                {allowShareNote(n) || allowDeleteNote(n) ? (
                   <View style={styles.noteActions}>
-                    <Button
-                      label="Delete"
-                      variant="ghost"
-                      onPress={() => void onDeleteNote(n.id)}
-                      testID={`note-delete-${idx}`}
-                    />
+                    {allowShareNote(n) && serverUrl ? (
+                      <Button
+                        label="Share"
+                        variant="ghost"
+                        onPress={() => setSharingNoteId(n.id)}
+                        accessibilityLabel={`Share ${n.kind === "tasting" ? "tasting note" : "note"}`}
+                        testID={`note-share-${idx}`}
+                      />
+                    ) : null}
+                    {allowDeleteNote(n) ? (
+                      <Button
+                        label="Delete"
+                        variant="ghost"
+                        onPress={() => void onDeleteNote(n.id)}
+                        testID={`note-delete-${idx}`}
+                      />
+                    ) : null}
                   </View>
                 ) : null}
               </View>
@@ -249,6 +275,23 @@ export function BatchNotesSection({
           </View>
         )}
       </Card>
+
+      {sharingNote && serverUrl ? (
+        <ShareDialog
+          open
+          onClose={() => setSharingNoteId(null)}
+          serverUrl={serverUrl}
+          authToken={authToken}
+          resourceType="note"
+          resourceId={sharingNote.id}
+          resourceName={sharingNote.kind === "tasting" ? "Tasting note" : "Batch note"}
+          visibility={sharingNote.visibility}
+          owner={sharingNote.owner}
+          canManage={allowShareNote(sharingNote)}
+          {...(breweries ? { breweries } : {})}
+          {...(customFetch ? { customFetch } : {})}
+        />
+      ) : null}
     </View>
   );
 }
@@ -348,5 +391,6 @@ const styles = StyleSheet.create({
   noteActions: {
     flexDirection: "row",
     justifyContent: "flex-end",
+    gap: spacing.xs,
   },
 });
