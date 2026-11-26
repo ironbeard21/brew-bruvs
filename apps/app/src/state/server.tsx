@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useState } from "react";
+import { Platform } from "react-native";
 import { appStorage, type KeyValueStorage } from "./storage";
 
 const ACTIVE_SERVER_KEY = "brewbruvs.server.active";
@@ -10,6 +11,27 @@ const TOKEN_KEY_PREFIX = "brewbruvs.token.";
 function tokenKeyFor(url: string): string {
   // SecureStore keys allow alphanumeric, '.', '-', '_' only.
   return `${TOKEN_KEY_PREFIX}${encodeURIComponent(url).replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+}
+
+/** Unqualified and .local names, loopback, private and link-local addresses. */
+function isLocalHost(hostname: string): boolean {
+  const host = hostname.toLowerCase();
+  if (host.startsWith("[")) {
+    return host === "[::1]" || /^\[f[cd]/.test(host) || /^\[fe[89ab]/.test(host);
+  }
+  if (!host.includes(".") || host.endsWith(".local") || host.endsWith(".localhost")) return true;
+  const ipv4 = /^(\d+)\.(\d+)\.(\d+)\.(\d+)$/.exec(host);
+  if (ipv4) {
+    const [a, b] = [Number(ipv4[1]), Number(ipv4[2])];
+    return (
+      a === 127 ||
+      a === 10 ||
+      (a === 172 && b >= 16 && b <= 31) ||
+      (a === 192 && b === 168) ||
+      (a === 169 && b === 254)
+    );
+  }
+  return false;
 }
 
 export type NormalizedUrlResult = { ok: true; url: string } | { ok: false; error: string };
@@ -45,6 +67,12 @@ export function normalizeServerUrl(raw: string): NormalizedUrlResult {
 
   if (!parsed.hostname) {
     return { ok: false, error: "Server address must include a hostname." };
+  }
+
+  // Release phone builds allow cleartext so home servers work; keep passwords and tokens off
+  // plain HTTP everywhere else. On the web the browser's own rules apply.
+  if (Platform.OS !== "web" && parsed.protocol === "http:" && !isLocalHost(parsed.hostname)) {
+    return { ok: false, error: "Use https:// for a server outside your local network." };
   }
 
   const pathname = parsed.pathname.replace(/\/+$/, "");
@@ -126,10 +154,12 @@ export function ServerProvider({
       storage.getItem(SAVED_SERVERS_KEY),
       storage.getItem(OFFLINE_MODE_KEY),
     ]).then(async ([savedActive, savedList, savedOffline]) => {
-      const activeUrl = savedActive || null;
+      // Drop servers saved before the local-network rule, so nothing is sent to them.
+      const usable = (url: string) => normalizeServerUrl(url).ok;
+      const activeUrl = savedActive && usable(savedActive) ? savedActive : null;
       const savedToken = activeUrl ? await storage.getItem(tokenKeyFor(activeUrl)) : null;
       if (!active) return;
-      setSavedServers(parseSavedServers(savedList));
+      setSavedServers(parseSavedServers(savedList).filter(usable));
       setServerUrl(activeUrl);
       setAuthTokenState(savedToken);
       setOfflineMode(savedOffline === "true");

@@ -163,6 +163,8 @@ describe("Store-ready config, assets, and listings (P2-15)", () => {
     expect(appJson.expo.ios.infoPlist.NSAppTransportSecurity).toEqual({
       NSAllowsLocalNetworking: true,
     });
+    // iOS asks before talking to the local network; the prompt needs a reason.
+    expect(appJson.expo.ios.infoPlist.NSLocalNetworkUsageDescription).toMatch(/self-hosted/);
     // Android blocks cleartext by default since API 28.
     const buildProperties = appJson.expo.plugins.find(
       (p): p is [string, Record<string, unknown>] =>
