@@ -1,0 +1,52 @@
+<!-- SPDX-License-Identifier: AGPL-3.0-or-later -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <title>Brew-Bruvs Icon</title>
+  <defs>
+    <linearGradient id="amberBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#D97706" />
+      <stop offset="55%" stop-color="#B45309" />
+      <stop offset="100%" stop-color="#78350F" />
+    </linearGradient>
+    <linearGradient id="wortGlow" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FDE68A" />
+      <stop offset="100%" stop-color="#F59E0B" />
+    </linearGradient>
+  </defs>
+
+  <!-- Opaque warm amber background (App Store compliant, no alpha) -->
+  <rect width="1024" height="1024" fill="url(#amberBg)" />
+
+  <!-- Subtle radial craft medallion ring -->
+  <circle cx="512" cy="512" r="392" fill="none" stroke="#FEF3C7" stroke-opacity="0.22" stroke-width="14" />
+
+  <!-- Carboy / fermenter vessel silhouette -->
+  <g transform="translate(0, 14)">
+    <!-- Neck & airlock cap -->
+    <rect x="444" y="180" width="136" height="44" rx="22" fill="#FEF3C7" />
+    <path
+      d="M462 224 H562 V298 C562 328 594 352 634 388 C688 436 716 492 716 566 V694 C716 764 662 818 592 818 H432 C362 818 308 764 308 694 V566 C308 492 336 436 390 388 C430 352 462 328 462 298 Z"
+      fill="#FAF7F2"
+    />
+
+    <!-- Fermenting amber liquid inside vessel -->
+    <path
+      d="M342 548 C396 520 452 574 512 548 C572 522 628 564 682 542 V690 C682 742 642 782 590 782 H434 C382 782 342 742 342 690 Z"
+      fill="url(#wortGlow)"
+    />
+
+    <!-- Rising fermentation bubbles -->
+    <circle cx="432" cy="672" r="20" fill="#FAF7F2" fill-opacity="0.82" />
+    <circle cx="556" cy="634" r="28" fill="#FAF7F2" fill-opacity="0.88" />
+    <circle cx="486" cy="596" r="15" fill="#FAF7F2" fill-opacity="0.85" />
+    <circle cx="512" cy="462" r="20" fill="#B45309" fill-opacity="0.85" />
+    <circle cx="468" cy="414" r="13" fill="#B45309" fill-opacity="0.65" />
+    <circle cx="558" cy="422" r="11" fill="#B45309" fill-opacity="0.55" />
+
+    <!-- Hydrometer measurement ticks on right shoulder -->
+    <g stroke="#B45309" stroke-width="12" stroke-linecap="round" stroke-opacity="0.65">
+      <line x1="600" y1="454" x2="640" y2="454" />
+      <line x1="612" y1="490" x2="646" y2="490" />
+      <line x1="600" y1="526" x2="646" y2="526" />
+    </g>
+  </g>
+</svg>

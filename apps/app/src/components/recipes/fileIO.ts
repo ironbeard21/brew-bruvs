@@ -2,6 +2,19 @@
 import { Platform, Share } from "react-native";
 import type { RecipeFileFormat } from "../../api/recipes";
 
+export interface PickedRecipeFile {
+  name: string;
+  contents: string;
+}
+
+const RECIPE_FILE_MIME_TYPES = [
+  "application/xml",
+  "text/xml",
+  "application/json",
+  "text/plain",
+  "*/*",
+];
+
 /**
  * Infers BeerXML vs BeerJSON from a file name or raw file contents.
  */
@@ -24,6 +37,48 @@ export function detectRecipeFormat(
     return "beerxml";
   }
   return null;
+}
+
+/**
+ * Opens the native iOS/Android document picker (via expo-document-picker) to choose a BeerXML or
+ * BeerJSON recipe file and reads its UTF-8 text contents via expo-file-system.
+ * Returns null if the user cancels the picker.
+ */
+export async function pickNativeRecipeFile(): Promise<PickedRecipeFile | null> {
+  const DocumentPicker = await import("expo-document-picker");
+  const result = await DocumentPicker.getDocumentAsync({
+    type: RECIPE_FILE_MIME_TYPES,
+    copyToCacheDirectory: true,
+    multiple: false,
+  });
+
+  if (result.canceled || !result.assets?.length) {
+    return null;
+  }
+
+  const asset = result.assets[0];
+  if (!asset) return null;
+
+  let contents: string;
+  if (asset.file) {
+    contents = await asset.file.text();
+  } else {
+    try {
+      const { File } = await import("expo-file-system");
+      contents = await new File(asset.uri).text();
+    } catch {
+      const response = await fetch(asset.uri);
+      if (!response.ok) {
+        throw new Error("Could not read the selected recipe file.");
+      }
+      contents = await response.text();
+    }
+  }
+
+  return {
+    name: asset.name || "recipe.xml",
+    contents,
+  };
 }
 
 /**

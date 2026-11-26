@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Local notifications for brew-day timers, batch reminders, and low-stock alerts (no push server, Decision 3).
 import { Platform } from "react-native";
-import type { Reminder } from "./api/batches";
+import { fetchDueReminders, type Reminder } from "./api/batches";
 import type { InventoryItem } from "./api/inventory";
 import { formatInventoryAmount } from "./components/inventory/inventoryUnits";
 import { appStorage, type KeyValueStorage } from "./state/storage";
@@ -9,6 +9,10 @@ import type { UnitSystem } from "./state/units";
 
 const REMINDER_NOTIF_MAP_KEY = "brewbruvs.notifications.reminders";
 const LOW_STOCK_ALERT_KEY = "brewbruvs.notifications.lowStock";
+/** Horizon ahead of now when fetching reminders to schedule locally on app open (90 days). */
+export const REMINDER_SYNC_HORIZON_MS = 90 * 24 * 60 * 60 * 1000;
+/** Cap scheduled native reminders below iOS's 64-notification ceiling so brew-day timers fit too. */
+export const MAX_SCHEDULED_REMINDERS = 48;
 
 let nativeConfigured = false;
 
@@ -111,13 +115,86 @@ export async function cancelLocalNotification(id: string | null | undefined): Pr
   }
 }
 
-async function readReminderMap(): Promise<Record<string, string>> {
-  const raw = await appStorage.getItem(REMINDER_NOTIF_MAP_KEY);
+interface StoredReminderEntry {
+  notifId?: string;
+  dueAt?: string;
+  notifiedDue?: boolean;
+}
+
+export interface NativeReminderAdapter {
+  getPermissionGranted: () => Promise<boolean>;
+  requestPermission: () => Promise<boolean>;
+  scheduleAt: (opts: { title: string; body: string; date: Date }) => Promise<string>;
+  fireNow: (opts: { title: string; body: string }) => Promise<string>;
+  cancel: (id: string) => Promise<void>;
+}
+
+export interface SyncRemindersOptions {
+  scopeKey?: string;
+  pruneMissing?: boolean;
+  requestPermission?: boolean;
+  storage?: KeyValueStorage;
+  nowMs?: number;
+  nativeAdapter?: NativeReminderAdapter | null;
+}
+
+export interface SyncRemindersResult {
+  scheduled: number;
+  dueAlerted: number;
+  pruned: number;
+  permissionGranted: boolean;
+}
+
+async function defaultNativeAdapter(): Promise<NativeReminderAdapter | null> {
+  const Notifications = await getNativeNotifications();
+  if (!Notifications) return null;
+  return {
+    getPermissionGranted: async () => (await Notifications.getPermissionsAsync()).granted,
+    requestPermission: async () => {
+      const current = await Notifications.getPermissionsAsync();
+      if (current.granted) return true;
+      return (await Notifications.requestPermissionsAsync()).granted;
+    },
+    scheduleAt: async ({ title, body, date }) =>
+      Notifications.scheduleNotificationAsync({
+        content: { title, body, sound: true },
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.DATE,
+          date,
+        },
+      }),
+    fireNow: async ({ title, body }) =>
+      Notifications.scheduleNotificationAsync({
+        content: { title, body, sound: true },
+        trigger: null,
+      }),
+    cancel: async (id) => {
+      try {
+        await Notifications.cancelScheduledNotificationAsync(id);
+      } catch {
+        // Already fired or removed.
+      }
+    },
+  };
+}
+
+async function readReminderMap(
+  storage: KeyValueStorage = appStorage,
+): Promise<Record<string, StoredReminderEntry>> {
+  const raw = await storage.getItem(REMINDER_NOTIF_MAP_KEY);
   if (!raw) return {};
   try {
     const parsed: unknown = JSON.parse(raw);
     if (parsed && typeof parsed === "object") {
-      return parsed as Record<string, string>;
+      const normalized: Record<string, StoredReminderEntry> = {};
+      for (const [k, v] of Object.entries(parsed as Record<string, unknown>)) {
+        if (typeof v === "string") {
+          normalized[k] = { notifId: v };
+        } else if (v && typeof v === "object") {
+          normalized[k] = v as StoredReminderEntry;
+        }
+      }
+      return normalized;
     }
   } catch {
     // Ignore corrupt map.
@@ -125,77 +202,238 @@ async function readReminderMap(): Promise<Record<string, string>> {
   return {};
 }
 
-async function writeReminderMap(map: Record<string, string>): Promise<void> {
-  await appStorage.setItem(REMINDER_NOTIF_MAP_KEY, JSON.stringify(map));
+async function writeReminderMap(
+  map: Record<string, StoredReminderEntry>,
+  storage: KeyValueStorage = appStorage,
+): Promise<void> {
+  await storage.setItem(REMINDER_NOTIF_MAP_KEY, JSON.stringify(map));
 }
 
-export async function cancelReminderNotification(reminderId: string): Promise<void> {
-  const map = await readReminderMap();
-  const notifId = map[reminderId];
-  if (notifId) {
-    await cancelLocalNotification(notifId);
-    delete map[reminderId];
-    await writeReminderMap(map);
+export async function cancelReminderNotification(
+  reminderId: string,
+  opts: { storage?: KeyValueStorage; nativeAdapter?: NativeReminderAdapter | null } = {},
+): Promise<void> {
+  const storage = opts.storage ?? appStorage;
+  const map = await readReminderMap(storage);
+  const matchingKeys = Object.keys(map).filter(
+    (k) => k === reminderId || k.endsWith(`::${reminderId}`),
+  );
+  if (matchingKeys.length === 0) return;
+
+  const adapter =
+    opts.nativeAdapter !== undefined ? opts.nativeAdapter : await defaultNativeAdapter();
+
+  for (const key of matchingKeys) {
+    const notifId = map[key]?.notifId;
+    if (notifId) {
+      if (adapter) {
+        await adapter.cancel(notifId);
+      } else {
+        await cancelLocalNotification(notifId);
+      }
+    }
+    delete map[key];
   }
+  await writeReminderMap(map, storage);
+}
+
+function reminderNotificationCopy(r: Reminder, overdue: boolean): { title: string; body: string } {
+  return {
+    title: overdue
+      ? `${r.batchName}: ${r.kind} reminder due`
+      : `${r.batchName}: ${r.kind} reminder`,
+    body: r.note || `Time for ${r.kind} on ${r.batchName}.`,
+  };
 }
 
 /**
- * Syncs a list of batch reminders into local device notifications:
- * cancels completed reminders and schedules upcoming undone reminders.
+ * Syncs reminders into local device notifications (no push server):
+ * - Cancels completed reminders (and, when `pruneMissing` is true, reminders removed/completed on other devices)
+ * - Schedules upcoming undone reminders (capped at MAX_SCHEDULED_REMINDERS soonest)
+ * - Fires a deduplicated local alert for open reminders already due
  */
 export async function syncReminderNotifications(
-  reminders: Reminder[],
-): Promise<{ scheduled: number; permissionGranted: boolean }> {
-  if (Platform.OS === "web") {
-    return { scheduled: 0, permissionGranted: false };
-  }
-  const granted = await requestNotificationPermission();
-  if (!granted) {
-    return { scheduled: 0, permissionGranted: false };
-  }
-  const Notifications = await getNativeNotifications();
-  if (!Notifications) {
-    return { scheduled: 0, permissionGranted: false };
+  reminders: readonly Reminder[],
+  opts: SyncRemindersOptions = {},
+): Promise<SyncRemindersResult> {
+  const storage = opts.storage ?? appStorage;
+  const now = opts.nowMs ?? Date.now();
+  const scopePrefix = opts.scopeKey ? `${opts.scopeKey}::` : "";
+  const keyFor = (id: string) => `${scopePrefix}${id}`;
+  const adapter =
+    opts.nativeAdapter !== undefined ? opts.nativeAdapter : await defaultNativeAdapter();
+
+  const map = await readReminderMap(storage);
+  let dirty = false;
+  let pruned = 0;
+
+  // 1. Prune stale reminders in this scope when performing a full app-open sync.
+  const incomingIds = new Set(reminders.map((r) => r.id));
+  if (opts.pruneMissing) {
+    for (const key of Object.keys(map)) {
+      const inScope = scopePrefix ? key.startsWith(scopePrefix) : !key.includes("::");
+      if (!inScope) continue;
+      const reminderId = scopePrefix ? key.slice(scopePrefix.length) : key;
+      if (!incomingIds.has(reminderId)) {
+        const notifId = map[key]?.notifId;
+        if (notifId && adapter) {
+          await adapter.cancel(notifId);
+        }
+        delete map[key];
+        pruned += 1;
+        dirty = true;
+      }
+    }
   }
 
-  const map = await readReminderMap();
-  const now = Date.now();
-  let scheduled = 0;
+  // 2. Separate completed, overdue/due-now, and upcoming open reminders.
+  const openDue: Reminder[] = [];
+  const openUpcoming: { reminder: Reminder; dueMs: number }[] = [];
 
   for (const r of reminders) {
-    const existingId = map[r.id];
+    const key = keyFor(r.id);
+    const existing = map[key];
     const dueMs = Date.parse(r.dueAt);
 
-    if (r.doneAt || !Number.isFinite(dueMs) || dueMs <= now) {
-      if (existingId) {
-        await cancelLocalNotification(existingId);
-        delete map[r.id];
+    if (r.doneAt || !Number.isFinite(dueMs)) {
+      if (existing) {
+        if (existing.notifId && adapter) {
+          await adapter.cancel(existing.notifId);
+        }
+        delete map[key];
+        pruned += 1;
+        dirty = true;
       }
       continue;
     }
 
-    if (existingId) {
-      scheduled += 1;
-      continue;
+    if (dueMs <= now) {
+      openDue.push(r);
+    } else {
+      openUpcoming.push({ reminder: r, dueMs });
     }
-
-    const id = await Notifications.scheduleNotificationAsync({
-      content: {
-        title: `${r.batchName}: ${r.kind} reminder`,
-        body: r.note || `Time for ${r.kind} on ${r.batchName}.`,
-        sound: true,
-      },
-      trigger: {
-        type: Notifications.SchedulableTriggerInputTypes.DATE,
-        date: new Date(dueMs),
-      },
-    });
-    map[r.id] = id;
-    scheduled += 1;
   }
 
-  await writeReminderMap(map);
-  return { scheduled, permissionGranted: true };
+  openUpcoming.sort((a, b) => a.dueMs - b.dueMs);
+  const cappedUpcoming = openUpcoming.slice(0, MAX_SCHEDULED_REMINDERS);
+
+  // Never prompt for OS permissions when there are no open reminders to deliver/schedule.
+  const hasActionable = openDue.length > 0 || (adapter !== null && cappedUpcoming.length > 0);
+  if (!hasActionable) {
+    if (dirty) await writeReminderMap(map, storage);
+    return { scheduled: 0, dueAlerted: 0, pruned, permissionGranted: false };
+  }
+
+  const shouldRequest = opts.requestPermission ?? true;
+  let permissionGranted = false;
+  if (adapter) {
+    permissionGranted = shouldRequest
+      ? await adapter.requestPermission()
+      : await adapter.getPermissionGranted();
+  } else if (Platform.OS === "web") {
+    permissionGranted =
+      typeof window !== "undefined" &&
+      typeof Notification !== "undefined" &&
+      Notification.permission === "granted";
+  }
+
+  if (!permissionGranted) {
+    if (dirty) await writeReminderMap(map, storage);
+    return { scheduled: 0, dueAlerted: 0, pruned, permissionGranted: false };
+  }
+
+  let dueAlerted = 0;
+  for (const r of openDue) {
+    const key = keyFor(r.id);
+    const existing = map[key];
+    if (existing?.notifiedDue && existing.dueAt === r.dueAt) {
+      continue;
+    }
+    if (existing?.notifId && adapter) {
+      await adapter.cancel(existing.notifId);
+    }
+    const copy = reminderNotificationCopy(r, true);
+    let delivered = false;
+    if (adapter) {
+      await adapter.fireNow(copy);
+      delivered = true;
+    } else if (Platform.OS === "web") {
+      delivered = fireWebNotification(copy.title, copy.body);
+    }
+    if (delivered) {
+      map[key] = { dueAt: r.dueAt, notifiedDue: true };
+      dueAlerted += 1;
+      dirty = true;
+    }
+  }
+
+  let scheduled = 0;
+  if (adapter) {
+    for (const { reminder: r, dueMs } of cappedUpcoming) {
+      const key = keyFor(r.id);
+      const existing = map[key];
+      if (existing?.notifId && existing.dueAt === r.dueAt) {
+        scheduled += 1;
+        continue;
+      }
+      if (existing?.notifId) {
+        await adapter.cancel(existing.notifId);
+      }
+      const copy = reminderNotificationCopy(r, false);
+      const notifId = await adapter.scheduleAt({
+        title: copy.title,
+        body: copy.body,
+        date: new Date(dueMs),
+      });
+      map[key] = { notifId, dueAt: r.dueAt, notifiedDue: false };
+      scheduled += 1;
+      dirty = true;
+    }
+  }
+
+  if (dirty) {
+    await writeReminderMap(map, storage);
+  }
+
+  return { scheduled, dueAlerted, pruned, permissionGranted: true };
+}
+
+export interface SyncDueRemindersOnOpenResult extends SyncRemindersResult {
+  fetched: number;
+}
+
+/**
+ * Fetches all open reminders due through the upcoming horizon from GET /api/reminders and syncs
+ * them into local notifications, pruning any reminders that were completed or deleted elsewhere.
+ */
+export async function syncDueRemindersOnOpen(opts: {
+  serverUrl: string;
+  authToken: string | null;
+  userId: string;
+  horizonMs?: number;
+  nowMs?: number;
+  requestPermission?: boolean;
+  storage?: KeyValueStorage;
+  nativeAdapter?: NativeReminderAdapter | null;
+  customFetch?: typeof fetch;
+}): Promise<SyncDueRemindersOnOpenResult> {
+  const now = opts.nowMs ?? Date.now();
+  const untilIso = new Date(now + (opts.horizonMs ?? REMINDER_SYNC_HORIZON_MS)).toISOString();
+  const reminders = await fetchDueReminders(
+    opts.serverUrl,
+    opts.authToken,
+    untilIso,
+    opts.customFetch,
+  );
+  const result = await syncReminderNotifications(reminders, {
+    scopeKey: `${opts.serverUrl}::${opts.userId}`,
+    pruneMissing: true,
+    nowMs: now,
+    ...(opts.requestPermission !== undefined ? { requestPermission: opts.requestPermission } : {}),
+    ...(opts.storage ? { storage: opts.storage } : {}),
+    ...(opts.nativeAdapter !== undefined ? { nativeAdapter: opts.nativeAdapter } : {}),
+  });
+  return { fetched: reminders.length, ...result };
 }
 
 async function readLowStockMap(storage: KeyValueStorage): Promise<Record<string, number>> {

@@ -457,4 +457,17 @@ test.describe("Brew-Bruvs app shell", () => {
 
     await context.setOffline(false);
   });
+
+  test("privacy policy is accessible from Connect and About without a server", async ({ page }) => {
+    await page.goto("/connect");
+    await page.getByTestId("connect-privacy-policy-link").click();
+    await expect(page).toHaveURL(/\/privacy$/);
+    await expect(page.getByTestId("privacy-policy-panel")).toContainText("No tracking");
+    await page.getByTestId("privacy-back-button").click();
+
+    await page.goto("/about");
+    await page.getByTestId("about-privacy-policy-link").click();
+    await expect(page).toHaveURL(/\/privacy$/);
+    await expect(page.getByTestId("privacy-summary-box")).toContainText("self-hosted server");
+  });
 });

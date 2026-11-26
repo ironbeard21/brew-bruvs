@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useVerifyServer } from "../src/api/health";
 import { AppShell } from "../src/components/AppShell";
 import { Banner, Button, Card, TextField } from "../src/components/ui";
@@ -133,6 +133,18 @@ export default function ConnectScreen() {
             </View>
           </Card>
         ) : null}
+
+        <Pressable
+          onPress={() => router.push("/privacy")}
+          accessibilityRole="link"
+          accessibilityLabel="Read Brew-Bruvs Privacy Policy"
+          testID="connect-privacy-policy-link"
+          style={styles.privacyLinkWrap}
+        >
+          <Text style={styles.privacyLinkText}>
+            Privacy Policy — no tracking; your data stays on the server you choose
+          </Text>
+        </Pressable>
       </View>
     </AppShell>
   );
@@ -187,5 +199,15 @@ const styles = StyleSheet.create({
   savedButtons: {
     flexDirection: "row",
     gap: spacing.sm,
+  },
+  privacyLinkWrap: {
+    paddingVertical: spacing.xs,
+    alignSelf: "flex-start",
+  },
+  privacyLinkText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: colors.accent,
+    textDecorationLine: "underline",
   },
 });

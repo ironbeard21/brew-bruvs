@@ -3,6 +3,7 @@ import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
 import type { CatalogAttribution, CatalogSource } from "../../api/catalog";
 import { colors, radii, spacing } from "../../theme";
 import { Banner, Card } from "../ui";
+import { PRIVACY_POLICY_URL } from "./PrivacyPolicyPanel";
 
 export const SOURCE_CODE_URL = "https://github.com/ironbeard21/brew-bruvs";
 export const AGPL_LICENSE_URL = "https://www.gnu.org/licenses/agpl-3.0.en.html";
@@ -88,6 +89,7 @@ export interface AboutPanelProps {
   attribution?: CatalogAttribution | null;
   loading?: boolean;
   error?: string | null;
+  onOpenPrivacyPolicy?: () => void;
 }
 
 function isHttpUrl(url: string): boolean {
@@ -99,6 +101,7 @@ export function AboutPanel({
   attribution = null,
   loading = false,
   error = null,
+  onOpenPrivacyPolicy,
 }: AboutPanelProps) {
   const sourceCodeUrl = sourceUrl && isHttpUrl(sourceUrl) ? sourceUrl : SOURCE_CODE_URL;
   const sourceRows: { id: string; source: CatalogSource }[] = attribution
@@ -142,6 +145,22 @@ export function AboutPanel({
               testID="about-license-link"
             >
               <Text style={styles.link}>Read GNU AGPL-3.0 license</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => {
+                if (onOpenPrivacyPolicy) {
+                  onOpenPrivacyPolicy();
+                } else {
+                  void Linking.openURL(PRIVACY_POLICY_URL);
+                }
+              }}
+              accessibilityRole="link"
+              accessibilityLabel="Read Brew-Bruvs Privacy Policy"
+              testID="about-privacy-policy-link"
+            >
+              <Text style={styles.link}>
+                Privacy Policy (no tracking; data stays on your server)
+              </Text>
             </Pressable>
           </View>
         </View>
