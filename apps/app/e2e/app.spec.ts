@@ -506,6 +506,7 @@ test.describe("Brew-Bruvs app shell", () => {
     await expect(page).toHaveURL(/\/privacy$/);
     await expect(page.getByTestId("privacy-policy-panel")).toContainText("No tracking");
     await page.getByTestId("privacy-back-button").click();
+    await expect(page).toHaveURL(/\/connect$/);
 
     await page.goto("/about");
     await page.getByTestId("about-privacy-policy-link").click();
