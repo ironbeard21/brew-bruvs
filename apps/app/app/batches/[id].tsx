@@ -265,6 +265,15 @@ export default function BatchDetailScreen() {
               onPress={() => router.push(`/recipes/${batch.recipe.id}`)}
               testID="batch-open-recipe-button"
             />
+            {canEdit ? (
+              <Button
+                label="Connect device"
+                variant="secondary"
+                onPress={() => router.push(`/integrations?tab=devices&batchId=${batch.id}`)}
+                accessibilityLabel={`Connect hydrometer device to ${batch.name}`}
+                testID="batch-connect-device-button"
+              />
+            ) : null}
             {canShare ? (
               <Button
                 label="Share"

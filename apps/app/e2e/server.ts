@@ -283,6 +283,29 @@ interface StoredReservation {
   state: "reserved" | "used" | "released";
 }
 
+interface StoredDevice {
+  id: string;
+  name: string;
+  kind: "ispindel" | "gravitymon" | "tilt" | "rapt";
+  batchId: string;
+  tiltColor: "red" | "green" | "black" | "purple" | "orange" | "blue" | "yellow" | "pink" | null;
+  owner: { type: "user" | "brewery"; id: string };
+  token: string;
+  lastSeenAt: string | null;
+}
+
+interface StoredWebhook {
+  id: string;
+  name: string;
+  url: string;
+  batchId: string | null;
+  breweryId: string | null;
+  ownerUserId: string | null;
+  signingKey: string;
+  lastDeliveredAt: string | null;
+  failing: boolean;
+}
+
 const users = new Map<string, StoredUser>();
 const sessions = new Map<string, string>();
 const tokens = new Map<string, StoredToken>();
@@ -293,6 +316,8 @@ const breweries = new Map<string, StoredBrewery>();
 const breweryInvites = new Map<string, StoredBreweryInvite>();
 const inventoryItems = new Map<string, StoredInventoryItem>();
 const equipmentItems = new Map<string, StoredEquipmentItem>();
+const devices = new Map<string, StoredDevice>();
+const webhooks = new Map<string, StoredWebhook>();
 const resourceShares = new Map<string, StoredShare[]>();
 const activityEvents: StoredActivityEvent[] = [];
 const batchReservations: StoredReservation[] = [];
@@ -2546,6 +2571,474 @@ const server = createServer(async (req, res) => {
     const slice = matching.slice(offset, offset + limit);
     const nextOffset = offset + limit < matching.length ? offset + limit : null;
     return sendJson(res, 200, { items: slice, nextOffset });
+  }
+
+  // Device integrations (P2-07)
+  const newDeviceSecret = () => `bb_${randomBytes(32).toString("base64url")}`;
+  const serializeDevice = (d: StoredDevice) => ({
+    id: d.id,
+    name: d.name,
+    kind: d.kind,
+    batchId: d.batchId,
+    tiltColor: d.tiltColor,
+    lastSeenAt: d.lastSeenAt,
+  });
+
+  if (pathname === "/api/integrations/devices" && method === "GET") {
+    const user = getUserForRequest(req);
+    if (!user)
+      return sendJson(res, 401, { error: { code: "unauthorized", message: "Sign in first" } });
+    const myBreweryIds = new Set(
+      [...breweries.values()]
+        .filter((b) => b.members.some((m) => m.userId === user.id))
+        .map((b) => b.id),
+    );
+    const items = [...devices.values()]
+      .filter(
+        (d) =>
+          (d.owner.type === "user" && d.owner.id === user.id) ||
+          (d.owner.type === "brewery" && myBreweryIds.has(d.owner.id)),
+      )
+      .map(serializeDevice);
+    return sendJson(res, 200, { items });
+  }
+
+  if (pathname === "/api/integrations/devices" && method === "POST") {
+    const user = getUserForRequest(req);
+    if (!user)
+      return sendJson(res, 401, { error: { code: "unauthorized", message: "Sign in first" } });
+    const body = JSON.parse(await readBody(req)) as {
+      name?: string;
+      kind?: StoredDevice["kind"];
+      batchId?: string;
+      tiltColor?: StoredDevice["tiltColor"];
+    };
+    const batch = body.batchId ? batches.get(body.batchId) : undefined;
+    if (!batch) {
+      return sendJson(res, 404, { error: { code: "not_found", message: "Batch not found" } });
+    }
+    const token = newDeviceSecret();
+    const created: StoredDevice = {
+      id: randomUUID(),
+      name: (body.name ?? "Device").trim(),
+      kind: body.kind ?? "ispindel",
+      batchId: batch.id,
+      tiltColor: body.kind === "tilt" ? (body.tiltColor ?? null) : null,
+      owner: batch.owner,
+      token,
+      lastSeenAt: null,
+    };
+    devices.set(created.id, created);
+    return sendJson(res, 201, {
+      ...serializeDevice(created),
+      url: `http://127.0.0.1:${PORT}/api/device-readings?token=${token}`,
+    });
+  }
+
+  const deviceRotateMatch = pathname.match(/^\/api\/integrations\/devices\/([^/]+)\/rotate$/);
+  if (deviceRotateMatch && method === "POST") {
+    const user = getUserForRequest(req);
+    if (!user)
+      return sendJson(res, 401, { error: { code: "unauthorized", message: "Sign in first" } });
+    const dev = devices.get(deviceRotateMatch[1] ?? "");
+    if (!dev) {
+      return sendJson(res, 404, {
+        error: { code: "not_found", message: "Device integration not found" },
+      });
+    }
+    dev.token = newDeviceSecret();
+    return sendJson(res, 200, {
+      ...serializeDevice(dev),
+      url: `http://127.0.0.1:${PORT}/api/device-readings?token=${dev.token}`,
+    });
+  }
+
+  const deviceIdMatch = pathname.match(/^\/api\/integrations\/devices\/([^/]+)$/);
+  if (deviceIdMatch && method === "DELETE") {
+    const user = getUserForRequest(req);
+    if (!user)
+      return sendJson(res, 401, { error: { code: "unauthorized", message: "Sign in first" } });
+    if (!devices.delete(deviceIdMatch[1] ?? "")) {
+      return sendJson(res, 404, {
+        error: { code: "not_found", message: "Device integration not found" },
+      });
+    }
+    res.writeHead(204);
+    res.end();
+    return;
+  }
+
+  if (pathname === "/api/device-readings" && method === "POST") {
+    const token = url.searchParams.get("token");
+    const dev = token ? [...devices.values()].find((d) => d.token === token) : undefined;
+    if (!dev) {
+      return sendJson(res, 401, {
+        error: { code: "invalid_device_token", message: "Invalid or revoked device token" },
+      });
+    }
+    const batch = batches.get(dev.batchId);
+    if (!batch) {
+      return sendJson(res, 401, {
+        error: { code: "invalid_device_token", message: "Invalid or revoked device token" },
+      });
+    }
+    const payload = JSON.parse(await readBody(req)) as Record<string, unknown>;
+    const nowIso = new Date().toISOString();
+    const rawGravity = Number(payload.gravity ?? payload.SG ?? Number.NaN);
+    const rawTemp = Number(payload.temperature ?? payload.temp ?? payload.Temp ?? Number.NaN);
+    const tempUnits = String(
+      payload["temp-units"] ?? payload.temp_units ?? payload.temp_unit ?? "c",
+    ).toLowerCase();
+    const gravitySg = Number.isFinite(rawGravity) ? rawGravity : null;
+    const temperatureC = Number.isFinite(rawTemp)
+      ? tempUnits === "f"
+        ? ((rawTemp - 32) * 5) / 9
+        : rawTemp
+      : null;
+    batch.readings.push({
+      id: randomUUID(),
+      batchId: batch.id,
+      takenAt: nowIso,
+      gravitySg,
+      temperatureC,
+      ph: null,
+      brix: null,
+      titratableAcidityGPerL: null,
+      freeSo2MgPerL: null,
+      source: "device",
+      note: null,
+      createdAt: nowIso,
+    });
+    dev.lastSeenAt = nowIso;
+    return sendJson(res, 200, { result: "success" });
+  }
+
+  // Outgoing webhooks (P2-08)
+  const serializeWebhook = (w: StoredWebhook) => ({
+    id: w.id,
+    name: w.name,
+    url: w.url,
+    batchId: w.batchId,
+    breweryId: w.breweryId,
+    lastDeliveredAt: w.lastDeliveredAt,
+    failing: w.failing,
+  });
+
+  if (pathname === "/api/integrations/webhooks" && method === "GET") {
+    const user = getUserForRequest(req);
+    if (!user)
+      return sendJson(res, 401, { error: { code: "unauthorized", message: "Sign in first" } });
+    const bId = url.searchParams.get("breweryId");
+    const items = [...webhooks.values()]
+      .filter((w) => (bId ? w.breweryId === bId : !w.breweryId && w.ownerUserId === user.id))
+      .map(serializeWebhook);
+    return sendJson(res, 200, { items });
+  }
+
+  if (pathname === "/api/integrations/webhooks" && method === "POST") {
+    const user = getUserForRequest(req);
+    if (!user)
+      return sendJson(res, 401, { error: { code: "unauthorized", message: "Sign in first" } });
+    const body = JSON.parse(await readBody(req)) as {
+      name?: string;
+      url?: string;
+      breweryId?: string;
+      batchId?: string;
+    };
+    const dest = (body.url ?? "").trim();
+    if (/^https?:\/\/(127\.0\.0\.1|localhost|\[::1\]|10\.|192\.168\.)/i.test(dest)) {
+      return sendJson(res, 400, {
+        error: {
+          code: "invalid_webhook_url",
+          message: "Webhook destination must be a public destination",
+        },
+      });
+    }
+    const signingKey = newDeviceSecret();
+    const created: StoredWebhook = {
+      id: randomUUID(),
+      name: (body.name ?? "Webhook").trim(),
+      url: dest,
+      batchId: body.batchId ?? null,
+      breweryId: body.breweryId ?? null,
+      ownerUserId: body.breweryId ? null : user.id,
+      signingKey,
+      lastDeliveredAt: null,
+      failing: dest.includes("fail"),
+    };
+    webhooks.set(created.id, created);
+    return sendJson(res, 201, { ...serializeWebhook(created), signingKey });
+  }
+
+  const webhookTestMatch = pathname.match(/^\/api\/integrations\/webhooks\/([^/]+)\/test$/);
+  if (webhookTestMatch && method === "POST") {
+    const user = getUserForRequest(req);
+    if (!user)
+      return sendJson(res, 401, { error: { code: "unauthorized", message: "Sign in first" } });
+    const hook = webhooks.get(webhookTestMatch[1] ?? "");
+    if (!hook) {
+      return sendJson(res, 404, { error: { code: "not_found", message: "Webhook not found" } });
+    }
+    if (hook.url.includes("fail")) {
+      hook.failing = true;
+    } else {
+      hook.failing = false;
+      hook.lastDeliveredAt = new Date().toISOString();
+    }
+    return sendJson(res, 202, { queued: true });
+  }
+
+  const webhookIdMatch = pathname.match(/^\/api\/integrations\/webhooks\/([^/]+)$/);
+  if (webhookIdMatch && method === "DELETE") {
+    const user = getUserForRequest(req);
+    if (!user)
+      return sendJson(res, 401, { error: { code: "unauthorized", message: "Sign in first" } });
+    if (!webhooks.delete(webhookIdMatch[1] ?? "")) {
+      return sendJson(res, 404, { error: { code: "not_found", message: "Webhook not found" } });
+    }
+    res.writeHead(204);
+    res.end();
+    return;
+  }
+
+  // Brewfather import (P2-09)
+  if (pathname === "/api/integrations/brewfather/preview" && method === "POST") {
+    const user = getUserForRequest(req);
+    if (!user)
+      return sendJson(res, 401, { error: { code: "unauthorized", message: "Sign in first" } });
+    const body = JSON.parse(await readBody(req)) as { userId?: string; apiKey?: string };
+    if (!body.userId || !body.apiKey) {
+      return sendJson(res, 400, {
+        error: { code: "validation_error", message: "User ID and API key are required" },
+      });
+    }
+    return sendJson(res, 200, {
+      recipes: [
+        {
+          ref: "recipe:BF-101",
+          draft: {
+            name: "Harvest Cascade Pale",
+            beverage: "beer",
+            batchSizeL: 18.927,
+            visibility: "private",
+            credit: {
+              sourceUrl: "https://example.test/harvest-cascade",
+              site: "Harvest Brewery",
+              author: "Robin Brewer",
+              publicSharingBlocked: false,
+            },
+            content: {
+              schemaVersion: 1,
+              efficiencyPct: 72,
+              boilTimeMin: 60,
+              fermentables: [
+                {
+                  name: "Local floor-malted pale",
+                  kind: "grain",
+                  amountKg: 4.5,
+                  use: "mash",
+                  potentialSg: 1.036,
+                  colorEbc: 4,
+                },
+              ],
+              hops: [
+                {
+                  name: "Columbus",
+                  catalogId: "hop-columbus",
+                  amountKg: 0.02,
+                  alphaAcidPct: 15,
+                  use: "boil",
+                  timeMin: 60,
+                },
+              ],
+              yeasts: [],
+              miscs: [],
+              mash: [],
+              fermentation: [],
+            },
+          },
+        },
+      ],
+      batches: [
+        {
+          recipeRef: "recipe:BF-101",
+          name: "Harvest Cascade #1",
+          batchSizeL: 18.927,
+          status: "fermenting",
+          brewedAt: "2026-11-20T12:00:00Z",
+          readings: [
+            {
+              takenAt: "2026-11-20T12:00:00Z",
+              gravitySg: 1.054,
+              temperatureC: 19.5,
+              source: "device",
+            },
+            {
+              takenAt: "2026-11-24T12:00:00Z",
+              gravitySg: 1.014,
+              temperatureC: 20.0,
+              source: "device",
+            },
+          ],
+        },
+      ],
+      inventory: [
+        {
+          name: "Local floor-malted pale",
+          quantity: 9.0,
+          quantityUnit: "kg",
+        },
+        {
+          name: "Columbus",
+          catalogId: "hop-columbus",
+          quantity: 0.113,
+          quantityUnit: "kg",
+          alphaAcidPct: 15,
+        },
+      ],
+    });
+  }
+
+  if (pathname === "/api/integrations/brewfather/import" && method === "POST") {
+    const user = getUserForRequest(req);
+    if (!user)
+      return sendJson(res, 401, { error: { code: "unauthorized", message: "Sign in first" } });
+    const data = JSON.parse(await readBody(req)) as {
+      recipes: { ref: string; draft: Record<string, unknown> }[];
+      batches: {
+        recipeRef: string;
+        name?: string;
+        batchSizeL?: number;
+        status: string;
+        brewedAt?: string;
+        completedAt?: string;
+        readings: Record<string, unknown>[];
+      }[];
+      inventory: {
+        name: string;
+        catalogId?: string | null;
+        quantity: number;
+        quantityUnit: QuantityUnit;
+        alphaAcidPct?: number | null;
+        notes?: string | null;
+      }[];
+    };
+    const now = new Date().toISOString();
+    const refMap = new Map<string, StoredRecipe>();
+    const recipeIds: string[] = [];
+    for (const item of data.recipes) {
+      const id = randomUUID();
+      const verId = randomUUID();
+      const draft = item.draft;
+      const stored: StoredRecipe = {
+        id,
+        uri: `http://127.0.0.1:${PORT}/recipes/${id}`,
+        name: String(draft.name ?? "Imported Recipe"),
+        beverage: (draft.beverage as StoredRecipe["beverage"]) ?? "beer",
+        visibility: "private",
+        owner: { type: "user", id: user.id },
+        credit: draft.credit
+          ? {
+              sourceUrl:
+                ((draft.credit as Record<string, unknown>).sourceUrl as string | null) ?? null,
+              site: ((draft.credit as Record<string, unknown>).site as string | null) ?? null,
+              author: ((draft.credit as Record<string, unknown>).author as string | null) ?? null,
+              importedAt: now,
+              license: null,
+            }
+          : null,
+        forkedFrom: null,
+        publicSharingBlocked: false,
+        createdAt: now,
+        updatedAt: now,
+        versions: [
+          {
+            id: verId,
+            version: 1,
+            name: String(draft.name ?? "Imported Recipe"),
+            beverage: (draft.beverage as StoredRecipe["beverage"]) ?? "beer",
+            styleId: (draft.styleId as string | null | undefined) ?? null,
+            batchSizeL: Number(draft.batchSizeL ?? 18.927),
+            equipmentProfileId: null,
+            content: (draft.content as Record<string, unknown>) ?? {},
+            createdAt: now,
+            stats: null,
+            statsError: null,
+            styleFit: null,
+          },
+        ],
+        shares: [],
+      };
+      recipes.set(id, stored);
+      refMap.set(item.ref, stored);
+      recipeIds.push(id);
+    }
+
+    const batchIds: string[] = [];
+    for (const b of data.batches) {
+      const rec = refMap.get(b.recipeRef);
+      if (!rec?.versions[0]) continue;
+      const id = randomUUID();
+      const storedBatch: StoredBatch = {
+        id,
+        uri: `http://127.0.0.1:${PORT}/batches/${id}`,
+        name: b.name ?? rec.name,
+        beverage: rec.beverage,
+        status: b.status,
+        visibility: "private",
+        owner: { type: "user", id: user.id },
+        recipe: { id: rec.id, version: 1, versionId: rec.versions[0].id },
+        batchSizeL: b.batchSizeL ?? rec.versions[0].batchSizeL,
+        equipmentProfileId: null,
+        brewedAt: b.brewedAt ?? null,
+        completedAt: b.completedAt ?? null,
+        createdAt: now,
+        updatedAt: now,
+        statusHistory: [{ status: b.status, changedAt: b.brewedAt ?? now }],
+        readings: b.readings.map((r) => ({
+          id: randomUUID(),
+          batchId: id,
+          takenAt: String(r.takenAt ?? now),
+          gravitySg: typeof r.gravitySg === "number" ? r.gravitySg : null,
+          temperatureC: typeof r.temperatureC === "number" ? r.temperatureC : null,
+          ph: null,
+          brix: null,
+          titratableAcidityGPerL: null,
+          freeSo2MgPerL: null,
+          source: r.source === "device" ? "device" : "manual",
+          note: typeof r.note === "string" ? r.note : null,
+          createdAt: now,
+        })),
+        reminders: [],
+      };
+      batches.set(id, storedBatch);
+      batchIds.push(id);
+    }
+
+    const inventoryIds: string[] = [];
+    for (const inv of data.inventory) {
+      const id = randomUUID();
+      inventoryItems.set(id, {
+        id,
+        uri: `http://127.0.0.1:${PORT}/inventory/${id}`,
+        owner: { type: "user", id: user.id },
+        name: inv.name,
+        catalogId: inv.catalogId ?? null,
+        quantity: inv.quantity,
+        quantityUnit: inv.quantityUnit,
+        lot: null,
+        location: null,
+        alphaAcidPct: inv.alphaAcidPct ?? null,
+        purchasedOn: null,
+        bestBefore: null,
+        lowStockThreshold: null,
+        notes: inv.notes ?? null,
+        createdAt: now,
+        updatedAt: now,
+      });
+      inventoryIds.push(id);
+    }
+    return sendJson(res, 201, { recipeIds, batchIds, inventoryIds });
   }
 
   if (pathname === "/api" || pathname.startsWith("/api/")) {

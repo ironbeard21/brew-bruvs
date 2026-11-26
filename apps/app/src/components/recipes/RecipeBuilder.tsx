@@ -160,6 +160,7 @@ export interface RecipeBuilderProps {
   onOpenRecipe?: (recipeId: string) => void;
   onVersionChange?: (version: number) => void;
   saving?: boolean;
+  saveLabel?: string;
   customFetch?: typeof fetch;
 }
 
@@ -181,6 +182,7 @@ export function RecipeBuilder({
   onOpenRecipe,
   onVersionChange,
   saving = false,
+  saveLabel,
   customFetch,
 }: RecipeBuilderProps) {
   const canEdit = canEditProp ?? canManage;
@@ -1564,7 +1566,11 @@ export function RecipeBuilder({
           <View style={styles.actionRow}>
             {canEdit ? (
               <Button
-                label={saving ? "Saving..." : recipe ? "Save new version" : "Create recipe"}
+                label={
+                  saving
+                    ? "Saving..."
+                    : (saveLabel ?? (recipe ? "Save new version" : "Create recipe"))
+                }
                 disabled={saving}
                 onPress={() => void handleSave()}
                 testID="recipe-save-button"

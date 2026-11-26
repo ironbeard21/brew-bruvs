@@ -14,10 +14,15 @@ import { colors, radii, spacing } from "../theme";
 export interface CardProps {
   children: ReactNode;
   style?: ViewStyle | undefined;
+  testID?: string;
 }
 
-export function Card({ children, style }: CardProps) {
-  return <View style={[styles.card, style]}>{children}</View>;
+export function Card({ children, style, testID }: CardProps) {
+  return (
+    <View style={[styles.card, style]} testID={testID}>
+      {children}
+    </View>
+  );
 }
 
 export interface ButtonProps {

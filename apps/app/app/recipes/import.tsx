@@ -74,6 +74,18 @@ export default function ImportRecipeScreen() {
         onSaveImported={handleSaveImported}
         saving={createRecipe.isPending}
       />
+      <Card>
+        <Banner
+          tone="info"
+          message="Moving from Brewfather? Import recipes, batches with readings, and inventory in one reviewed draft."
+        />
+        <Button
+          label="Import from Brewfather"
+          variant="secondary"
+          onPress={() => router.push("/integrations?tab=brewfather")}
+          testID="import-brewfather-shortcut"
+        />
+      </Card>
     </AppShell>
   );
 }
