@@ -13,7 +13,7 @@ import { useUnits } from "../../state/units";
 import { colors, radii, spacing } from "../../theme";
 import { parseNumber } from "../calculators/parseNumber";
 import { Banner, Button, Card, SegmentedControl, TextField } from "../ui";
-import { detectRecipeFormat } from "./fileIO";
+import { detectRecipeFormat, type PickedRecipeFile, pickNativeRecipeFile } from "./fileIO";
 import { RecipeBuilder } from "./RecipeBuilder";
 
 export interface RecipeImportFlowProps {
@@ -21,6 +21,7 @@ export interface RecipeImportFlowProps {
   authToken: string | null;
   onSaveImported: (input: CreateRecipeInput) => Promise<void>;
   saving?: boolean;
+  onPickNativeFile?: () => Promise<PickedRecipeFile | null>;
   customFetch?: typeof fetch;
 }
 
@@ -41,6 +42,7 @@ export function RecipeImportFlow({
   authToken,
   onSaveImported,
   saving = false,
+  onPickNativeFile = pickNativeRecipeFile,
   customFetch,
 }: RecipeImportFlowProps) {
   const { unitSystem } = useUnits();
@@ -49,6 +51,7 @@ export function RecipeImportFlow({
   const [format, setFormat] = useState<RecipeFileFormat>("beerxml");
   const [fileName, setFileName] = useState<string | null>(null);
   const [fileContents, setFileContents] = useState("");
+  const [pickingFile, setPickingFile] = useState(false);
 
   const [urlText, setUrlText] = useState("");
   const [urlBatchSizeText, setUrlBatchSizeText] = useState("");
@@ -75,6 +78,25 @@ export function RecipeImportFlow({
       }
     } catch {
       setError("Could not read the selected file.");
+    }
+  };
+
+  const handleNativeFilePick = async () => {
+    setError(null);
+    setPickingFile(true);
+    try {
+      const picked = await onPickNativeFile();
+      if (!picked) return;
+      setFileName(picked.name);
+      setFileContents(picked.contents);
+      const detected = detectRecipeFormat(picked.name, picked.contents);
+      if (detected) {
+        setFormat(detected);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not read the selected file.");
+    } finally {
+      setPickingFile(false);
     }
   };
 
@@ -217,10 +239,28 @@ export function RecipeImportFlow({
                 ) : null}
               </View>
             ) : (
-              <Banner
-                tone="info"
-                message="Paste BeerXML or BeerJSON text below to parse and review your recipe."
-              />
+              <View style={styles.fileDropBox}>
+                <Text style={styles.fieldLabel}>
+                  Select BeerXML (.xml) or BeerJSON (.json) file
+                </Text>
+                <Button
+                  label={pickingFile ? "Opening files..." : "Choose recipe file"}
+                  variant="secondary"
+                  disabled={pickingFile}
+                  onPress={() => void handleNativeFilePick()}
+                  accessibilityLabel="Choose BeerXML or BeerJSON recipe file from device"
+                  testID="import-native-file-button"
+                />
+                {fileName ? (
+                  <Text style={styles.fileSelectedText} testID="import-selected-filename">
+                    Loaded: {fileName} ({format.toUpperCase()})
+                  </Text>
+                ) : (
+                  <Text style={styles.muted}>
+                    Choose a file from your device, or paste BeerXML / BeerJSON text below.
+                  </Text>
+                )}
+              </View>
             )}
 
             <View style={styles.textAreaGroup}>

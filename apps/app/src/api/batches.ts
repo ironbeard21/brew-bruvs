@@ -128,6 +128,28 @@ export async function fetchBatchReminders(
   return data;
 }
 
+export async function fetchDueReminders(
+  serverUrl: string,
+  token: string | null,
+  untilIso?: string,
+  customFetch?: typeof fetch,
+): Promise<Reminder[]> {
+  const client = getApiClient(serverUrl, {
+    token,
+    ...(customFetch ? { customFetch } : {}),
+  });
+  const { data, error } = await client.GET("/api/reminders", {
+    credentials: "include",
+    params: {
+      query: untilIso ? { until: untilIso } : {},
+    },
+  });
+  if (error || !data) {
+    throw new Error(formatApiError(error, "Could not load due reminders."));
+  }
+  return data;
+}
+
 export async function fetchBatchNotes(
   serverUrl: string,
   token: string | null,

@@ -1728,6 +1728,24 @@ const server = createServer(async (req, res) => {
     }
   }
 
+  if (pathname === "/api/reminders" && method === "GET") {
+    const user = getUserForRequest(req);
+    if (!user)
+      return sendJson(res, 401, { error: { code: "unauthorized", message: "Sign in first" } });
+    const untilParam = url.searchParams.get("until");
+    const untilMs = untilParam ? Date.parse(untilParam) : Date.now();
+    const list: StoredReminder[] = [];
+    for (const b of batches.values()) {
+      for (const r of b.reminders) {
+        if (r.doneAt === null && Date.parse(r.dueAt) <= untilMs) {
+          list.push(r);
+        }
+      }
+    }
+    list.sort((a, c) => Date.parse(a.dueAt) - Date.parse(c.dueAt));
+    return sendJson(res, 200, list);
+  }
+
   const reminderDoneMatch = pathname.match(/^\/api\/reminders\/([^/]+)\/done$/);
   if (reminderDoneMatch && method === "POST") {
     const remId = reminderDoneMatch[1] ?? "";

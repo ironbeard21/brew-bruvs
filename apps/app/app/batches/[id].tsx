@@ -447,6 +447,7 @@ export default function BatchDetailScreen() {
           reminders={remindersQuery.data ?? []}
           loading={remindersQuery.isPending}
           canEdit={canEdit}
+          {...(serverUrl && userId ? { scopeKey: `${serverUrl}::${userId}` } : {})}
           saving={addReminder.isPending || completeReminder.isPending}
           onAddReminder={async (input) => {
             await addReminder.mutateAsync(input);

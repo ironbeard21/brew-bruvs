@@ -11,6 +11,7 @@ export interface RemindersSectionProps {
   reminders: readonly Reminder[];
   loading?: boolean;
   canEdit: boolean;
+  scopeKey?: string;
   onAddReminder: (input: ReminderInput) => Promise<void>;
   onCompleteReminder: (reminderId: string) => Promise<void>;
   saving?: boolean;
@@ -36,6 +37,7 @@ export function RemindersSection({
   reminders,
   loading = false,
   canEdit,
+  scopeKey,
   onAddReminder,
   onCompleteReminder,
   saving = false,
@@ -53,7 +55,9 @@ export function RemindersSection({
   useEffect(() => {
     if (Platform.OS === "web" || reminders.length === 0) return;
     let active = true;
-    void syncReminderNotifications([...reminders]).then((res) => {
+    void syncReminderNotifications([...reminders], {
+      ...(scopeKey ? { scopeKey } : {}),
+    }).then((res) => {
       if (!active) return;
       if (res.permissionGranted && res.scheduled > 0) {
         setSyncMessage(
@@ -64,14 +68,16 @@ export function RemindersSection({
     return () => {
       active = false;
     };
-  }, [reminders]);
+  }, [reminders, scopeKey]);
 
   const handleSyncNotifications = async () => {
     if (Platform.OS === "web") {
       setSyncMessage("Local reminder notifications run automatically on iOS & Android.");
       return;
     }
-    const res = await syncReminderNotifications([...reminders]);
+    const res = await syncReminderNotifications([...reminders], {
+      ...(scopeKey ? { scopeKey } : {}),
+    });
     setSyncMessage(
       res.permissionGranted
         ? `Synced ${res.scheduled} upcoming reminder${res.scheduled === 1 ? "" : "s"} to device alerts.`
