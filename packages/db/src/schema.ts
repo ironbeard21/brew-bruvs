@@ -619,12 +619,19 @@ export const inventoryItems = pgTable(
   },
   (t) => [
     ...ownerChecks("inventory_items", t),
-    check("inventory_items_quantity_nonneg", sql`${t.quantity} >= 0`),
+    // `< 'Infinity'` also rejects NaN, which Postgres sorts above every number.
+    check(
+      "inventory_items_quantity_nonneg",
+      sql`${t.quantity} >= 0 AND ${t.quantity} < 'Infinity'::float8`,
+    ),
     check(
       "inventory_items_alpha_acid_range",
       sql`${t.alphaAcidPct} >= 0 AND ${t.alphaAcidPct} <= 100`,
     ),
-    check("inventory_items_low_stock_nonneg", sql`${t.lowStockThreshold} >= 0`),
+    check(
+      "inventory_items_low_stock_nonneg",
+      sql`${t.lowStockThreshold} >= 0 AND ${t.lowStockThreshold} < 'Infinity'::float8`,
+    ),
     check(
       "inventory_items_tradeable_quantity_range",
       sql`${t.tradeableQuantity} >= 0 AND ${t.tradeableQuantity} <= ${t.quantity}`,
@@ -650,7 +657,10 @@ export const inventoryReservations = pgTable(
     updatedAt: updatedAt(),
   },
   (t) => [
-    check("inventory_reservations_quantity_positive", sql`${t.quantity} > 0`),
+    check(
+      "inventory_reservations_quantity_positive",
+      sql`${t.quantity} > 0 AND ${t.quantity} < 'Infinity'::float8`,
+    ),
     index().on(t.batchId),
     index().on(t.inventoryItemId, t.state),
   ],

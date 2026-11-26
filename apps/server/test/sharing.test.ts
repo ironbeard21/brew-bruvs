@@ -240,4 +240,35 @@ describe.skipIf(!TEST_DATABASE_URL)("sharing and activity on PostgreSQL", () => 
       expect([outsider.status, code(outsider)]).toEqual([404, "not_found"]);
     });
   });
+  it("leaves no share behind when one is added while the item is being deleted", async () => {
+    await withPeople(async (ctx) => {
+      const me = await call(ctx.app, "GET", "/api/me", { token: ctx.ann });
+      const kinds = [
+        [
+          "inventory_item",
+          "inventory_items",
+          "/api/inventory",
+          { name: "Oats", quantity: 1, quantityUnit: "kg" },
+        ],
+        ["equipment_profile", "equipment_profiles", "/api/equipment-profiles", { name: "Kettle" }],
+        ["note", "notes", "/api/notes", { body: "Note" }],
+      ] as const;
+      for (const [kind, table, path, body] of kinds) {
+        const id = await created(call(ctx.app, "POST", path, { token: ctx.me, body }));
+        // Another transaction holds the row (as sharing does) and adds a share.
+        await ctx.sql.query("BEGIN");
+        await ctx.sql.query(`SELECT 1 FROM ${table} WHERE id = $1 FOR UPDATE`, [id]);
+        await ctx.sql.query(
+          "INSERT INTO shares (resource_type, resource_id, to_user_id, level) VALUES ($1, $2, $3, 'read')",
+          [kind, id, me.json.id],
+        );
+        const removing = call(ctx.app, "DELETE", `${path}/${id}`, { token: ctx.me });
+        await new Promise((done) => setTimeout(done, 300));
+        await ctx.sql.query("COMMIT");
+        expect((await removing).status, kind).toBe(204);
+        const left = await ctx.sql.query("SELECT 1 FROM shares WHERE resource_id = $1", [id]);
+        expect(left.rowCount, kind).toBe(0);
+      }
+    });
+  });
 });
