@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { type Db, schema } from "@brew-bruvs/db";
-import { and, eq } from "drizzle-orm";
+import { and, asc, eq, inArray } from "drizzle-orm";
 import type { EquipmentItemInput, EquipmentItemPatch } from "../contracts/equipment-items.ts";
 import { ApiError } from "../errors.ts";
 import type { Action, User } from "../permissions.ts";
@@ -57,14 +57,20 @@ async function catalogDefaults(tx: Tx, id: string) {
   return row;
 }
 
-async function authorizeItem(tx: Tx, user: User, action: Action, id: string) {
+async function authorizeItem(
+  tx: Tx,
+  user: User,
+  action: Action,
+  id: string,
+  lock = action !== "read",
+) {
   const query = tx.select().from(equipmentItems).where(eq(equipmentItems.id, id));
   // Check first, then lock: under row-level security a locking read skips rows the user can read
   // but not change, which would turn a 403 into a 404.
   const [found] = await query;
   if (!found) throw new ApiError(404, "not_found", "Equipment item not found");
   await authorizeRow(tx, user, action, shareableType, found, label);
-  if (action === "read") return found;
+  if (!lock) return found;
   const [row] = await query.for("update");
   if (!row) throw new ApiError(404, "not_found", "Equipment item not found");
   return row;
@@ -173,8 +179,8 @@ export function createEquipmentItemService(db: Db, { baseUrl }: { baseUrl: strin
     async setHolder(viewer: User | null, id: string, heldByUserId: string | null) {
       const user = signedIn(viewer);
       return db.transaction(async (tx) => {
-        const item = await authorizeItem(tx, user, "edit", id);
-        const breweryId = item.ownerBreweryId;
+        const found = await authorizeItem(tx, user, "edit", id, false);
+        const breweryId = found.ownerBreweryId;
         if (!breweryId)
           throw new ApiError(
             400,
@@ -183,19 +189,31 @@ export function createEquipmentItemService(db: Db, { baseUrl }: { baseUrl: strin
           );
         checkBrewery(user, "edit", breweryId);
 
-        if (heldByUserId) {
-          const [member] = await tx
-            .select({ userId: memberships.userId })
-            .from(memberships)
-            .where(and(eq(memberships.breweryId, breweryId), eq(memberships.userId, heldByUserId)))
-            .for("key share");
-          if (!member)
-            throw new ApiError(
-              400,
-              "unknown_brewery_member",
-              "The holder must belong to this brewery",
-            );
-        }
+        // Memberships first, then the item: leaving deletes the membership and its trigger then
+        // returns the item (migration 0010), so the same order here means the two can't deadlock.
+        const people = [...new Set([heldByUserId, found.heldByUserId])]
+          .filter((p): p is string => p !== null)
+          .sort();
+        const members = people.length
+          ? await tx
+              .select({ userId: memberships.userId })
+              .from(memberships)
+              .where(and(eq(memberships.breweryId, breweryId), inArray(memberships.userId, people)))
+              .orderBy(asc(memberships.userId))
+              .for("key share")
+          : [];
+        if (heldByUserId && !members.some((m) => m.userId === heldByUserId))
+          throw new ApiError(
+            400,
+            "unknown_brewery_member",
+            "The holder must belong to this brewery",
+          );
+        const [item] = await tx
+          .select()
+          .from(equipmentItems)
+          .where(eq(equipmentItems.id, id))
+          .for("update");
+        if (!item) throw new ApiError(404, "not_found", "Equipment item not found");
 
         if (item.heldByUserId === heldByUserId) return view(item);
         const [row] = await tx
