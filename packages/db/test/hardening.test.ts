@@ -4,7 +4,7 @@
 import { Client } from "pg";
 import { describe, expect, it } from "vitest";
 import { migrateUp } from "../src/migrations.ts";
-import { withTestDatabase } from "./test-database.ts";
+import { rollbackThrough, withTestDatabase } from "./test-database.ts";
 
 const connectionString = process.env.TEST_DATABASE_URL;
 
@@ -116,6 +116,58 @@ describe.skipIf(!connectionString)("hardening on Postgres (TEST_DATABASE_URL)", 
       expect(held.rows).toEqual([
         { id: keg.id, held_by_user_id: holder.id },
         { id: kettle.id, held_by_user_id: null },
+      ]);
+    });
+  });
+  it("returns equipment held by people who left before the upgrade", async () => {
+    await withClient(async (client) => {
+      // As an install before 0010: no trigger, so a departure left a stale holder behind.
+      await rollbackThrough(client, "0010_release_hardening");
+      const user = (n: number) =>
+        one(
+          client,
+          `INSERT INTO users (uri, email, display_name) VALUES ('https://b.test/u/${n}', 'u${n}@b.test', 'U${n}') RETURNING id`,
+        );
+      const [gone, stays] = [await user(1), await user(2)];
+      const brewery = await one(
+        client,
+        "INSERT INTO breweries (uri, name) VALUES ('https://b.test/b/1', 'Hops Co') RETURNING id",
+      );
+      const other = await one(
+        client,
+        "INSERT INTO breweries (uri, name) VALUES ('https://b.test/b/2', 'Malt Co') RETURNING id",
+      );
+      for (const [b, u] of [
+        [brewery.id, gone.id],
+        [brewery.id, stays.id],
+        [other.id, gone.id],
+      ]) {
+        await client.query(
+          "INSERT INTO memberships (brewery_id, user_id, role) VALUES ($1, $2, 'member')",
+          [b, u],
+        );
+      }
+      const lend = (breweryId: string, name: string, holder: string) =>
+        client.query(
+          "INSERT INTO equipment_items (uri, owner_brewery_id, name, held_by_user_id) VALUES ('https://b.test/e/' || uuidv7(), $1, $2, $3)",
+          [breweryId, name, holder],
+        );
+      await lend(brewery.id, "Kettle", gone.id);
+      await lend(brewery.id, "Mill", stays.id);
+      await lend(other.id, "Keg", gone.id);
+      await client.query("DELETE FROM memberships WHERE brewery_id = $1 AND user_id = $2", [
+        brewery.id,
+        gone.id,
+      ]);
+
+      await migrateUp(client);
+      const held = await client.query(
+        "SELECT name, held_by_user_id AS holder FROM equipment_items ORDER BY name",
+      );
+      expect(held.rows).toEqual([
+        { name: "Keg", holder: gone.id },
+        { name: "Kettle", holder: null },
+        { name: "Mill", holder: stays.id },
       ]);
     });
   });

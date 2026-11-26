@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 // Breweries API: members and roles, invites, creating and moving things into a brewery, and
 // what each role can do to a brewery batch. Postgres tests need TEST_DATABASE_URL.
+import type { Client } from "pg";
 import { describe, expect, it } from "vitest";
 import { createApp } from "../src/app.ts";
 import {
@@ -33,11 +34,12 @@ const ROLES = ["owner", "brewer", "member", "viewer"] as const;
 async function withBrewery(
   run: (ctx: {
     app: TestApp;
+    sql: Client;
     brewery: string;
     people: Record<(typeof ROLES)[number] | "outsider", Person>;
   }) => Promise<void>,
 ) {
-  await withApp({}, async (app) => {
+  await withApp({}, async (app, sql) => {
     const adminToken = await setupAdmin(app);
     const me = await call(app, "GET", "/api/me", { token: adminToken });
     const people = {
@@ -79,7 +81,7 @@ async function withBrewery(
       });
       expect(joined.status).toBe(200);
     }
-    await run({ app, brewery, people });
+    await run({ app, sql, brewery, people });
   });
 }
 
@@ -617,6 +619,96 @@ describe.skipIf(!TEST_DATABASE_URL)("breweries API on PostgreSQL", () => {
       expect(left.status).toBe(204);
       const after = await call(app, "GET", item, { token: people.owner.token });
       expect(after.json.heldByUserId).toBeNull();
+    });
+  });
+  it("never deadlocks when an item is lent while its holder leaves", async () => {
+    await withBrewery(async ({ app, sql, brewery, people }) => {
+      const kettle = await call(app, "POST", "/api/equipment", {
+        token: people.owner.token,
+        body: { name: "Kettle", breweryId: brewery },
+      });
+      const holder = `/api/equipment/${kettle.json.id}/holder`;
+      const lend = () =>
+        call(app, "PUT", holder, {
+          token: people.owner.token,
+          body: { heldByUserId: people.member.id },
+        });
+      expect((await lend()).status).toBe(200);
+
+      // The member starts leaving: their membership row is held while the lend comes in.
+      await sql.query("BEGIN");
+      await sql.query(
+        "SELECT 1 FROM memberships WHERE brewery_id = $1 AND user_id = $2 FOR UPDATE",
+        [brewery, people.member.id],
+      );
+      const lending = lend();
+      await new Promise((done) => setTimeout(done, 300));
+      let leaveError: string | undefined;
+      try {
+        // Deleting the membership returns their equipment (trigger), then commits.
+        await sql.query("DELETE FROM memberships WHERE brewery_id = $1 AND user_id = $2", [
+          brewery,
+          people.member.id,
+        ]);
+        await sql.query("COMMIT");
+      } catch (err) {
+        leaveError = (err as { code?: string }).code;
+        await sql.query("ROLLBACK");
+      }
+      const lent = await lending;
+      expect(leaveError).toBeUndefined();
+      // They've left, so the repeat loan is refused instead of failing.
+      expect([lent.status, lent.json.error?.code]).toEqual([400, "unknown_brewery_member"]);
+      const item = await call(app, "GET", `/api/equipment/${kettle.json.id}`, {
+        token: people.owner.token,
+      });
+      expect(item.json.heldByUserId).toBeNull();
+    });
+  });
+
+  it("never deadlocks when an item is handed to a member who is leaving", async () => {
+    await withBrewery(async ({ app, sql, brewery, people }) => {
+      // The deadlock needed the current holder's id to sort before the incoming holder's.
+      const [from, to] =
+        people.brewer.id < people.member.id
+          ? [people.brewer, people.member]
+          : [people.member, people.brewer];
+      const kettle = await call(app, "POST", "/api/equipment", {
+        token: people.owner.token,
+        body: { name: "Kettle", breweryId: brewery },
+      });
+      const holder = `/api/equipment/${kettle.json.id}/holder`;
+      const lend = (heldByUserId: string) =>
+        call(app, "PUT", holder, { token: people.owner.token, body: { heldByUserId } });
+      expect((await lend(from.id)).status).toBe(200);
+
+      // The incoming holder starts leaving, taking the same locks as removeMember.
+      await sql.query("BEGIN");
+      await sql.query(
+        "SELECT 1 FROM memberships WHERE brewery_id = $1 AND user_id = $2 FOR UPDATE",
+        [brewery, to.id],
+      );
+      const handing = lend(to.id);
+      await new Promise((done) => setTimeout(done, 300));
+      let leaveError: string | undefined;
+      try {
+        await sql.query("SELECT 1 FROM memberships WHERE brewery_id = $1 FOR UPDATE", [brewery]);
+        await sql.query("DELETE FROM memberships WHERE brewery_id = $1 AND user_id = $2", [
+          brewery,
+          to.id,
+        ]);
+        await sql.query("COMMIT");
+      } catch (err) {
+        leaveError = (err as { code?: string }).code;
+        await sql.query("ROLLBACK");
+      }
+      const handed = await handing;
+      expect(leaveError).toBeUndefined();
+      expect([handed.status, handed.json.error?.code]).toEqual([400, "unknown_brewery_member"]);
+      const item = await call(app, "GET", `/api/equipment/${kettle.json.id}`, {
+        token: people.owner.token,
+      });
+      expect(item.json.heldByUserId).toBe(from.id);
     });
   });
 });
