@@ -19,6 +19,7 @@ import { MoveToBreweryBar } from "../../src/components/breweries/OwnerPickerCard
 import { OwnerBadge } from "../../src/components/OwnerBadge";
 import { deliverExportedFile } from "../../src/components/recipes/fileIO";
 import { RecipeBuilder } from "../../src/components/recipes/RecipeBuilder";
+import { ShareDialog } from "../../src/components/sharing/ShareDialog";
 import { Banner, Button, Card } from "../../src/components/ui";
 import { useOptionalBrewery } from "../../src/state/brewery";
 import { canPerformOnOwner, canWriteBrewery } from "../../src/state/permissions";
@@ -45,6 +46,7 @@ export default function RecipeDetailScreen() {
   const [exportNotice, setExportNotice] = useState<string | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
   const [moveNotice, setMoveNotice] = useState<string | null>(null);
+  const [shareOpen, setShareOpen] = useState(false);
 
   if (!serverUrl) {
     return (
@@ -199,6 +201,15 @@ export default function RecipeDetailScreen() {
             onPress={() => void handleExport("beerjson")}
             testID="export-beerjson-button"
           />
+          {canShare ? (
+            <Button
+              label="Share"
+              variant="secondary"
+              onPress={() => setShareOpen(true)}
+              accessibilityLabel={`Share ${recipe.name}`}
+              testID="recipe-share-button"
+            />
+          ) : null}
           {canMoveToBrewery ? (
             <MoveToBreweryBar
               itemLabel="recipe"
@@ -209,6 +220,21 @@ export default function RecipeDetailScreen() {
             />
           ) : null}
         </View>
+        <ShareDialog
+          open={shareOpen}
+          onClose={() => setShareOpen(false)}
+          serverUrl={serverUrl}
+          authToken={authToken}
+          resourceType="recipe"
+          resourceId={recipe.id}
+          resourceName={recipe.name}
+          visibility={recipe.visibility}
+          owner={recipe.owner}
+          canManage={canShare}
+          hasCredit={Boolean(recipe.credit)}
+          publicSharingBlocked={recipe.publicSharingBlocked}
+          breweries={breweries}
+        />
         {moveNotice ? (
           <Banner tone="success" message={moveNotice} testID="move-recipe-notice" />
         ) : null}

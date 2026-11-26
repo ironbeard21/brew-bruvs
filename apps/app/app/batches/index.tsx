@@ -56,6 +56,7 @@ export default function BatchesScreen() {
   const currentUser = useCurrentUser(serverUrl, authToken);
   const batchesQuery = useBatches(serverUrl, authToken, {
     mine: !activeBreweryId && scope === "mine",
+    breweryId: activeBrewery && scope === "workspace" ? activeBrewery.id : null,
     ...(statusFilter !== "all" ? { status: statusFilter as BatchStatus } : {}),
   });
   const recipesQuery = useRecipes(serverUrl, authToken, {
@@ -65,11 +66,7 @@ export default function BatchesScreen() {
 
   const signedIn = Boolean(currentUser.data);
   const canStartInWorkspace = signedIn && (!activeBrewery || canWriteBrewery(activeBrewery.role));
-  const allBatches = batchesQuery.data ?? [];
-  const visibleBatches =
-    activeBrewery && scope === "workspace"
-      ? allBatches.filter((b) => b.owner.type === "brewery" && b.owner.id === activeBrewery.id)
-      : allBatches;
+  const visibleBatches = batchesQuery.data ?? [];
 
   const scopeOptions: readonly { value: ScopeFilter; label: string }[] = activeBrewery
     ? [

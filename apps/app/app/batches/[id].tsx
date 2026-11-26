@@ -50,6 +50,7 @@ import {
   canAccessOwnerInventory,
 } from "../../src/components/inventory/inventoryScope";
 import { OwnerBadge } from "../../src/components/OwnerBadge";
+import { ShareDialog } from "../../src/components/sharing/ShareDialog";
 import { Banner, Button, Card, SegmentedControl } from "../../src/components/ui";
 import { notifyLowStockItems } from "../../src/notifications";
 import { useOptionalBrewery } from "../../src/state/brewery";
@@ -89,6 +90,7 @@ export default function BatchDetailScreen() {
   const [lowStockAlert, setLowStockAlert] = useState<string | null>(null);
   const [moveNotice, setMoveNotice] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
 
   const currentUser = useCurrentUser(serverUrl, authToken);
   const detailQuery = useBatchDetail(serverUrl, authToken, batchId || null);
@@ -174,6 +176,7 @@ export default function BatchDetailScreen() {
   const canContribute = canPerformOnOwner(userId, breweries, batch.owner, "contribute");
   const canEdit = canPerformOnOwner(userId, breweries, batch.owner, "edit");
   const canDelete = canPerformOnOwner(userId, breweries, batch.owner, "delete");
+  const canShare = canPerformOnOwner(userId, breweries, batch.owner, "share");
   const canMoveToBrewery =
     batch.owner.type === "user" && batch.owner.id === userId && writableBreweries.length > 0;
   const flow = getStatusFlow(batch.beverage);
@@ -262,6 +265,15 @@ export default function BatchDetailScreen() {
               onPress={() => router.push(`/recipes/${batch.recipe.id}`)}
               testID="batch-open-recipe-button"
             />
+            {canShare ? (
+              <Button
+                label="Share"
+                variant="secondary"
+                onPress={() => setShareOpen(true)}
+                accessibilityLabel={`Share ${batch.name}`}
+                testID="batch-share-button"
+              />
+            ) : null}
             {canMoveToBrewery ? (
               <MoveToBreweryBar
                 itemLabel="batch"
@@ -463,6 +475,10 @@ export default function BatchDetailScreen() {
           canEdit={canEdit}
           canContribute={canContribute}
           canDeleteNote={(note) => canPerformOnOwner(userId, breweries, note.owner, "delete")}
+          canShareNote={(note) => canPerformOnOwner(userId, breweries, note.owner, "share")}
+          serverUrl={serverUrl}
+          authToken={authToken}
+          breweries={breweries}
           saving={createNote.isPending || deleteNote.isPending}
           onCreateNote={async (input) => {
             await createNote.mutateAsync(input);
@@ -472,6 +488,20 @@ export default function BatchDetailScreen() {
           }}
         />
       ) : null}
+
+      <ShareDialog
+        open={shareOpen}
+        onClose={() => setShareOpen(false)}
+        serverUrl={serverUrl}
+        authToken={authToken}
+        resourceType="batch"
+        resourceId={batch.id}
+        resourceName={batch.name}
+        visibility={batch.visibility}
+        owner={batch.owner}
+        canManage={canShare}
+        breweries={breweries}
+      />
     </AppShell>
   );
 }

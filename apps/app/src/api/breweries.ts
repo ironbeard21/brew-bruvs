@@ -446,6 +446,8 @@ export function useAcceptBreweryInvite(
         queryClient.invalidateQueries({ queryKey: ["recipes", serverUrl] }),
         queryClient.invalidateQueries({ queryKey: ["batches", serverUrl] }),
         queryClient.invalidateQueries({ queryKey: ["inventory", serverUrl] }),
+        queryClient.invalidateQueries({ queryKey: ["equipment-items", serverUrl] }),
+        queryClient.invalidateQueries({ queryKey: ["brewery-activity", serverUrl, detail.id] }),
       ]);
     },
   });

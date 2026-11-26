@@ -47,6 +47,7 @@ export default function RecipeLibraryScreen() {
   const recipesQuery = useRecipes(serverUrl, authToken, {
     q: query,
     mine: !activeBreweryId && scope === "mine",
+    breweryId: activeBrewery && scope === "workspace" ? activeBrewery.id : null,
     enabled: Boolean(serverUrl),
   });
   const forkMutation = useForkRecipe(serverUrl, authToken);
@@ -55,12 +56,8 @@ export default function RecipeLibraryScreen() {
   const signedIn = Boolean(currentUser.data);
   const canCreateInWorkspace = signedIn && (!activeBrewery || canWriteBrewery(activeBrewery.role));
   const allItems = recipesQuery.data ?? [];
-  const workspaceItems =
-    activeBrewery && scope === "workspace"
-      ? allItems.filter((r) => r.owner.type === "brewery" && r.owner.id === activeBrewery.id)
-      : allItems;
   const filteredItems =
-    beverage === "all" ? workspaceItems : workspaceItems.filter((r) => r.beverage === beverage);
+    beverage === "all" ? allItems : allItems.filter((r) => r.beverage === beverage);
 
   const scopeOptions = activeBrewery
     ? ([

@@ -68,13 +68,49 @@ interface StoredRecipe {
   createdAt: string;
   updatedAt: string;
   versions: StoredVersion[];
-  shares: {
-    id: string;
-    user: { id: string; displayName: string } | null;
-    breweryId: null;
-    level: "read" | "edit";
-    createdAt: string;
-  }[];
+  shares: StoredShare[];
+}
+
+interface StoredShare {
+  id: string;
+  user: { id: string; displayName: string } | null;
+  breweryId: string | null;
+  level: "read" | "edit";
+  createdAt: string;
+}
+
+interface StoredEquipmentItem {
+  id: string;
+  uri: string;
+  catalogId: string | null;
+  owner: { type: "user" | "brewery"; id: string };
+  visibility: "private" | "unlisted" | "server" | "public";
+  name: string;
+  type: string | null;
+  condition: "new" | "good" | "worn" | "needs_repair" | "retired" | null;
+  notes: string | null;
+  heldByUserId: string | null;
+  batchSizeL: number | null;
+  boilSizeL: number | null;
+  kettleVolumeL: number | null;
+  kettleLossL: number | null;
+  boilRateLPerHr: number | null;
+  mashTunVolumeL: number | null;
+  grainAbsorptionLPerKg: number | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface StoredActivityEvent {
+  id: string;
+  breweryId: string;
+  verb: string;
+  at: string;
+  actor: { id: string; displayName: string } | null;
+  object: { type: string; id: string };
+  batch: { id: string; name: string } | null;
+  status: string | null;
+  name: string | null;
 }
 
 interface StoredBatch {
@@ -256,8 +292,19 @@ const notes = new Map<string, StoredNote>();
 const breweries = new Map<string, StoredBrewery>();
 const breweryInvites = new Map<string, StoredBreweryInvite>();
 const inventoryItems = new Map<string, StoredInventoryItem>();
+const equipmentItems = new Map<string, StoredEquipmentItem>();
+const resourceShares = new Map<string, StoredShare[]>();
+const activityEvents: StoredActivityEvent[] = [];
 const batchReservations: StoredReservation[] = [];
 const equipmentProfiles: Record<string, unknown>[] = [];
+
+function recordBreweryActivity(ev: Omit<StoredActivityEvent, "id" | "at">) {
+  activityEvents.unshift({
+    ...ev,
+    id: randomUUID(),
+    at: new Date().toISOString(),
+  });
+}
 
 function reservedForItem(itemId: string): number {
   return batchReservations
@@ -453,7 +500,25 @@ const SEEDED_CATALOG: Record<string, Record<string, unknown>[]> = {
   ],
   miscs: [],
   water_profiles: [],
-  equipment: [],
+  equipment: [
+    {
+      id: "equip-anvil-foundry-105",
+      catalog: "equipment",
+      name: "Anvil Foundry 10.5 gal",
+      aliases: ["Anvil 10.5"],
+      sources: ["beerproto"],
+      licenses: ["MIT"],
+      notes: null,
+      category: "All-in-One",
+      batchSizeL: 18.927,
+      boilSizeL: 24.6,
+      kettleVolumeL: 39.75,
+      kettleLossL: 1.9,
+      boilRateLPerHr: 3.785,
+      mashTunVolumeL: 39.75,
+      grainAbsorptionLPerKg: 1.0,
+    },
+  ],
 };
 
 const MIME_TYPES: Record<string, string> = {
@@ -1036,9 +1101,19 @@ const server = createServer(async (req, res) => {
 
   // Recipes CRUD, versions, fork, shares
   if (pathname === "/api/recipes" && method === "GET") {
+    const user = getUserForRequest(req);
     const q = (url.searchParams.get("q") ?? "").trim().toLowerCase();
+    const mine = url.searchParams.get("mine") === "true";
+    const breweryId = url.searchParams.get("breweryId");
     const list = [...recipes.values()]
       .filter((r) => (!q ? true : r.name.toLowerCase().includes(q)))
+      .filter((r) =>
+        breweryId
+          ? r.owner.type === "brewery" && r.owner.id === breweryId
+          : mine && user
+            ? r.owner.type === "user" && r.owner.id === user.id
+            : true,
+      )
       .map(recipeSummary);
     return sendJson(res, 200, { items: list, nextOffset: null });
   }
@@ -1251,16 +1326,87 @@ const server = createServer(async (req, res) => {
       recipes.set(newId, forked);
       return sendJson(res, 201, recipeDetail(forked));
     }
-    if (sub === "shares" && method === "GET") {
+    if (sub === "shares" && !subId && method === "GET") {
       return sendJson(res, 200, recipe.shares);
+    }
+    if (sub === "shares" && !subId && method === "POST") {
+      const data = JSON.parse(await readBody(req)) as {
+        email?: string;
+        breweryId?: string;
+        level: "read" | "edit";
+      };
+      if (data.email) {
+        const target = [...users.values()].find(
+          (u) => u.email.toLowerCase() === data.email?.trim().toLowerCase(),
+        );
+        if (!target) {
+          return sendJson(res, 404, {
+            error: { code: "user_not_found", message: "No account with that email here" },
+          });
+        }
+        const existing = recipe.shares.find((s) => s.user?.id === target.id);
+        if (existing) {
+          existing.level = data.level;
+          return sendJson(res, 201, existing);
+        }
+        const created: StoredShare = {
+          id: randomUUID(),
+          user: { id: target.id, displayName: target.displayName },
+          breweryId: null,
+          level: data.level,
+          createdAt: new Date().toISOString(),
+        };
+        recipe.shares.push(created);
+        return sendJson(res, 201, created);
+      }
+      if (data.breweryId) {
+        if (!breweries.has(data.breweryId)) {
+          return sendJson(res, 404, {
+            error: { code: "brewery_not_found", message: "No brewery with that id" },
+          });
+        }
+        const existing = recipe.shares.find((s) => s.breweryId === data.breweryId);
+        if (existing) {
+          existing.level = data.level;
+          return sendJson(res, 201, existing);
+        }
+        const created: StoredShare = {
+          id: randomUUID(),
+          user: null,
+          breweryId: data.breweryId,
+          level: data.level,
+          createdAt: new Date().toISOString(),
+        };
+        recipe.shares.push(created);
+        return sendJson(res, 201, created);
+      }
+      return sendJson(res, 400, {
+        error: { code: "validation_error", message: "Provide email or breweryId" },
+      });
+    }
+    if (sub === "shares" && subId && method === "DELETE") {
+      recipe.shares = recipe.shares.filter((s) => s.id !== subId);
+      res.writeHead(204);
+      res.end();
+      return;
     }
   }
 
   // Batches CRUD, status, readings, reminders
   if (pathname === "/api/batches" && method === "GET") {
+    const user = getUserForRequest(req);
     const statusFilter = url.searchParams.get("status");
+    const mine = url.searchParams.get("mine") === "true";
+    const breweryId = url.searchParams.get("breweryId");
     const list = [...batches.values()]
       .filter((b) => (!statusFilter ? true : b.status === statusFilter))
+      .filter((b) =>
+        breweryId
+          ? b.owner.type === "brewery" && b.owner.id === breweryId
+          : mine && user
+            ? b.owner.type === "user" && b.owner.id === user.id
+            : true,
+      )
       .map(batchSummary);
     return sendJson(res, 200, { items: list, nextOffset: null });
   }
@@ -1472,6 +1618,34 @@ const server = createServer(async (req, res) => {
         if (releasedAny) inventory = { reserved: [], short: [], used: false, released: true };
       }
 
+      if (b.owner.type === "brewery") {
+        const actorUser = getUserForRequest(req);
+        const actor = actorUser ? { id: actorUser.id, displayName: actorUser.displayName } : null;
+        recordBreweryActivity({
+          breweryId: b.owner.id,
+          verb:
+            prevStatus === "planned" && (data.status === "brewing" || data.status === "primary")
+              ? "batch_started"
+              : "batch_moved",
+          actor,
+          object: { type: "batch_status_change", id: randomUUID() },
+          batch: { id: b.id, name: b.name },
+          status: data.status,
+          name: null,
+        });
+        if (inventory?.used) {
+          recordBreweryActivity({
+            breweryId: b.owner.id,
+            verb: "inventory_used",
+            actor,
+            object: { type: "batch", id: b.id },
+            batch: { id: b.id, name: b.name },
+            status: null,
+            name: null,
+          });
+        }
+      }
+
       return sendJson(res, 200, {
         batch: batchDetail(b),
         addedReminders: [],
@@ -1501,6 +1675,18 @@ const server = createServer(async (req, res) => {
         createdAt: now,
       };
       b.readings.push(r);
+      if (b.owner.type === "brewery") {
+        const actorUser = getUserForRequest(req);
+        recordBreweryActivity({
+          breweryId: b.owner.id,
+          verb: "reading_logged",
+          actor: actorUser ? { id: actorUser.id, displayName: actorUser.displayName } : null,
+          object: { type: "reading", id: r.id },
+          batch: { id: b.id, name: b.name },
+          status: null,
+          name: null,
+        });
+      }
       return sendJson(res, 201, r);
     }
     if (sub === "readings" && subId && method === "PATCH") {
@@ -1927,6 +2113,15 @@ const server = createServer(async (req, res) => {
       role: found.role,
       joinedAt: new Date().toISOString(),
     });
+    recordBreweryActivity({
+      breweryId: b.id,
+      verb: "member_joined",
+      actor: { id: user.id, displayName: user.displayName },
+      object: { type: "user", id: user.id },
+      batch: null,
+      status: null,
+      name: user.displayName,
+    });
     breweryInvites.delete(found.id);
     return sendJson(res, 200, breweryDetailView(b, found.role));
   }
@@ -2055,6 +2250,284 @@ const server = createServer(async (req, res) => {
       me.role = "brewer";
       return sendJson(res, 200, breweryDetailView(b, "brewer"));
     }
+  }
+
+  // Equipment items (P2-05)
+  if (pathname === "/api/equipment" && method === "GET") {
+    const user = getUserForRequest(req);
+    if (!user)
+      return sendJson(res, 401, { error: { code: "unauthorized", message: "Sign in first" } });
+    const breweryId = url.searchParams.get("breweryId");
+    const list = [...equipmentItems.values()].filter((item) =>
+      breweryId ? item.owner.type === "brewery" && item.owner.id === breweryId : true,
+    );
+    return sendJson(res, 200, { items: list, nextOffset: null });
+  }
+  if (pathname === "/api/equipment" && method === "POST") {
+    const user = getUserForRequest(req);
+    if (!user)
+      return sendJson(res, 401, { error: { code: "unauthorized", message: "Sign in first" } });
+    const data = JSON.parse(await readBody(req)) as Partial<StoredEquipmentItem> & {
+      breweryId?: string;
+    };
+    const cat = data.catalogId
+      ? (SEEDED_CATALOG.equipment ?? []).find((c) => c.id === data.catalogId)
+      : undefined;
+    const id = randomUUID();
+    const now = new Date().toISOString();
+    const item: StoredEquipmentItem = {
+      id,
+      uri: `http://127.0.0.1:${PORT}/equipment/${id}`,
+      catalogId: data.catalogId ?? null,
+      owner: data.breweryId
+        ? { type: "brewery", id: data.breweryId }
+        : { type: "user", id: user.id },
+      visibility: "private",
+      name: data.name?.trim() || (cat ? String(cat.name) : "Equipment"),
+      type: data.type !== undefined ? data.type : cat ? (cat.category as string | null) : null,
+      condition: data.condition ?? null,
+      notes: data.notes ?? null,
+      heldByUserId: null,
+      batchSizeL:
+        data.batchSizeL !== undefined
+          ? data.batchSizeL
+          : cat
+            ? ((cat.batchSizeL as number | null) ?? null)
+            : null,
+      boilSizeL:
+        data.boilSizeL !== undefined
+          ? data.boilSizeL
+          : cat
+            ? ((cat.boilSizeL as number | null) ?? null)
+            : null,
+      kettleVolumeL:
+        data.kettleVolumeL !== undefined
+          ? data.kettleVolumeL
+          : cat
+            ? ((cat.kettleVolumeL as number | null) ?? null)
+            : null,
+      kettleLossL:
+        data.kettleLossL !== undefined
+          ? data.kettleLossL
+          : cat
+            ? ((cat.kettleLossL as number | null) ?? null)
+            : null,
+      boilRateLPerHr:
+        data.boilRateLPerHr !== undefined
+          ? data.boilRateLPerHr
+          : cat
+            ? ((cat.boilRateLPerHr as number | null) ?? null)
+            : null,
+      mashTunVolumeL:
+        data.mashTunVolumeL !== undefined
+          ? data.mashTunVolumeL
+          : cat
+            ? ((cat.mashTunVolumeL as number | null) ?? null)
+            : null,
+      grainAbsorptionLPerKg:
+        data.grainAbsorptionLPerKg !== undefined
+          ? data.grainAbsorptionLPerKg
+          : cat
+            ? ((cat.grainAbsorptionLPerKg as number | null) ?? null)
+            : null,
+      createdAt: now,
+      updatedAt: now,
+    };
+    equipmentItems.set(id, item);
+    return sendJson(res, 201, item);
+  }
+
+  const equipHolderMatch = pathname.match(/^\/api\/equipment\/([^/]+)\/holder$/);
+  if (equipHolderMatch && method === "PUT") {
+    const user = getUserForRequest(req);
+    if (!user)
+      return sendJson(res, 401, { error: { code: "unauthorized", message: "Sign in first" } });
+    const item = equipmentItems.get(equipHolderMatch[1] ?? "");
+    if (!item)
+      return sendJson(res, 404, {
+        error: { code: "not_found", message: "Equipment item not found" },
+      });
+    if (item.owner.type !== "brewery") {
+      return sendJson(res, 400, {
+        error: {
+          code: "brewery_equipment_required",
+          message: "Only brewery equipment can be lent",
+        },
+      });
+    }
+    const data = JSON.parse(await readBody(req)) as { heldByUserId: string | null };
+    if (item.heldByUserId !== data.heldByUserId) {
+      item.heldByUserId = data.heldByUserId;
+      item.updatedAt = new Date().toISOString();
+      recordBreweryActivity({
+        breweryId: item.owner.id,
+        verb: data.heldByUserId ? "item_lent" : "item_returned",
+        actor: { id: user.id, displayName: user.displayName },
+        object: { type: "equipment_item", id: item.id },
+        batch: null,
+        status: null,
+        name: item.name,
+      });
+    }
+    return sendJson(res, 200, item);
+  }
+
+  const equipIdMatch = pathname.match(/^\/api\/equipment\/([^/]+)$/);
+  if (equipIdMatch) {
+    const user = getUserForRequest(req);
+    if (!user)
+      return sendJson(res, 401, { error: { code: "unauthorized", message: "Sign in first" } });
+    const item = equipmentItems.get(equipIdMatch[1] ?? "");
+    if (!item)
+      return sendJson(res, 404, {
+        error: { code: "not_found", message: "Equipment item not found" },
+      });
+    if (method === "GET") return sendJson(res, 200, item);
+    if (method === "PATCH") {
+      const patch = JSON.parse(await readBody(req)) as Partial<StoredEquipmentItem>;
+      Object.assign(item, patch, { updatedAt: new Date().toISOString() });
+      return sendJson(res, 200, item);
+    }
+    if (method === "DELETE") {
+      equipmentItems.delete(item.id);
+      res.writeHead(204);
+      res.end();
+      return;
+    }
+  }
+
+  // Unified sharing & visibility routes (P2-06)
+  const sharingMatch = pathname.match(
+    /^\/api\/(batches|notes|inventory|equipment|equipment-profiles)\/([^/]+)\/(visibility|shares)(?:\/([^/]+))?$/,
+  );
+  if (sharingMatch) {
+    const user = getUserForRequest(req);
+    if (!user)
+      return sendJson(res, 401, { error: { code: "unauthorized", message: "Sign in first" } });
+    const segment = sharingMatch[1] ?? "";
+    const resourceId = sharingMatch[2] ?? "";
+    const action = sharingMatch[3] ?? "";
+    const shareId = sharingMatch[4];
+    const key = `${segment}:${resourceId}`;
+
+    if (action === "visibility" && method === "PUT") {
+      const data = JSON.parse(await readBody(req)) as {
+        visibility: "private" | "unlisted" | "server" | "public";
+      };
+      if (segment === "batches") {
+        const b = batches.get(resourceId);
+        if (!b)
+          return sendJson(res, 404, { error: { code: "not_found", message: "Batch not found" } });
+        b.visibility = data.visibility;
+      } else if (segment === "notes") {
+        const n = notes.get(resourceId);
+        if (!n)
+          return sendJson(res, 404, { error: { code: "not_found", message: "Note not found" } });
+        n.visibility = data.visibility;
+      } else if (segment === "equipment") {
+        const eq = equipmentItems.get(resourceId);
+        if (!eq)
+          return sendJson(res, 404, {
+            error: { code: "not_found", message: "Equipment not found" },
+          });
+        eq.visibility = data.visibility;
+      } else if (segment === "inventory" && !inventoryItems.has(resourceId)) {
+        return sendJson(res, 404, {
+          error: { code: "not_found", message: "Inventory item not found" },
+        });
+      }
+      return sendJson(res, 200, { id: resourceId, visibility: data.visibility });
+    }
+
+    if (action === "shares" && !shareId && method === "GET") {
+      return sendJson(res, 200, resourceShares.get(key) ?? []);
+    }
+    if (action === "shares" && !shareId && method === "POST") {
+      const data = JSON.parse(await readBody(req)) as {
+        email?: string;
+        breweryId?: string;
+        level: "read" | "edit";
+      };
+      const list = resourceShares.get(key) ?? [];
+      if (data.email) {
+        const target = [...users.values()].find(
+          (u) => u.email.toLowerCase() === data.email?.trim().toLowerCase(),
+        );
+        if (!target) {
+          return sendJson(res, 404, {
+            error: { code: "user_not_found", message: "No account with that email here" },
+          });
+        }
+        const existing = list.find((s) => s.user?.id === target.id);
+        if (existing) {
+          existing.level = data.level;
+          return sendJson(res, 201, existing);
+        }
+        const created: StoredShare = {
+          id: randomUUID(),
+          user: { id: target.id, displayName: target.displayName },
+          breweryId: null,
+          level: data.level,
+          createdAt: new Date().toISOString(),
+        };
+        list.push(created);
+        resourceShares.set(key, list);
+        return sendJson(res, 201, created);
+      }
+      if (data.breweryId) {
+        if (!breweries.has(data.breweryId)) {
+          return sendJson(res, 404, {
+            error: { code: "brewery_not_found", message: "No brewery with that id" },
+          });
+        }
+        const existing = list.find((s) => s.breweryId === data.breweryId);
+        if (existing) {
+          existing.level = data.level;
+          return sendJson(res, 201, existing);
+        }
+        const created: StoredShare = {
+          id: randomUUID(),
+          user: null,
+          breweryId: data.breweryId,
+          level: data.level,
+          createdAt: new Date().toISOString(),
+        };
+        list.push(created);
+        resourceShares.set(key, list);
+        return sendJson(res, 201, created);
+      }
+      return sendJson(res, 400, {
+        error: { code: "validation_error", message: "Provide email or breweryId" },
+      });
+    }
+    if (action === "shares" && shareId && method === "DELETE") {
+      const list = (resourceShares.get(key) ?? []).filter((s) => s.id !== shareId);
+      resourceShares.set(key, list);
+      res.writeHead(204);
+      res.end();
+      return;
+    }
+  }
+
+  // Brewery activity feed (P2-06)
+  const activityMatch = pathname.match(/^\/api\/breweries\/([^/]+)\/activity$/);
+  if (activityMatch && method === "GET") {
+    const user = getUserForRequest(req);
+    if (!user)
+      return sendJson(res, 401, { error: { code: "unauthorized", message: "Sign in first" } });
+    const bId = activityMatch[1] ?? "";
+    const b = breweries.get(bId);
+    if (!b?.members.some((m) => m.userId === user.id)) {
+      return sendJson(res, 404, { error: { code: "not_found", message: "Brewery not found" } });
+    }
+    const limit = Math.min(100, Math.max(1, Number(url.searchParams.get("limit") ?? "25") || 25));
+    const offset = Math.max(0, Number(url.searchParams.get("offset") ?? "0") || 0);
+    const matching = activityEvents
+      .filter((e) => e.breweryId === bId)
+      .map(({ breweryId: _, ...rest }) => rest);
+    const slice = matching.slice(offset, offset + limit);
+    const nextOffset = offset + limit < matching.length ? offset + limit : null;
+    return sendJson(res, 200, { items: slice, nextOffset });
   }
 
   if (pathname === "/api" || pathname.startsWith("/api/")) {

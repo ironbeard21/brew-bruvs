@@ -6,6 +6,7 @@ test.describe("Brew-Bruvs app shell", () => {
     page,
     baseURL,
   }) => {
+    test.setTimeout(60_000);
     await page.goto("/");
 
     // First launch routes to the server-address screen.
@@ -415,6 +416,47 @@ test.describe("Brew-Bruvs app shell", () => {
     await page.getByTestId("batch-open-shopping-list-button").click();
     await expect(page).toHaveURL(/\/inventory\?tab=shopping&breweryId=/);
     await expect(page.getByTestId("shopping-list-panel")).toContainText(breweryName);
+
+    // P2-13: Equipment list with "held by" & lending, unified Share dialog, and Brewery activity feed.
+    await page.locator('[data-testid^="workspace-switch-"]', { hasText: breweryName }).click();
+    await page.getByTestId("nav-equipment").click();
+    await expect(page).toHaveURL(/\/equipment$/);
+    await expect(page.getByTestId("equipment-panel")).toBeVisible();
+
+    await page.getByTestId("equipment-add-button").click();
+    await page.getByTestId("equipment-name-input").fill("Club Plate Chiller");
+    await page.getByTestId("equipment-type-input").fill("Chiller");
+    await page.getByTestId("equipment-editor-submit").click();
+    await expect(page.getByTestId("equipment-list")).toContainText("Club Plate Chiller");
+    await expect(page.locator('[data-testid^="equipment-holder-"]').first()).toContainText(
+      "Available at brewery",
+    );
+
+    // Lend to Head Brewer -> shows "Held by You"
+    await page.locator('[data-testid^="equipment-lend-"]').first().click();
+    await page.locator('[data-testid^="equipment-lend-member-"]').first().click();
+    await expect(page.locator('[data-testid^="equipment-holder-"]').first()).toContainText(
+      "Held by You",
+    );
+
+    // Unified Share dialog on equipment: update visibility to Server
+    await page.locator('[data-testid^="equipment-share-"]').first().click();
+    await expect(page.getByTestId("share-dialog")).toBeVisible();
+    await page.getByRole("tab", { name: "Server members visibility" }).click();
+    await page.getByTestId("save-visibility-button").click();
+    await expect(page.getByTestId("visibility-status")).toContainText("server");
+    await page.getByTestId("share-dialog-close").click();
+
+    // Brewery activity feed shows both the batch start and the equipment loan
+    await page.getByTestId("nav-breweries").click();
+    await page
+      .locator('[data-testid^="brewery-row-"]', { hasText: breweryName })
+      .locator('[data-testid^="brewery-open-"]')
+      .first()
+      .click();
+    await expect(page.getByTestId("brewery-activity-feed")).toBeVisible();
+    await expect(page.getByTestId("activity-list")).toContainText("Club Plate Chiller");
+    await expect(page.getByTestId("activity-list")).toContainText("Brewery Shortfall Pale");
 
     // Leave workspace cleanly back on Me
     await page.getByTestId("workspace-switch-me").click();

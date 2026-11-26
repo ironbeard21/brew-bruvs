@@ -90,6 +90,8 @@ export default function BreweryDetailScreen() {
         currentUserId={currentUser.data.id}
         detail={detailQuery.data}
         onLeftOrDeleted={() => router.replace("/breweries")}
+        onOpenBatch={(batchId) => router.push(`/batches/${batchId}`)}
+        onOpenEquipment={(id) => router.push(`/equipment?breweryId=${encodeURIComponent(id)}`)}
       />
     </AppShell>
   );

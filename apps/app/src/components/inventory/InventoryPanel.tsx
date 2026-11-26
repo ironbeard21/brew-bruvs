@@ -17,6 +17,7 @@ import { canPerformOnOwner, canWriteBrewery, ROLE_LABELS } from "../../state/per
 import { useUnits } from "../../state/units";
 import { colors, radii, spacing } from "../../theme";
 import { OwnerBadge } from "../OwnerBadge";
+import { ShareDialog } from "../sharing/ShareDialog";
 import { Banner, Button, Card, SegmentedControl, TextField } from "../ui";
 import { InventoryEditorCard } from "./InventoryEditorCard";
 import { formatInventoryAmount, isLowStock } from "./inventoryUnits";
@@ -63,6 +64,7 @@ export function InventoryPanel({
   const [showAddForm, setShowAddForm] = useState(false);
   const [localEditingItem, setLocalEditingItem] = useState<InventoryItem | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [sharingItemId, setSharingItemId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [alertNotice, setAlertNotice] = useState<string | null>(null);
 
@@ -108,6 +110,7 @@ export function InventoryPanel({
   }, [lowStockQuery.isSuccess, lowStockItems, unitSystem, serverUrl, breweryId, workspaceLabel]);
 
   const items = inventoryQuery.data ?? [];
+  const sharingItem = sharingItemId ? (items.find((i) => i.id === sharingItemId) ?? null) : null;
 
   const locations = useMemo(() => {
     const set = new Set<string>();
@@ -356,6 +359,7 @@ export function InventoryPanel({
             const low = isLowStock(item);
             const canEdit = canPerformOnOwner(currentUserId, breweries, item.owner, "edit");
             const canDelete = canPerformOnOwner(currentUserId, breweries, item.owner, "delete");
+            const canShare = canPerformOnOwner(currentUserId, breweries, item.owner, "share");
             return (
               <Card key={item.id} style={low ? styles.lowStockCard : undefined}>
                 <View style={styles.itemHeader} testID={`inventory-item-${item.id}`}>
@@ -403,6 +407,15 @@ export function InventoryPanel({
                   </View>
 
                   <View style={styles.itemActions}>
+                    {canShare ? (
+                      <Button
+                        label="Share"
+                        variant="ghost"
+                        onPress={() => setSharingItemId(item.id)}
+                        accessibilityLabel={`Share ${item.name}`}
+                        testID={`inventory-share-${item.id}`}
+                      />
+                    ) : null}
                     {canEdit ? (
                       <Button
                         label="Edit"
@@ -469,6 +482,22 @@ export function InventoryPanel({
           })}
         </View>
       )}
+
+      {sharingItem ? (
+        <ShareDialog
+          open
+          onClose={() => setSharingItemId(null)}
+          serverUrl={serverUrl}
+          authToken={authToken}
+          resourceType="inventory_item"
+          resourceId={sharingItem.id}
+          resourceName={sharingItem.name}
+          owner={sharingItem.owner}
+          canManage={canPerformOnOwner(currentUserId, breweries, sharingItem.owner, "share")}
+          breweries={breweries}
+          {...(customFetch ? { customFetch } : {})}
+        />
+      ) : null}
     </View>
   );
 }

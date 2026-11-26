@@ -26,30 +26,46 @@ export async function fetchMyBatches(
   return fetchBatches(serverUrl, token, { mine: true }, customFetch);
 }
 
+const PAGE_LIMIT = 100;
+const MAX_PAGES = 20;
+
 export async function fetchBatches(
   serverUrl: string,
   token: string | null,
-  opts: { mine?: boolean; status?: BatchStatus } = {},
+  opts: { mine?: boolean; status?: BatchStatus; breweryId?: string | null } = {},
   customFetch?: typeof fetch,
 ): Promise<Batch[]> {
   const client = getApiClient(serverUrl, {
     token,
     ...(customFetch ? { customFetch } : {}),
   });
-  const { data, error } = await client.GET("/api/batches", {
-    credentials: "include",
-    params: {
-      query: {
-        ...(opts.mine ? { mine: "true" } : {}),
-        ...(opts.status ? { status: opts.status } : {}),
-        limit: 100,
+  const breweryId = opts.breweryId ?? null;
+  const mine = !breweryId && Boolean(opts.mine);
+  const all: Batch[] = [];
+  let offset = 0;
+  for (let page = 0; page < MAX_PAGES; page += 1) {
+    const { data, error } = await client.GET("/api/batches", {
+      credentials: "include",
+      params: {
+        query: {
+          ...(mine ? { mine: "true" } : {}),
+          ...(breweryId ? { breweryId } : {}),
+          ...(opts.status ? { status: opts.status } : {}),
+          limit: PAGE_LIMIT,
+          offset,
+        },
       },
-    },
-  });
-  if (error || !data) {
-    throw new Error(formatApiError(error, "Could not load batches."));
+    });
+    if (error || !data) {
+      throw new Error(formatApiError(error, "Could not load batches."));
+    }
+    all.push(...data.items);
+    if (data.nextOffset == null || data.nextOffset <= offset) {
+      break;
+    }
+    offset = data.nextOffset;
   }
-  return data.items;
+  return all;
 }
 
 export async function fetchBatchDetail(
@@ -183,16 +199,18 @@ export function useMyBatches(
 export function useBatches(
   serverUrl: string | null,
   token: string | null,
-  opts: { mine?: boolean; status?: BatchStatus; enabled?: boolean } = {},
+  opts: { mine?: boolean; status?: BatchStatus; breweryId?: string | null; enabled?: boolean } = {},
   customFetch?: typeof fetch,
 ) {
+  const breweryId = opts.breweryId ?? null;
+  const mine = !breweryId && Boolean(opts.mine);
   return useQuery({
-    queryKey: ["batches", serverUrl, Boolean(opts.mine), opts.status ?? "all"],
+    queryKey: ["batches", serverUrl, mine, opts.status ?? "all", breweryId],
     enabled: Boolean(serverUrl) && (opts.enabled ?? true),
     retry: false,
     queryFn: () => {
       if (!serverUrl) throw new Error("No server configured");
-      return fetchBatches(serverUrl, token, opts, customFetch);
+      return fetchBatches(serverUrl, token, { ...opts, mine, breweryId }, customFetch);
     },
   });
 }
@@ -327,6 +345,7 @@ export function useDeleteBatch(
         queryClient.invalidateQueries({ queryKey: ["inventory", serverUrl] }),
         queryClient.invalidateQueries({ queryKey: ["low-stock", serverUrl] }),
         queryClient.invalidateQueries({ queryKey: ["shopping-list", serverUrl] }),
+        queryClient.invalidateQueries({ queryKey: ["brewery-activity", serverUrl] }),
       ]);
     },
   });
@@ -367,6 +386,7 @@ export function useChangeBatchStatus(
         queryClient.invalidateQueries({ queryKey: ["inventory", serverUrl] }),
         queryClient.invalidateQueries({ queryKey: ["low-stock", serverUrl] }),
         queryClient.invalidateQueries({ queryKey: ["shopping-list", serverUrl] }),
+        queryClient.invalidateQueries({ queryKey: ["brewery-activity", serverUrl] }),
       ]);
     },
   });
@@ -398,7 +418,10 @@ export function useAddReading(
     },
     onSuccess: async () => {
       if (!serverUrl) return;
-      await queryClient.invalidateQueries({ queryKey: ["batch-readings", serverUrl, batchId] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["batch-readings", serverUrl, batchId] }),
+        queryClient.invalidateQueries({ queryKey: ["brewery-activity", serverUrl] }),
+      ]);
     },
   });
 }
@@ -429,7 +452,10 @@ export function useUpdateReading(
     },
     onSuccess: async () => {
       if (!serverUrl) return;
-      await queryClient.invalidateQueries({ queryKey: ["batch-readings", serverUrl, batchId] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["batch-readings", serverUrl, batchId] }),
+        queryClient.invalidateQueries({ queryKey: ["brewery-activity", serverUrl] }),
+      ]);
     },
   });
 }
@@ -458,7 +484,10 @@ export function useDeleteReading(
     },
     onSuccess: async () => {
       if (!serverUrl) return;
-      await queryClient.invalidateQueries({ queryKey: ["batch-readings", serverUrl, batchId] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["batch-readings", serverUrl, batchId] }),
+        queryClient.invalidateQueries({ queryKey: ["brewery-activity", serverUrl] }),
+      ]);
     },
   });
 }
