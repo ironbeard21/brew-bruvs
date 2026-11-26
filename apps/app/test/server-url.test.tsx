@@ -2,6 +2,7 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { Platform, Pressable, Text, View } from "react-native";
 import { afterEach, describe, expect, it } from "vitest";
+import { getApiClient } from "../src/api/client";
 import { verifyServerHealth } from "../src/api/health";
 import { normalizeServerUrl, ServerProvider, useServer } from "../src/state/server";
 import type { KeyValueStorage } from "../src/state/storage";
@@ -236,5 +237,31 @@ describe("ServerProvider", () => {
     } finally {
       Platform.OS = os;
     }
+  });
+});
+
+describe("getApiClient", () => {
+  it("on phones, refuses redirects so a sign-in can't be sent on to http://", async () => {
+    const sent: string[] = [];
+    // Like Android's transport: follows redirects, body and all, unless told not to.
+    const transport: typeof fetch = async (input, init) => {
+      sent.push((input as Request).url);
+      if (init?.redirect === "error") throw new TypeError("Redirect is not allowed");
+      sent.push("http://brew.example.com/api/auth/login");
+      return new Response("{}", { status: 200, headers: { "content-type": "application/json" } });
+    };
+    const os = Platform.OS;
+    Platform.OS = "android";
+    try {
+      const client = getApiClient("https://brew.example.com", transport);
+      await expect(
+        client.POST("/api/auth/login", {
+          body: { email: "brewer@example.com", password: "hunter2", client: "app" },
+        }),
+      ).rejects.toThrow("Redirect is not allowed");
+    } finally {
+      Platform.OS = os;
+    }
+    expect(sent).toEqual(["https://brew.example.com/api/auth/login"]);
   });
 });
