@@ -297,6 +297,7 @@ export function usePreviewBrewfather(
   customFetch?: typeof fetch,
 ) {
   return useMutation({
+    gcTime: 0,
     mutationFn: async (input: BrewfatherCredentials): Promise<BrewfatherImport> => {
       if (!serverUrl) throw new Error("Not connected to a server.");
       const client = getApiClient(serverUrl, {

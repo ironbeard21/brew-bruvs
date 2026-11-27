@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import type { ReactNode } from "react";
+import { type ReactNode, StrictMode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Batch, Reading } from "../src/api/batches";
 import type { Brewery } from "../src/api/breweries";
@@ -35,17 +35,25 @@ function jsonResponse(body: unknown, status = 200): Response {
   });
 }
 
-function renderWithProviders(ui: ReactNode, initialUnitSystem: "us" | "metric" = "us") {
+function renderWithProviders(
+  ui: ReactNode,
+  initialUnitSystem: "us" | "metric" = "us",
+  opts: { strictMode?: boolean } = {},
+) {
   const qc = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
-  return render(
+  const content = (
     <QueryClientProvider client={qc}>
       <UnitsProvider storage={noopStorage} initialUnitSystem={initialUnitSystem}>
         {ui}
       </UnitsProvider>
-    </QueryClientProvider>,
+    </QueryClientProvider>
   );
+  return {
+    queryClient: qc,
+    ...render(opts.strictMode ? <StrictMode>{content}</StrictMode> : content),
+  };
 }
 
 const SERVER_URL = "https://brew.example.test";
@@ -362,6 +370,82 @@ describe("DevicesPanel (P2-14)", () => {
     });
     expect("tiltColor" in (payloads[0] ?? {})).toBe(false);
   });
+
+  it("allows switching away from initialBatchId before creating a device", async () => {
+    const batches: Batch[] = [
+      makeBatch(BATCH_PERSONAL_ID, "Cascade Pale #1", { type: "user", id: USER_ID }),
+      makeBatch(BATCH_CLUB_EDITABLE_ID, "Club IPA #2", {
+        type: "brewery",
+        id: BREWERY_OWNER_ID,
+      }),
+    ];
+    const payloads: Record<string, unknown>[] = [];
+    const customFetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const req = input instanceof Request ? input : new Request(input, init);
+      const url = new URL(req.url);
+      if (url.pathname === "/api/batches")
+        return jsonResponse({ items: batches, nextOffset: null });
+      if (url.pathname === "/api/integrations/devices" && req.method === "GET") {
+        return jsonResponse({ items: [] });
+      }
+      if (url.pathname === "/api/integrations/devices" && req.method === "POST") {
+        const body = JSON.parse(await req.clone().text()) as Record<string, unknown>;
+        payloads.push(body);
+        return jsonResponse(
+          {
+            id: "01950000-0000-7000-8000-000000000303",
+            name: body.name,
+            kind: body.kind,
+            batchId: body.batchId,
+            tiltColor: null,
+            lastSeenAt: null,
+            url: `${SERVER_URL}/api/device-readings?token=bb_clubIpaToken12345678901234567890123456789`,
+          },
+          201,
+        );
+      }
+      return jsonResponse({ items: [] });
+    }) as unknown as typeof fetch;
+
+    renderWithProviders(
+      <DevicesPanel
+        serverUrl={SERVER_URL}
+        authToken="tok"
+        currentUserId={USER_ID}
+        breweries={[BREWERY_OWNER]}
+        initialBatchId={BATCH_PERSONAL_ID}
+        customFetch={customFetch}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId(`device-batch-option-${BATCH_CLUB_EDITABLE_ID}`)).toBeTruthy();
+    });
+    expect(
+      screen.getByTestId(`device-batch-option-${BATCH_PERSONAL_ID}`).getAttribute("aria-checked"),
+    ).toBe("true");
+
+    // Switch from initialBatchId to the club batch and create the device
+    fireEvent.click(screen.getByTestId(`device-batch-option-${BATCH_CLUB_EDITABLE_ID}`));
+    expect(
+      screen
+        .getByTestId(`device-batch-option-${BATCH_CLUB_EDITABLE_ID}`)
+        .getAttribute("aria-checked"),
+    ).toBe("true");
+    fireEvent.change(screen.getByTestId("device-name-input"), {
+      target: { value: "Club GravityMon" },
+    });
+    fireEvent.click(screen.getByTestId("device-create-button"));
+
+    await waitFor(() => {
+      expect(payloads).toHaveLength(1);
+    });
+    expect(payloads[0]).toEqual({
+      name: "Club GravityMon",
+      kind: "ispindel",
+      batchId: BATCH_CLUB_EDITABLE_ID,
+    });
+  });
 });
 
 describe("WebhooksPanel (P2-14)", () => {
@@ -635,12 +719,13 @@ describe("BrewfatherPanel (P2-14)", () => {
       return jsonResponse([]);
     }) as unknown as typeof fetch;
 
-    renderWithProviders(
+    const { queryClient } = renderWithProviders(
       <>
         <UnitToggle />
         <BrewfatherPanel serverUrl={SERVER_URL} authToken="tok" customFetch={customFetch} />
       </>,
       "us",
+      { strictMode: true },
     );
 
     // Privacy banner explains API key is never stored
@@ -659,6 +744,18 @@ describe("BrewfatherPanel (P2-14)", () => {
 
     await waitFor(() => {
       expect(screen.getByTestId("brewfather-review-screen")).toBeTruthy();
+    });
+
+    // Credentials are cleared from TanStack Query mutation cache too (not retained in memory)
+    await waitFor(() => {
+      const cachedVars = JSON.stringify(
+        queryClient
+          .getMutationCache()
+          .getAll()
+          .map((m) => m.state.variables),
+      );
+      expect(cachedVars).not.toContain("bf-secret-key");
+      expect(cachedVars).not.toContain("bf-user-1");
     });
 
     // Credit and unmatched free-text counts are visible on review screen

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { type Batch, useBatches, useBatchReadings } from "../../api/batches";
 import type { Brewery } from "../../api/breweries";
@@ -292,18 +292,21 @@ export function DevicesPanel({
   const [kind, setKind] = useState<DeviceKind>("ispindel");
   const [tiltColor, setTiltColor] = useState<TiltColor | null>(null);
   const [selectedBatchId, setSelectedBatchId] = useState<string>(initialBatchId ?? "");
+  const appliedInitialBatchRef = useRef<string | null>(initialBatchId);
   const [issuedDevice, setIssuedDevice] = useState<IssuedDevice | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
-    if (initialBatchId && editableBatches.some((b) => b.id === initialBatchId)) {
+    if (initialBatchId && initialBatchId !== appliedInitialBatchRef.current) {
+      appliedInitialBatchRef.current = initialBatchId;
       setSelectedBatchId(initialBatchId);
       return;
     }
-    if (!selectedBatchId && editableBatches.length > 0 && editableBatches[0]) {
-      setSelectedBatchId(editableBatches[0].id);
+    if (editableBatches.length === 0) return;
+    if (!selectedBatchId || !editableBatches.some((b) => b.id === selectedBatchId)) {
+      setSelectedBatchId(editableBatches[0]?.id ?? "");
     }
   }, [editableBatches, initialBatchId, selectedBatchId]);
 
@@ -494,6 +497,7 @@ export function DevicesPanel({
                       accessibilityRole="radio"
                       accessibilityLabel={`Link batch ${batch.name}`}
                       accessibilityState={{ checked: selected }}
+                      aria-checked={selected}
                       testID={`device-batch-option-${batch.id}`}
                       style={[styles.batchOption, selected && styles.batchOptionActive]}
                     >

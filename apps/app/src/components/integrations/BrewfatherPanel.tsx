@@ -147,7 +147,7 @@ export function BrewfatherPanel({
         userId: trimmedUserId,
         apiKey: trimmedApiKey,
       });
-      // Immediately clear credentials from memory — never stored or kept past preview.
+      // Immediately clear credentials from memory (inputs and TanStack Query mutation state).
       setUserId("");
       setApiKey("");
       setSaveResult(null);
@@ -180,60 +180,65 @@ export function BrewfatherPanel({
       );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not fetch Brewfather preview.");
+    } finally {
+      previewMutation.reset();
     }
   };
 
   const toggleRecipe = (ref: string) => {
-    setNotice(null);
-    setReviewRecipes((prev) => {
-      if (!prev) return prev;
-      const target = prev.find((r) => r.ref === ref);
-      if (!target) return prev;
-      const nextSelected = !target.selected;
-      if (!nextSelected) {
-        let uncheckedBatches = 0;
-        setReviewBatches((curr) =>
-          curr.map((b) => {
-            if (b.data.recipeRef === ref && b.selected) {
-              uncheckedBatches += 1;
-              return { ...b, selected: false };
-            }
-            return b;
-          }),
-        );
-        if (uncheckedBatches > 0) {
-          setNotice(
-            `Unchecked ${uncheckedBatches} linked batch${uncheckedBatches === 1 ? "" : "es"} because their recipe draft was excluded.`,
-          );
+    if (!reviewRecipes) return;
+    const target = reviewRecipes.find((r) => r.ref === ref);
+    if (!target) return;
+    const nextSelected = !target.selected;
+
+    setReviewRecipes(
+      reviewRecipes.map((r) => (r.ref === ref ? { ...r, selected: nextSelected } : r)),
+    );
+
+    if (!nextSelected) {
+      let uncheckedBatches = 0;
+      const nextBatches = reviewBatches.map((b) => {
+        if (b.data.recipeRef === ref && b.selected) {
+          uncheckedBatches += 1;
+          return { ...b, selected: false };
         }
-      }
-      return prev.map((r) => (r.ref === ref ? { ...r, selected: nextSelected } : r));
-    });
+        return b;
+      });
+      setReviewBatches(nextBatches);
+      setNotice(
+        uncheckedBatches > 0
+          ? `Unchecked ${uncheckedBatches} linked batch${uncheckedBatches === 1 ? "" : "es"} because their recipe draft was excluded.`
+          : null,
+      );
+    } else {
+      setNotice(null);
+    }
   };
 
   const toggleBatch = (key: string) => {
-    setNotice(null);
-    setReviewBatches((prev) => {
-      const target = prev.find((b) => b.key === key);
-      if (!target) return prev;
-      const nextSelected = !target.selected;
-      if (nextSelected) {
-        setReviewRecipes((curr) => {
-          if (!curr) return curr;
-          const parent = curr.find((r) => r.ref === target.data.recipeRef);
-          if (parent && !parent.selected) {
-            setNotice(
-              `Re-selected linked recipe "${parent.draft.name}" so this batch can be imported.`,
-            );
-            return curr.map((r) =>
-              r.ref === target.data.recipeRef ? { ...r, selected: true } : r,
-            );
-          }
-          return curr;
-        });
+    const target = reviewBatches.find((b) => b.key === key);
+    if (!target) return;
+    const nextSelected = !target.selected;
+
+    setReviewBatches(
+      reviewBatches.map((b) => (b.key === key ? { ...b, selected: nextSelected } : b)),
+    );
+
+    if (nextSelected && reviewRecipes) {
+      const parent = reviewRecipes.find((r) => r.ref === target.data.recipeRef);
+      if (parent && !parent.selected) {
+        setReviewRecipes(
+          reviewRecipes.map((r) =>
+            r.ref === target.data.recipeRef ? { ...r, selected: true } : r,
+          ),
+        );
+        setNotice(
+          `Re-selected linked recipe "${parent.draft.name}" so this batch can be imported.`,
+        );
+        return;
       }
-      return prev.map((b) => (b.key === key ? { ...b, selected: nextSelected } : b));
-    });
+    }
+    setNotice(null);
   };
 
   const toggleInventory = (key: string) => {
