@@ -607,4 +607,35 @@ test.describe("Brew-Bruvs app shell", () => {
       );
     }
   });
+
+  test("switches craft beverage themes via header modal and Settings gallery and persists offline", async ({
+    page,
+  }) => {
+    await page.goto("/calculators");
+    await expect(page.getByTestId("header-theme-button")).toBeVisible();
+
+    // Open quick theme picker modal from header and switch to Imperial Stout (dark beer theme)
+    await page.getByTestId("header-theme-button").click();
+    await expect(page.getByTestId("theme-picker-modal")).toBeVisible();
+    await page.getByRole("tab", { name: "Beer (4)" }).click();
+    await page.getByTestId("theme-card-imperial-stout").click();
+    await page.getByTestId("close-theme-modal-button").click();
+    await expect(page.getByTestId("theme-picker-modal")).not.toBeVisible();
+
+    // Verify dark canvas color scheme applied to document & persists across reload
+    await expect(page.locator("html")).toHaveAttribute("style", /color-scheme:\s*dark/);
+    await page.reload();
+    await expect(page.getByTestId("header-theme-button")).toHaveAttribute(
+      "aria-label",
+      /Imperial Stout/,
+    );
+
+    // Navigate to Settings (even offline) and switch to Crisp Orchard (light cider theme)
+    await page.getByTestId("nav-settings").click();
+    await expect(page.getByTestId("theme-gallery")).toBeVisible();
+    await page.getByRole("tab", { name: "Cider (4)" }).click();
+    await page.getByTestId("theme-card-crisp-orchard").click();
+    await expect(page.getByTestId("theme-current-badge")).toContainText("Crisp Orchard");
+    await expect(page.locator("html")).toHaveAttribute("style", /color-scheme:\s*light/);
+  });
 });

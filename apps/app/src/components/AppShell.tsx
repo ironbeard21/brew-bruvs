@@ -6,7 +6,9 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useCurrentUser, useUpdateMe } from "../api/auth";
 import { useOptionalBrewery } from "../state/brewery";
 import { useServer } from "../state/server";
-import { colors, DESKTOP_BREAKPOINT, radii, spacing } from "../theme";
+import { useThemedStyles } from "../state/theme";
+import { DESKTOP_BREAKPOINT, radii, spacing, type ThemeColors } from "../theme";
+import { ThemeSwitcherButton } from "./ThemeGallery";
 import { UnitToggle } from "./UnitToggle";
 import { WorkspaceSwitcher } from "./WorkspaceSwitcher";
 
@@ -25,6 +27,7 @@ function formatHost(url: string): string {
 }
 
 export function AppShell({ children, title, subtitle }: AppShellProps) {
+  const styles = useThemedStyles(createStyles);
   const { width } = useWindowDimensions();
   const isDesktop = width >= DESKTOP_BREAKPOINT;
   const pathname = usePathname();
@@ -48,8 +51,12 @@ export function AppShell({ children, title, subtitle }: AppShellProps) {
   return (
     <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
       <View nativeID="app-shell-header" style={styles.headerOuter}>
+        <View style={styles.headerAccentBar} accessible={false} />
         <View style={[styles.headerInner, isDesktop && styles.headerInnerDesktop]}>
           <View style={styles.brandRow}>
+            <View style={styles.brandEmblem} accessible={false}>
+              <Text style={styles.brandEmblemText}>BB</Text>
+            </View>
             <Text accessibilityRole="header" style={styles.brandTitle}>
               Brew-Bruvs
             </Text>
@@ -199,13 +206,16 @@ export function AppShell({ children, title, subtitle }: AppShellProps) {
               </Pressable>
             </View>
 
-            <UnitToggle
-              onUnitChange={(next) => {
-                if (serverUrl && currentUser.data && currentUser.data.units !== next) {
-                  updateMe.mutate({ units: next });
-                }
-              }}
-            />
+            <View style={styles.utilityControls}>
+              <ThemeSwitcherButton />
+              <UnitToggle
+                onUnitChange={(next) => {
+                  if (serverUrl && currentUser.data && currentUser.data.units !== next) {
+                    updateMe.mutate({ units: next });
+                  }
+                }}
+              />
+            </View>
           </View>
         </View>
         <WorkspaceSwitcher signedIn={Boolean(serverUrl && currentUser.data)} />
@@ -223,6 +233,7 @@ export function AppShell({ children, title, subtitle }: AppShellProps) {
                 {title}
               </Text>
               {subtitle ? <Text style={styles.pageSubtitle}>{subtitle}</Text> : null}
+              <View style={styles.pageAccentRule} accessible={false} />
             </View>
           ) : null}
           {children}
@@ -232,127 +243,169 @@ export function AppShell({ children, title, subtitle }: AppShellProps) {
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: colors.canvas,
-  },
-  headerOuter: {
-    backgroundColor: colors.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  headerInner: {
-    width: "100%",
-    maxWidth: 1120,
-    alignSelf: "center",
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    gap: spacing.sm,
-  },
-  headerInnerDesktop: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  brandRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.sm,
-  },
-  brandTitle: {
-    fontSize: 20,
-    fontWeight: "800",
-    color: colors.text,
-    letterSpacing: -0.3,
-  },
-  statusPill: {
-    maxWidth: 190,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: radii.pill,
-  },
-  statusPillConnected: {
-    backgroundColor: colors.successSoft,
-  },
-  statusPillOffline: {
-    backgroundColor: colors.surfaceSubtle,
-  },
-  statusPillText: {
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  statusPillTextConnected: {
-    color: colors.success,
-  },
-  statusPillTextOffline: {
-    color: colors.textMuted,
-  },
-  controlsRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: spacing.sm,
-    flexWrap: "wrap",
-  },
-  navRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    flexWrap: "wrap",
-    flexShrink: 1,
-    maxWidth: "100%",
-    gap: spacing.xs,
-  },
-  navLink: {
-    minHeight: 38,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderRadius: radii.md,
-    justifyContent: "center",
-  },
-  navLinkActive: {
-    backgroundColor: colors.accentSoft,
-  },
-  navLinkText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: colors.textMuted,
-  },
-  navLinkTextActive: {
-    color: colors.accentPressed,
-  },
-  scroll: {
-    flex: 1,
-  },
-  content: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.lg,
-    paddingBottom: spacing.xl * 2,
-  },
-  contentDesktop: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.xl,
-  },
-  container: {
-    width: "100%",
-    maxWidth: 1120,
-    alignSelf: "center",
-    gap: spacing.lg,
-  },
-  pageHeader: {
-    gap: spacing.xs,
-  },
-  pageTitle: {
-    fontSize: 26,
-    fontWeight: "800",
-    color: colors.text,
-    letterSpacing: -0.4,
-  },
-  pageSubtitle: {
-    fontSize: 15,
-    lineHeight: 22,
-    color: colors.textMuted,
-  },
-});
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: colors.canvas,
+    },
+    headerOuter: {
+      backgroundColor: colors.surface,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+      shadowColor: colors.shadow,
+      shadowOpacity: 0.05,
+      shadowRadius: 8,
+      shadowOffset: { width: 0, height: 2 },
+      elevation: 2,
+    },
+    headerAccentBar: {
+      height: 3,
+      width: "100%",
+      backgroundColor: colors.accent,
+    },
+    headerInner: {
+      width: "100%",
+      maxWidth: 1120,
+      alignSelf: "center",
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      gap: spacing.sm,
+    },
+    headerInnerDesktop: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.md,
+      rowGap: spacing.xs,
+    },
+    brandRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.sm,
+    },
+    brandEmblem: {
+      width: 28,
+      height: 28,
+      borderRadius: 8,
+      backgroundColor: colors.accent,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    brandEmblemText: {
+      fontSize: 12,
+      fontWeight: "900",
+      color: colors.accentText,
+      letterSpacing: -0.4,
+    },
+    brandTitle: {
+      fontSize: 20,
+      fontWeight: "800",
+      color: colors.text,
+      letterSpacing: -0.4,
+    },
+    statusPill: {
+      maxWidth: 190,
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      borderRadius: radii.pill,
+    },
+    statusPillConnected: {
+      backgroundColor: colors.successSoft,
+    },
+    statusPillOffline: {
+      backgroundColor: colors.surfaceSubtle,
+    },
+    statusPillText: {
+      fontSize: 12,
+      fontWeight: "600",
+    },
+    statusPillTextConnected: {
+      color: colors.success,
+    },
+    statusPillTextOffline: {
+      color: colors.textMuted,
+    },
+    controlsRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: spacing.xs,
+      flexWrap: "wrap",
+      flexShrink: 1,
+      minWidth: 0,
+    },
+    utilityControls: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.xs,
+      flexShrink: 0,
+    },
+    navRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      flexWrap: "wrap",
+      flexShrink: 1,
+      maxWidth: "100%",
+      gap: 2,
+    },
+    navLink: {
+      minHeight: 38,
+      paddingHorizontal: 9,
+      paddingVertical: 8,
+      borderRadius: radii.md,
+      justifyContent: "center",
+    },
+    navLinkActive: {
+      backgroundColor: colors.accentSoft,
+    },
+    navLinkText: {
+      fontSize: 14,
+      fontWeight: "600",
+      color: colors.textMuted,
+    },
+    navLinkTextActive: {
+      color: colors.accentPressed,
+    },
+    scroll: {
+      flex: 1,
+    },
+    content: {
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.lg,
+      paddingBottom: spacing.xl * 2,
+    },
+    contentDesktop: {
+      paddingHorizontal: spacing.lg,
+      paddingVertical: spacing.xl,
+    },
+    container: {
+      width: "100%",
+      maxWidth: 1120,
+      alignSelf: "center",
+      gap: spacing.lg,
+    },
+    pageHeader: {
+      gap: spacing.xs,
+    },
+    pageTitle: {
+      fontSize: 27,
+      fontWeight: "800",
+      color: colors.text,
+      letterSpacing: -0.5,
+    },
+    pageSubtitle: {
+      fontSize: 15,
+      lineHeight: 22,
+      color: colors.textMuted,
+    },
+    pageAccentRule: {
+      width: 40,
+      height: 3,
+      borderRadius: 2,
+      backgroundColor: colors.accent,
+      marginTop: 4,
+    },
+  });

@@ -3,7 +3,8 @@ import { useState } from "react";
 import { StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import type { Note, NoteInput, TastingScores } from "../../api/batches";
 import type { Brewery } from "../../api/breweries";
-import { colors, DESKTOP_BREAKPOINT, radii, spacing } from "../../theme";
+import { useThemedStyles } from "../../state/theme";
+import { DESKTOP_BREAKPOINT, radii, spacing, type ThemeColors } from "../../theme";
 import { ShareDialog } from "../sharing/ShareDialog";
 import { Banner, Button, Card, SegmentedControl, TextField } from "../ui";
 import { formatDateTime } from "./batchFlows";
@@ -68,6 +69,7 @@ export function BatchNotesSection({
   onDeleteNote,
   saving = false,
 }: BatchNotesSectionProps) {
+  const styles = useThemedStyles(createStyles);
   const canContribute = canContributeProp ?? canEdit;
   const allowDeleteNote = canDeleteNote ?? (() => canEdit);
   const allowShareNote = canShareNote ?? (() => false);
@@ -296,101 +298,102 @@ export function BatchNotesSection({
   );
 }
 
-const styles = StyleSheet.create({
-  layout: { gap: spacing.lg },
-  layoutDesktop: { flexDirection: "row", alignItems: "flex-start" },
-  column: { flex: 1 },
-  sectionTitle: { fontSize: 18, fontWeight: "700", color: colors.text },
-  muted: { fontSize: 13, lineHeight: 19, color: colors.textMuted },
-  bjcpBox: {
-    padding: spacing.md,
-    borderRadius: radii.md,
-    backgroundColor: colors.surfaceSubtle,
-    borderWidth: 1,
-    borderColor: colors.border,
-    gap: spacing.sm,
-  },
-  bjcpHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  bjcpTitle: { fontSize: 14, fontWeight: "700", color: colors.text },
-  bjcpTotal: {
-    fontSize: 15,
-    fontWeight: "800",
-    color: colors.accentPressed,
-    fontVariant: ["tabular-nums"],
-  },
-  scoreGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: spacing.sm,
-  },
-  scoreCell: {
-    flex: 1,
-    minWidth: 115,
-  },
-  list: { gap: spacing.sm },
-  noteCard: {
-    padding: spacing.md,
-    borderRadius: radii.md,
-    backgroundColor: colors.surfaceSubtle,
-    borderWidth: 1,
-    borderColor: colors.border,
-    gap: spacing.xs,
-  },
-  noteHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    flexWrap: "wrap",
-    gap: spacing.xs,
-  },
-  noteBadges: { flexDirection: "row", alignItems: "center", gap: 6 },
-  kindPill: {
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: radii.pill,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-  },
-  kindPillTasting: {
-    backgroundColor: colors.accentSoft,
-    borderColor: colors.accent,
-  },
-  kindPillText: { fontSize: 12, fontWeight: "700", color: colors.textMuted },
-  kindPillTextTasting: { color: colors.accentPressed },
-  totalPill: {
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: radii.pill,
-    backgroundColor: colors.successSoft,
-  },
-  totalPillText: {
-    fontSize: 12,
-    fontWeight: "800",
-    color: colors.success,
-    fontVariant: ["tabular-nums"],
-  },
-  noteDate: { fontSize: 12, color: colors.textMuted },
-  noteBody: { fontSize: 14, lineHeight: 20, color: colors.text },
-  scoresBreakdown: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    paddingTop: 4,
-  },
-  scoreChip: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: colors.textMuted,
-    fontVariant: ["tabular-nums"],
-  },
-  noteActions: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    gap: spacing.xs,
-  },
-});
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    layout: { gap: spacing.lg },
+    layoutDesktop: { flexDirection: "row", alignItems: "flex-start" },
+    column: { flex: 1 },
+    sectionTitle: { fontSize: 18, fontWeight: "700", color: colors.text },
+    muted: { fontSize: 13, lineHeight: 19, color: colors.textMuted },
+    bjcpBox: {
+      padding: spacing.md,
+      borderRadius: radii.md,
+      backgroundColor: colors.surfaceSubtle,
+      borderWidth: 1,
+      borderColor: colors.border,
+      gap: spacing.sm,
+    },
+    bjcpHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+    },
+    bjcpTitle: { fontSize: 14, fontWeight: "700", color: colors.text },
+    bjcpTotal: {
+      fontSize: 15,
+      fontWeight: "800",
+      color: colors.accentPressed,
+      fontVariant: ["tabular-nums"],
+    },
+    scoreGrid: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: spacing.sm,
+    },
+    scoreCell: {
+      flex: 1,
+      minWidth: 115,
+    },
+    list: { gap: spacing.sm },
+    noteCard: {
+      padding: spacing.md,
+      borderRadius: radii.md,
+      backgroundColor: colors.surfaceSubtle,
+      borderWidth: 1,
+      borderColor: colors.border,
+      gap: spacing.xs,
+    },
+    noteHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      flexWrap: "wrap",
+      gap: spacing.xs,
+    },
+    noteBadges: { flexDirection: "row", alignItems: "center", gap: 6 },
+    kindPill: {
+      paddingHorizontal: 10,
+      paddingVertical: 3,
+      borderRadius: radii.pill,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.borderStrong,
+    },
+    kindPillTasting: {
+      backgroundColor: colors.accentSoft,
+      borderColor: colors.accent,
+    },
+    kindPillText: { fontSize: 12, fontWeight: "700", color: colors.textMuted },
+    kindPillTextTasting: { color: colors.accentPressed },
+    totalPill: {
+      paddingHorizontal: 10,
+      paddingVertical: 3,
+      borderRadius: radii.pill,
+      backgroundColor: colors.successSoft,
+    },
+    totalPillText: {
+      fontSize: 12,
+      fontWeight: "800",
+      color: colors.success,
+      fontVariant: ["tabular-nums"],
+    },
+    noteDate: { fontSize: 12, color: colors.textMuted },
+    noteBody: { fontSize: 14, lineHeight: 20, color: colors.text },
+    scoresBreakdown: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 8,
+      paddingTop: 4,
+    },
+    scoreChip: {
+      fontSize: 12,
+      fontWeight: "600",
+      color: colors.textMuted,
+      fontVariant: ["tabular-nums"],
+    },
+    noteActions: {
+      flexDirection: "row",
+      justifyContent: "flex-end",
+      gap: spacing.xs,
+    },
+  });

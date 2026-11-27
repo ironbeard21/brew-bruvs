@@ -4,6 +4,7 @@ import { StyleSheet, View } from "react-native";
 import { useCurrentUser } from "../src/api/auth";
 import { AppShell } from "../src/components/AppShell";
 import { SettingsPanel } from "../src/components/settings/SettingsPanel";
+import { ThemeGallery } from "../src/components/ThemeGallery";
 import { Banner, Button, Card } from "../src/components/ui";
 import { useServer } from "../src/state/server";
 import { spacing } from "../src/theme";
@@ -17,8 +18,11 @@ export default function SettingsScreen() {
     return (
       <AppShell
         title="Settings"
-        subtitle="Connect to a Brew-Bruvs server to manage profile settings and API tokens."
+        subtitle="Customize your beverage theme locally, or connect to a server for synced profile settings."
       >
+        <Card>
+          <ThemeGallery />
+        </Card>
         <Card>
           <Banner
             tone="info"
@@ -41,6 +45,9 @@ export default function SettingsScreen() {
     return (
       <AppShell title="Settings">
         <Card>
+          <ThemeGallery />
+        </Card>
+        <Card>
           <Banner tone="info" message="Loading account settings..." />
         </Card>
       </AppShell>
@@ -52,8 +59,11 @@ export default function SettingsScreen() {
     return (
       <AppShell
         title="Settings"
-        subtitle="Sign in to manage your profile, password, and API tokens."
+        subtitle="Customize your beverage theme locally, or sign in to manage your profile, password, and API tokens."
       >
+        <Card>
+          <ThemeGallery />
+        </Card>
         <Card>
           <Banner tone="info" message="Sign in to view and update your account settings." />
           <View style={styles.actions}>
@@ -72,7 +82,7 @@ export default function SettingsScreen() {
   return (
     <AppShell
       title="Settings"
-      subtitle="Manage your display name, server-synced units preference, password, and personal API tokens."
+      subtitle="Customize your beverage theme, display name, server-synced units preference, password, and personal API tokens."
     >
       <View style={styles.subNav}>
         <Button
@@ -102,6 +112,10 @@ export default function SettingsScreen() {
           testID="subnav-about"
         />
       </View>
+
+      <Card>
+        <ThemeGallery />
+      </Card>
 
       <SettingsPanel serverUrl={serverUrl} authToken={authToken} user={user} />
     </AppShell>

@@ -9,6 +9,7 @@ import { useCurrentUser, useSyncCallerCache } from "../src/api/auth";
 import { syncDueRemindersOnOpen } from "../src/notifications";
 import { BreweryProvider } from "../src/state/brewery";
 import { ServerProvider, useServer } from "../src/state/server";
+import { ThemeProvider, useTheme } from "../src/state/theme";
 import { UnitsProvider, useUnits } from "../src/state/units";
 
 const REMINDER_RESYNC_MIN_INTERVAL_MS = 15_000;
@@ -96,6 +97,11 @@ function SessionCacheSync() {
   return null;
 }
 
+function ThemedStatusBar() {
+  const { theme } = useTheme();
+  return <StatusBar style={theme.mode === "dark" ? "light" : "dark"} />;
+}
+
 export default function RootLayout() {
   const [queryClient] = useState(
     () =>
@@ -111,19 +117,21 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <QueryClientProvider client={queryClient}>
-        <UnitsProvider>
-          <ServerProvider>
-            <BreweryProvider>
-              <SessionCacheSync />
-              <ServerUnitSync />
-              <DueReminderSync />
-              <StatusBar style="dark" />
-              <Slot />
-            </BreweryProvider>
-          </ServerProvider>
-        </UnitsProvider>
-      </QueryClientProvider>
+      <ThemeProvider>
+        <QueryClientProvider client={queryClient}>
+          <UnitsProvider>
+            <ServerProvider>
+              <BreweryProvider>
+                <SessionCacheSync />
+                <ServerUnitSync />
+                <DueReminderSync />
+                <ThemedStatusBar />
+                <Slot />
+              </BreweryProvider>
+            </ServerProvider>
+          </UnitsProvider>
+        </QueryClientProvider>
+      </ThemeProvider>
     </SafeAreaProvider>
   );
 }

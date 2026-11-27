@@ -6,9 +6,11 @@ import { useVerifyServer } from "../src/api/health";
 import { AppShell } from "../src/components/AppShell";
 import { Banner, Button, Card, TextField } from "../src/components/ui";
 import { getSuggestedWebServerUrl, useServer } from "../src/state/server";
-import { colors, radii, spacing } from "../src/theme";
+import { useThemedStyles } from "../src/state/theme";
+import { radii, spacing, type ThemeColors } from "../src/theme";
 
 export default function ConnectScreen() {
+  const styles = useThemedStyles(createStyles);
   const router = useRouter();
   const { serverUrl, savedServers, selectServer, removeSavedServer, enterOfflineMode } =
     useServer();
@@ -150,64 +152,65 @@ export default function ConnectScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  narrowColumn: {
-    width: "100%",
-    maxWidth: 560,
-    gap: spacing.lg,
-  },
-  actions: {
-    gap: spacing.sm,
-  },
-  sectionTitle: {
-    fontSize: 17,
-    fontWeight: "700",
-    color: colors.text,
-  },
-  sectionSubtitle: {
-    fontSize: 14,
-    color: colors.textMuted,
-  },
-  savedList: {
-    gap: spacing.sm,
-  },
-  savedRow: {
-    padding: spacing.md,
-    borderRadius: radii.md,
-    backgroundColor: colors.surfaceSubtle,
-    borderWidth: 1,
-    borderColor: colors.border,
-    gap: spacing.sm,
-  },
-  savedMeta: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: spacing.sm,
-  },
-  savedUrl: {
-    flex: 1,
-    fontSize: 14,
-    fontWeight: "600",
-    color: colors.text,
-  },
-  activeBadge: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: colors.success,
-  },
-  savedButtons: {
-    flexDirection: "row",
-    gap: spacing.sm,
-  },
-  privacyLinkWrap: {
-    paddingVertical: spacing.xs,
-    alignSelf: "flex-start",
-  },
-  privacyLinkText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: colors.accent,
-    textDecorationLine: "underline",
-  },
-});
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    narrowColumn: {
+      width: "100%",
+      maxWidth: 560,
+      gap: spacing.lg,
+    },
+    actions: {
+      gap: spacing.sm,
+    },
+    sectionTitle: {
+      fontSize: 17,
+      fontWeight: "700",
+      color: colors.text,
+    },
+    sectionSubtitle: {
+      fontSize: 14,
+      color: colors.textMuted,
+    },
+    savedList: {
+      gap: spacing.sm,
+    },
+    savedRow: {
+      padding: spacing.md,
+      borderRadius: radii.md,
+      backgroundColor: colors.surfaceSubtle,
+      borderWidth: 1,
+      borderColor: colors.border,
+      gap: spacing.sm,
+    },
+    savedMeta: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: spacing.sm,
+    },
+    savedUrl: {
+      flex: 1,
+      fontSize: 14,
+      fontWeight: "600",
+      color: colors.text,
+    },
+    activeBadge: {
+      fontSize: 12,
+      fontWeight: "700",
+      color: colors.success,
+    },
+    savedButtons: {
+      flexDirection: "row",
+      gap: spacing.sm,
+    },
+    privacyLinkWrap: {
+      paddingVertical: spacing.xs,
+      alignSelf: "flex-start",
+    },
+    privacyLinkText: {
+      fontSize: 13,
+      fontWeight: "600",
+      color: colors.accent,
+      textDecorationLine: "underline",
+    },
+  });

@@ -12,7 +12,8 @@ import {
   type Webhook,
 } from "../../api/integrations";
 import { canWriteBrewery, ROLE_LABELS } from "../../state/permissions";
-import { colors, DESKTOP_BREAKPOINT, radii, spacing } from "../../theme";
+import { useThemedStyles } from "../../state/theme";
+import { DESKTOP_BREAKPOINT, radii, spacing, type ThemeColors } from "../../theme";
 import { formatBatchStatus, formatDateTime } from "../batches/batchFlows";
 import { Banner, Button, Card, TextField } from "../ui";
 import { copyOrShareSecret } from "./clipboard";
@@ -41,6 +42,7 @@ export function WebhooksPanel({
   onSwitchToPersonal,
   customFetch,
 }: WebhooksPanelProps) {
+  const styles = useThemedStyles(createStyles);
   const { width } = useWindowDimensions();
   const isDesktop = width >= DESKTOP_BREAKPOINT;
 
@@ -470,92 +472,93 @@ export function WebhooksPanel({
   );
 }
 
-const styles = StyleSheet.create({
-  root: { gap: spacing.lg },
-  stack: { gap: spacing.lg },
-  layout: { gap: spacing.lg },
-  layoutDesktop: { flexDirection: "row", alignItems: "flex-start" },
-  formColumn: { flex: 1 },
-  listColumn: { flex: 1.25, gap: spacing.lg },
-  sectionTitle: { fontSize: 18, fontWeight: "700", color: colors.text },
-  muted: { fontSize: 13, lineHeight: 19, color: colors.textMuted },
-  mutedSmall: { fontSize: 12, lineHeight: 17, color: colors.textMuted },
-  strong: { fontWeight: "700", color: colors.text },
-  mono: { fontWeight: "600", color: colors.text },
-  fieldGroup: { gap: spacing.xs },
-  fieldLabel: { fontSize: 14, fontWeight: "600", color: colors.text },
-  scopeList: { gap: spacing.xs },
-  scopeOption: {
-    padding: spacing.sm,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surfaceSubtle,
-    gap: 2,
-  },
-  scopeOptionActive: {
-    borderColor: colors.accent,
-    backgroundColor: colors.accentSoft,
-  },
-  scopeOptionTitle: { fontSize: 14, fontWeight: "700", color: colors.text },
-  scopeOptionTitleActive: { color: colors.accentPressed },
-  secretCard: {
-    backgroundColor: colors.accentSoft,
-    borderColor: colors.accent,
-  },
-  secretTitle: { fontSize: 15, fontWeight: "700", color: colors.accentPressed },
-  secretValue: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: colors.text,
-    padding: spacing.sm,
-    borderRadius: radii.sm,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-  },
-  secretActions: { flexDirection: "row", flexWrap: "wrap", gap: spacing.xs },
-  listHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    flexWrap: "wrap",
-    gap: spacing.sm,
-  },
-  listHeaderText: { flex: 1, minWidth: 180, gap: 2 },
-  list: { gap: spacing.md },
-  webhookCard: {
-    padding: spacing.md,
-    borderRadius: radii.md,
-    backgroundColor: colors.surfaceSubtle,
-    borderWidth: 1,
-    borderColor: colors.border,
-    gap: spacing.sm,
-  },
-  webhookCardFailing: {
-    borderColor: colors.error,
-  },
-  webhookHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    flexWrap: "wrap",
-    gap: spacing.sm,
-  },
-  webhookTitleCol: { flex: 1, minWidth: 180, gap: 4 },
-  webhookName: { fontSize: 16, fontWeight: "700", color: colors.text },
-  webhookUrl: { fontSize: 12, fontWeight: "600", color: colors.accentPressed },
-  statusBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: radii.pill,
-  },
-  statusHealthy: { backgroundColor: colors.successSoft },
-  statusFailing: { backgroundColor: colors.errorSoft },
-  statusIdle: { backgroundColor: colors.surface },
-  statusBadgeText: { fontSize: 12, fontWeight: "700" },
-  statusTextHealthy: { color: colors.success },
-  statusTextFailing: { color: colors.error },
-  statusTextIdle: { color: colors.textMuted },
-  inlineActions: { flexDirection: "row", flexWrap: "wrap", gap: spacing.xs },
-});
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    root: { gap: spacing.lg },
+    stack: { gap: spacing.lg },
+    layout: { gap: spacing.lg },
+    layoutDesktop: { flexDirection: "row", alignItems: "flex-start" },
+    formColumn: { flex: 1 },
+    listColumn: { flex: 1.25, gap: spacing.lg },
+    sectionTitle: { fontSize: 18, fontWeight: "700", color: colors.text },
+    muted: { fontSize: 13, lineHeight: 19, color: colors.textMuted },
+    mutedSmall: { fontSize: 12, lineHeight: 17, color: colors.textMuted },
+    strong: { fontWeight: "700", color: colors.text },
+    mono: { fontWeight: "600", color: colors.text },
+    fieldGroup: { gap: spacing.xs },
+    fieldLabel: { fontSize: 14, fontWeight: "600", color: colors.text },
+    scopeList: { gap: spacing.xs },
+    scopeOption: {
+      padding: spacing.sm,
+      borderRadius: radii.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surfaceSubtle,
+      gap: 2,
+    },
+    scopeOptionActive: {
+      borderColor: colors.accent,
+      backgroundColor: colors.accentSoft,
+    },
+    scopeOptionTitle: { fontSize: 14, fontWeight: "700", color: colors.text },
+    scopeOptionTitleActive: { color: colors.accentPressed },
+    secretCard: {
+      backgroundColor: colors.accentSoft,
+      borderColor: colors.accent,
+    },
+    secretTitle: { fontSize: 15, fontWeight: "700", color: colors.accentPressed },
+    secretValue: {
+      fontSize: 13,
+      fontWeight: "600",
+      color: colors.text,
+      padding: spacing.sm,
+      borderRadius: radii.sm,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.borderStrong,
+    },
+    secretActions: { flexDirection: "row", flexWrap: "wrap", gap: spacing.xs },
+    listHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "flex-start",
+      flexWrap: "wrap",
+      gap: spacing.sm,
+    },
+    listHeaderText: { flex: 1, minWidth: 180, gap: 2 },
+    list: { gap: spacing.md },
+    webhookCard: {
+      padding: spacing.md,
+      borderRadius: radii.md,
+      backgroundColor: colors.surfaceSubtle,
+      borderWidth: 1,
+      borderColor: colors.border,
+      gap: spacing.sm,
+    },
+    webhookCardFailing: {
+      borderColor: colors.error,
+    },
+    webhookHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "flex-start",
+      flexWrap: "wrap",
+      gap: spacing.sm,
+    },
+    webhookTitleCol: { flex: 1, minWidth: 180, gap: 4 },
+    webhookName: { fontSize: 16, fontWeight: "700", color: colors.text },
+    webhookUrl: { fontSize: 12, fontWeight: "600", color: colors.accentPressed },
+    statusBadge: {
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      borderRadius: radii.pill,
+    },
+    statusHealthy: { backgroundColor: colors.successSoft },
+    statusFailing: { backgroundColor: colors.errorSoft },
+    statusIdle: { backgroundColor: colors.surface },
+    statusBadgeText: { fontSize: 12, fontWeight: "700" },
+    statusTextHealthy: { color: colors.success },
+    statusTextFailing: { color: colors.error },
+    statusTextIdle: { color: colors.textMuted },
+    inlineActions: { flexDirection: "row", flexWrap: "wrap", gap: spacing.xs },
+  });

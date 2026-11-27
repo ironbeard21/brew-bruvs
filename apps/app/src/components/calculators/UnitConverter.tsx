@@ -2,7 +2,8 @@
 import { units } from "@brew-bruvs/brew-math";
 import { useState } from "react";
 import { StyleSheet, Text, useWindowDimensions, View } from "react-native";
-import { colors, DESKTOP_BREAKPOINT, spacing } from "../../theme";
+import { useThemedStyles } from "../../state/theme";
+import { DESKTOP_BREAKPOINT, spacing, type ThemeColors } from "../../theme";
 import { Banner, Card, ResultRow, SegmentedControl, TextField } from "../ui";
 import { FormulaDisclosure, SaveToBatchNote } from "./CalculatorExtras";
 import { formatFixed, parseNumber } from "./parseNumber";
@@ -127,6 +128,7 @@ const CATEGORIES: readonly CategoryDef[] = [
 const CATEGORY_OPTIONS = CATEGORIES.map((c) => ({ value: c.id, label: c.label }));
 
 export function UnitConverter() {
+  const styles = useThemedStyles(createStyles);
   const { width } = useWindowDimensions();
   const isDesktop = width >= DESKTOP_BREAKPOINT;
 
@@ -225,28 +227,29 @@ export function UnitConverter() {
   );
 }
 
-const styles = StyleSheet.create({
-  layout: {
-    gap: spacing.lg,
-  },
-  layoutDesktop: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-  },
-  column: {
-    flex: 1,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: colors.text,
-  },
-  sectionSubtitle: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: colors.textMuted,
-  },
-  resultsList: {
-    gap: spacing.sm,
-  },
-});
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    layout: {
+      gap: spacing.lg,
+    },
+    layoutDesktop: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+    },
+    column: {
+      flex: 1,
+    },
+    sectionTitle: {
+      fontSize: 18,
+      fontWeight: "700",
+      color: colors.text,
+    },
+    sectionSubtitle: {
+      fontSize: 14,
+      lineHeight: 20,
+      color: colors.textMuted,
+    },
+    resultsList: {
+      gap: spacing.sm,
+    },
+  });

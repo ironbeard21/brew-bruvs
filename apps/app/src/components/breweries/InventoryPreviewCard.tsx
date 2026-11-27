@@ -2,8 +2,9 @@
 import { StyleSheet, Text, View } from "react-native";
 import type { Brewery } from "../../api/breweries";
 import { type InventoryItem, type QuantityUnit, useInventory } from "../../api/inventory";
+import { useThemedStyles } from "../../state/theme";
 import { useUnits } from "../../state/units";
-import { colors, radii, spacing } from "../../theme";
+import { radii, spacing, type ThemeColors } from "../../theme";
 import { formatInventoryAmount } from "../inventory/inventoryUnits";
 import { OwnerBadge } from "../OwnerBadge";
 import { Banner, Card } from "../ui";
@@ -35,6 +36,7 @@ export function InventoryPreviewCard({
   breweries,
   customFetch,
 }: InventoryPreviewCardProps) {
+  const styles = useThemedStyles(createStyles);
   const { unitSystem } = useUnits();
   const inventoryQuery = useInventory(
     serverUrl,
@@ -96,30 +98,31 @@ export function InventoryPreviewCard({
   );
 }
 
-const styles = StyleSheet.create({
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: spacing.sm,
-  },
-  title: { fontSize: 18, fontWeight: "700", color: colors.text },
-  count: { fontSize: 13, fontWeight: "600", color: colors.textMuted },
-  muted: { fontSize: 14, lineHeight: 20, color: colors.textMuted },
-  list: { gap: spacing.xs },
-  row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    flexWrap: "wrap",
-    gap: spacing.sm,
-    padding: spacing.md,
-    borderRadius: radii.md,
-    backgroundColor: colors.surfaceSubtle,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  rowMain: { flex: 1, minWidth: 180, gap: 2 },
-  itemName: { fontSize: 15, fontWeight: "700", color: colors.text },
-  itemMeta: { fontSize: 13, color: colors.textMuted },
-});
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    header: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      gap: spacing.sm,
+    },
+    title: { fontSize: 18, fontWeight: "700", color: colors.text },
+    count: { fontSize: 13, fontWeight: "600", color: colors.textMuted },
+    muted: { fontSize: 14, lineHeight: 20, color: colors.textMuted },
+    list: { gap: spacing.xs },
+    row: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      flexWrap: "wrap",
+      gap: spacing.sm,
+      padding: spacing.md,
+      borderRadius: radii.md,
+      backgroundColor: colors.surfaceSubtle,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    rowMain: { flex: 1, minWidth: 180, gap: 2 },
+    itemName: { fontSize: 15, fontWeight: "700", color: colors.text },
+    itemMeta: { fontSize: 13, color: colors.textMuted },
+  });

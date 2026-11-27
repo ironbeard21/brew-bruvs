@@ -10,7 +10,8 @@ import {
   useSetupAdmin,
   useSignup,
 } from "../api/auth";
-import { colors, radii, spacing } from "../theme";
+import { useThemedStyles } from "../state/theme";
+import { radii, spacing, type ThemeColors } from "../theme";
 import { Banner, Button, Card, SegmentedControl, TextField } from "./ui";
 
 type AuthMode = "login" | "signup";
@@ -35,6 +36,7 @@ export function AuthPanel({
   onOpenCalculators,
   customFetch,
 }: AuthPanelProps) {
+  const styles = useThemedStyles(createStyles);
   const [mode, setMode] = useState<AuthMode>("login");
   const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
@@ -349,41 +351,42 @@ export function AuthPanel({
   );
 }
 
-const styles = StyleSheet.create({
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: colors.text,
-  },
-  mutedText: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: colors.textMuted,
-  },
-  profileHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: spacing.sm,
-  },
-  profileText: {
-    flex: 1,
-    gap: 2,
-  },
-  adminBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: radii.pill,
-    backgroundColor: colors.accentSoft,
-    borderWidth: 1,
-    borderColor: colors.accent,
-  },
-  adminBadgeText: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: colors.accentPressed,
-  },
-  actions: {
-    gap: spacing.sm,
-  },
-});
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    sectionTitle: {
+      fontSize: 18,
+      fontWeight: "700",
+      color: colors.text,
+    },
+    mutedText: {
+      fontSize: 14,
+      lineHeight: 20,
+      color: colors.textMuted,
+    },
+    profileHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: spacing.sm,
+    },
+    profileText: {
+      flex: 1,
+      gap: 2,
+    },
+    adminBadge: {
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      borderRadius: radii.pill,
+      backgroundColor: colors.accentSoft,
+      borderWidth: 1,
+      borderColor: colors.accent,
+    },
+    adminBadgeText: {
+      fontSize: 12,
+      fontWeight: "700",
+      color: colors.accentPressed,
+    },
+    actions: {
+      gap: spacing.sm,
+    },
+  });

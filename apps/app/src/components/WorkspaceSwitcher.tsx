@@ -3,13 +3,15 @@ import { useRouter } from "expo-router";
 import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { useOptionalBrewery } from "../state/brewery";
 import { ROLE_LABELS } from "../state/permissions";
-import { colors, DESKTOP_BREAKPOINT, radii, spacing } from "../theme";
+import { useThemedStyles } from "../state/theme";
+import { DESKTOP_BREAKPOINT, radii, spacing, type ThemeColors } from "../theme";
 
 export interface WorkspaceSwitcherProps {
   signedIn: boolean;
 }
 
 export function WorkspaceSwitcher({ signedIn }: WorkspaceSwitcherProps) {
+  const styles = useThemedStyles(createStyles);
   const router = useRouter();
   const { width } = useWindowDimensions();
   const isDesktop = width >= DESKTOP_BREAKPOINT;
@@ -86,66 +88,67 @@ export function WorkspaceSwitcher({ signedIn }: WorkspaceSwitcherProps) {
   );
 }
 
-const styles = StyleSheet.create({
-  barOuter: {
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    backgroundColor: colors.surfaceSubtle,
-  },
-  barWrap: {
-    width: "100%",
-    maxWidth: 1120,
-    alignSelf: "center",
-    paddingHorizontal: spacing.md,
-  },
-  barWrapDesktop: {
-    paddingHorizontal: spacing.lg,
-  },
-  barInner: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 6,
-    gap: spacing.xs,
-  },
-  label: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: colors.textMuted,
-    marginRight: 2,
-  },
-  pill: {
-    minHeight: 30,
-    maxWidth: 220,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: radii.pill,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    backgroundColor: colors.surface,
-    justifyContent: "center",
-  },
-  pillActive: {
-    backgroundColor: colors.accentSoft,
-    borderColor: colors.accent,
-  },
-  pillText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: colors.textMuted,
-  },
-  pillTextActive: {
-    color: colors.accentPressed,
-    fontWeight: "700",
-  },
-  manageLink: {
-    minHeight: 30,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    justifyContent: "center",
-  },
-  manageLinkText: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: colors.accent,
-  },
-});
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    barOuter: {
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      backgroundColor: colors.surfaceSubtle,
+    },
+    barWrap: {
+      width: "100%",
+      maxWidth: 1120,
+      alignSelf: "center",
+      paddingHorizontal: spacing.md,
+    },
+    barWrapDesktop: {
+      paddingHorizontal: spacing.lg,
+    },
+    barInner: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingVertical: 6,
+      gap: spacing.xs,
+    },
+    label: {
+      fontSize: 12,
+      fontWeight: "700",
+      color: colors.textMuted,
+      marginRight: 2,
+    },
+    pill: {
+      minHeight: 30,
+      maxWidth: 220,
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      borderRadius: radii.pill,
+      borderWidth: 1,
+      borderColor: colors.borderStrong,
+      backgroundColor: colors.surface,
+      justifyContent: "center",
+    },
+    pillActive: {
+      backgroundColor: colors.accentSoft,
+      borderColor: colors.accent,
+    },
+    pillText: {
+      fontSize: 12,
+      fontWeight: "600",
+      color: colors.textMuted,
+    },
+    pillTextActive: {
+      color: colors.accentPressed,
+      fontWeight: "700",
+    },
+    manageLink: {
+      minHeight: 30,
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      justifyContent: "center",
+    },
+    manageLinkText: {
+      fontSize: 12,
+      fontWeight: "700",
+      color: colors.accent,
+    },
+  });

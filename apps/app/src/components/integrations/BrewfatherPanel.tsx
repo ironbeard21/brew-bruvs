@@ -10,8 +10,9 @@ import {
   useSaveBrewfather,
 } from "../../api/integrations";
 import type { CreateRecipeInput } from "../../api/recipes";
+import { useThemedStyles } from "../../state/theme";
 import { useUnits } from "../../state/units";
-import { colors, radii, spacing } from "../../theme";
+import { radii, spacing, type ThemeColors } from "../../theme";
 import { formatBatchStatus, formatDateTime, formatVolume } from "../batches/batchFlows";
 import { parseNumber, useOnUnitSystemChange } from "../calculators/parseNumber";
 import {
@@ -91,6 +92,7 @@ export function BrewfatherPanel({
   onOpenInventory,
   customFetch,
 }: BrewfatherPanelProps) {
+  const styles = useThemedStyles(createStyles);
   const { unitSystem } = useUnits();
 
   const [userId, setUserId] = useState("");
@@ -819,79 +821,80 @@ export function BrewfatherPanel({
   );
 }
 
-const styles = StyleSheet.create({
-  stack: { gap: spacing.lg },
-  sectionTitle: { fontSize: 18, fontWeight: "700", color: colors.text },
-  muted: { fontSize: 13, lineHeight: 19, color: colors.textMuted },
-  mutedSmall: { fontSize: 12, lineHeight: 17, color: colors.textMuted },
-  reviewHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    flexWrap: "wrap",
-    gap: spacing.sm,
-  },
-  reviewHeaderText: { flex: 1, minWidth: 200, gap: 4 },
-  summaryStrip: { flexDirection: "row", flexWrap: "wrap", gap: spacing.xs },
-  summaryPill: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: radii.pill,
-    backgroundColor: colors.accentSoft,
-  },
-  summaryPillText: { fontSize: 12, fontWeight: "700", color: colors.accentPressed },
-  inlineActions: { flexDirection: "row", flexWrap: "wrap", gap: spacing.xs },
-  list: { gap: spacing.sm },
-  draftCard: {
-    padding: spacing.md,
-    borderRadius: radii.md,
-    backgroundColor: colors.surfaceSubtle,
-    borderWidth: 1,
-    borderColor: colors.border,
-    gap: spacing.sm,
-  },
-  draftCardExcluded: {
-    opacity: 0.6,
-  },
-  draftRowHeader: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: spacing.sm,
-    flexWrap: "wrap",
-  },
-  checkBox: {
-    width: 24,
-    height: 24,
-    borderRadius: radii.sm,
-    borderWidth: 2,
-    borderColor: colors.borderStrong,
-    backgroundColor: colors.surface,
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 2,
-  },
-  checkBoxChecked: {
-    borderColor: colors.accent,
-    backgroundColor: colors.accent,
-  },
-  checkBoxText: { fontSize: 14, fontWeight: "800", color: colors.surface },
-  checkBoxTextChecked: { color: colors.surface },
-  draftMeta: { flex: 1, minWidth: 180, gap: spacing.xs },
-  draftTitle: { fontSize: 15, fontWeight: "700", color: colors.text },
-  badgeRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 6 },
-  tagPill: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: radii.pill,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-  },
-  tagPillText: { fontSize: 11, fontWeight: "700", color: colors.textMuted },
-  matchedPill: { backgroundColor: colors.successSoft, borderColor: colors.success },
-  matchedPillText: { color: colors.success },
-  creditText: { fontSize: 12, fontWeight: "600", color: colors.accentPressed },
-  invEditRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
-  invNameCol: { flex: 2, minWidth: 160 },
-  invQtyCol: { flex: 1, minWidth: 120 },
-});
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    stack: { gap: spacing.lg },
+    sectionTitle: { fontSize: 18, fontWeight: "700", color: colors.text },
+    muted: { fontSize: 13, lineHeight: 19, color: colors.textMuted },
+    mutedSmall: { fontSize: 12, lineHeight: 17, color: colors.textMuted },
+    reviewHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "flex-start",
+      flexWrap: "wrap",
+      gap: spacing.sm,
+    },
+    reviewHeaderText: { flex: 1, minWidth: 200, gap: 4 },
+    summaryStrip: { flexDirection: "row", flexWrap: "wrap", gap: spacing.xs },
+    summaryPill: {
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+      borderRadius: radii.pill,
+      backgroundColor: colors.accentSoft,
+    },
+    summaryPillText: { fontSize: 12, fontWeight: "700", color: colors.accentPressed },
+    inlineActions: { flexDirection: "row", flexWrap: "wrap", gap: spacing.xs },
+    list: { gap: spacing.sm },
+    draftCard: {
+      padding: spacing.md,
+      borderRadius: radii.md,
+      backgroundColor: colors.surfaceSubtle,
+      borderWidth: 1,
+      borderColor: colors.border,
+      gap: spacing.sm,
+    },
+    draftCardExcluded: {
+      opacity: 0.6,
+    },
+    draftRowHeader: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      gap: spacing.sm,
+      flexWrap: "wrap",
+    },
+    checkBox: {
+      width: 24,
+      height: 24,
+      borderRadius: radii.sm,
+      borderWidth: 2,
+      borderColor: colors.borderStrong,
+      backgroundColor: colors.surface,
+      alignItems: "center",
+      justifyContent: "center",
+      marginTop: 2,
+    },
+    checkBoxChecked: {
+      borderColor: colors.accent,
+      backgroundColor: colors.accent,
+    },
+    checkBoxText: { fontSize: 14, fontWeight: "800", color: colors.surface },
+    checkBoxTextChecked: { color: colors.surface },
+    draftMeta: { flex: 1, minWidth: 180, gap: spacing.xs },
+    draftTitle: { fontSize: 15, fontWeight: "700", color: colors.text },
+    badgeRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 6 },
+    tagPill: {
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      borderRadius: radii.pill,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.borderStrong,
+    },
+    tagPillText: { fontSize: 11, fontWeight: "700", color: colors.textMuted },
+    matchedPill: { backgroundColor: colors.successSoft, borderColor: colors.success },
+    matchedPillText: { color: colors.success },
+    creditText: { fontSize: 12, fontWeight: "600", color: colors.accentPressed },
+    invEditRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
+    invNameCol: { flex: 2, minWidth: 160 },
+    invQtyCol: { flex: 1, minWidth: 120 },
+  });

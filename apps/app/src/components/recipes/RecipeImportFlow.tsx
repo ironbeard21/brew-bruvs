@@ -9,8 +9,9 @@ import {
   useImportRecipeFile,
   useImportRecipeUrl,
 } from "../../api/recipes";
+import { useTheme, useThemedStyles } from "../../state/theme";
 import { useUnits } from "../../state/units";
-import { colors, radii, spacing } from "../../theme";
+import { radii, spacing, type ThemeColors } from "../../theme";
 import { parseNumber } from "../calculators/parseNumber";
 import { Banner, Button, Card, SegmentedControl, TextField } from "../ui";
 import { detectRecipeFormat, type PickedRecipeFile, pickNativeRecipeFile } from "./fileIO";
@@ -45,6 +46,8 @@ export function RecipeImportFlow({
   onPickNativeFile = pickNativeRecipeFile,
   customFetch,
 }: RecipeImportFlowProps) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const { unitSystem } = useUnits();
 
   const [mode, setMode] = useState<ImportMode>("file");
@@ -333,38 +336,39 @@ export function RecipeImportFlow({
   );
 }
 
-const styles = StyleSheet.create({
-  stack: { gap: spacing.md },
-  sectionTitle: { fontSize: 18, fontWeight: "700", color: colors.text },
-  muted: { fontSize: 13, lineHeight: 19, color: colors.textMuted },
-  reviewHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    flexWrap: "wrap",
-    gap: spacing.sm,
-  },
-  reviewHeaderText: { flex: 1, minWidth: 200, gap: 4 },
-  fileDropBox: {
-    padding: spacing.md,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    backgroundColor: colors.surfaceSubtle,
-    gap: spacing.sm,
-  },
-  fieldLabel: { fontSize: 14, fontWeight: "600", color: colors.text },
-  fileSelectedText: { fontSize: 13, fontWeight: "600", color: colors.success },
-  textAreaGroup: { gap: spacing.xs },
-  textArea: {
-    minHeight: 130,
-    padding: spacing.md,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    backgroundColor: colors.surface,
-    color: colors.text,
-    fontSize: 13,
-    textAlignVertical: "top",
-  },
-});
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    stack: { gap: spacing.md },
+    sectionTitle: { fontSize: 18, fontWeight: "700", color: colors.text },
+    muted: { fontSize: 13, lineHeight: 19, color: colors.textMuted },
+    reviewHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "flex-start",
+      flexWrap: "wrap",
+      gap: spacing.sm,
+    },
+    reviewHeaderText: { flex: 1, minWidth: 200, gap: 4 },
+    fileDropBox: {
+      padding: spacing.md,
+      borderRadius: radii.md,
+      borderWidth: 1,
+      borderColor: colors.borderStrong,
+      backgroundColor: colors.surfaceSubtle,
+      gap: spacing.sm,
+    },
+    fieldLabel: { fontSize: 14, fontWeight: "600", color: colors.text },
+    fileSelectedText: { fontSize: 13, fontWeight: "600", color: colors.success },
+    textAreaGroup: { gap: spacing.xs },
+    textArea: {
+      minHeight: 130,
+      padding: spacing.md,
+      borderRadius: radii.md,
+      borderWidth: 1,
+      borderColor: colors.borderStrong,
+      backgroundColor: colors.surface,
+      color: colors.text,
+      fontSize: 13,
+      textAlignVertical: "top",
+    },
+  });

@@ -7,8 +7,9 @@ import type {
   InventoryItem,
   InventoryItemPatch,
 } from "../../api/inventory";
+import { useThemedStyles } from "../../state/theme";
 import { useUnits } from "../../state/units";
-import { colors, radii, spacing } from "../../theme";
+import { radii, spacing, type ThemeColors } from "../../theme";
 import { parseNumber, useOnUnitSystemChange } from "../calculators/parseNumber";
 import { CatalogPicker } from "../recipes/CatalogPicker";
 import { Banner, Button, Card, SegmentedControl, TextField } from "../ui";
@@ -57,6 +58,7 @@ export function InventoryEditorCard({
   onCancel,
   customFetch,
 }: InventoryEditorCardProps) {
+  const styles = useThemedStyles(createStyles);
   const { unitSystem } = useUnits();
 
   const initialUnit: DisplayUnit = item
@@ -488,40 +490,41 @@ export function InventoryEditorCard({
   );
 }
 
-const styles = StyleSheet.create({
-  root: { gap: spacing.md },
-  headerRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    flexWrap: "wrap",
-    gap: spacing.sm,
-  },
-  flexCol: { flex: 1, minWidth: 180, gap: 2 },
-  title: { fontSize: 18, fontWeight: "700", color: colors.text },
-  subTitle: { fontSize: 14, fontWeight: "700", color: colors.text },
-  fieldLabel: { fontSize: 14, fontWeight: "600", color: colors.text },
-  muted: { fontSize: 13, lineHeight: 19, color: colors.textMuted },
-  metaText: { fontSize: 12, color: colors.textMuted },
-  catalogBox: {
-    padding: spacing.md,
-    borderRadius: radii.md,
-    backgroundColor: colors.surfaceSubtle,
-    borderWidth: 1,
-    borderColor: colors.border,
-    gap: spacing.sm,
-  },
-  catalogPillRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: spacing.sm,
-  },
-  catalogPillText: { fontSize: 13, fontWeight: "700", color: colors.accentPressed },
-  catalogSearchWrap: { gap: spacing.sm },
-  unitGroup: { gap: spacing.xs },
-  fieldRow: { flexDirection: "row", gap: spacing.sm, flexWrap: "wrap" },
-  halfField: { flex: 1, minWidth: 140 },
-  thirdField: { flex: 1, minWidth: 130 },
-  actionsRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
-});
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    root: { gap: spacing.md },
+    headerRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      flexWrap: "wrap",
+      gap: spacing.sm,
+    },
+    flexCol: { flex: 1, minWidth: 180, gap: 2 },
+    title: { fontSize: 18, fontWeight: "700", color: colors.text },
+    subTitle: { fontSize: 14, fontWeight: "700", color: colors.text },
+    fieldLabel: { fontSize: 14, fontWeight: "600", color: colors.text },
+    muted: { fontSize: 13, lineHeight: 19, color: colors.textMuted },
+    metaText: { fontSize: 12, color: colors.textMuted },
+    catalogBox: {
+      padding: spacing.md,
+      borderRadius: radii.md,
+      backgroundColor: colors.surfaceSubtle,
+      borderWidth: 1,
+      borderColor: colors.border,
+      gap: spacing.sm,
+    },
+    catalogPillRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: spacing.sm,
+    },
+    catalogPillText: { fontSize: 13, fontWeight: "700", color: colors.accentPressed },
+    catalogSearchWrap: { gap: spacing.sm },
+    unitGroup: { gap: spacing.xs },
+    fieldRow: { flexDirection: "row", gap: spacing.sm, flexWrap: "wrap" },
+    halfField: { flex: 1, minWidth: 140 },
+    thirdField: { flex: 1, minWidth: 130 },
+    actionsRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
+  });

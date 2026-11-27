@@ -10,7 +10,8 @@ import { Banner, Button, Card, SegmentedControl, TextField } from "../../src/com
 import { useOptionalBrewery } from "../../src/state/brewery";
 import { canPerformOnOwner, canWriteBrewery, ROLE_LABELS } from "../../src/state/permissions";
 import { useServer } from "../../src/state/server";
-import { colors, radii, spacing } from "../../src/theme";
+import { useThemedStyles } from "../../src/state/theme";
+import { radii, spacing, type ThemeColors } from "../../src/theme";
 
 type BeverageFilter = "all" | Beverage;
 type RecipeScope = "all" | "mine" | "workspace";
@@ -29,6 +30,7 @@ const ME_SCOPE_OPTIONS = [
 ] as const;
 
 export default function RecipeLibraryScreen() {
+  const styles = useThemedStyles(createStyles);
   const router = useRouter();
   const { serverUrl, authToken } = useServer();
   const currentUser = useCurrentUser(serverUrl, authToken);
@@ -294,26 +296,27 @@ export default function RecipeLibraryScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  stack: { gap: spacing.lg },
-  topActions: { flexDirection: "row", alignItems: "flex-end", gap: spacing.md, flexWrap: "wrap" },
-  headerButtons: { flexDirection: "row", gap: spacing.xs, flexWrap: "wrap" },
-  searchFlex: { flex: 1, minWidth: 200 },
-  filtersRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm, alignItems: "center" },
-  filterGroup: { flexGrow: 1 },
-  scopeGroup: {},
-  emptyTitle: { fontSize: 17, fontWeight: "700", color: colors.text },
-  muted: { fontSize: 14, lineHeight: 20, color: colors.textMuted },
-  list: { gap: spacing.md },
-  recipeCard: { gap: spacing.sm },
-  cardHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  cardTitleCol: { flex: 1, gap: 4 },
-  titleRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: spacing.xs },
-  recipeName: { fontSize: 17, fontWeight: "700", color: colors.text },
-  recipeMeta: {
-    fontSize: 13,
-    color: colors.textMuted,
-    borderRadius: radii.sm,
-  },
-  cardActions: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
-});
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    stack: { gap: spacing.lg },
+    topActions: { flexDirection: "row", alignItems: "flex-end", gap: spacing.md, flexWrap: "wrap" },
+    headerButtons: { flexDirection: "row", gap: spacing.xs, flexWrap: "wrap" },
+    searchFlex: { flex: 1, minWidth: 200 },
+    filtersRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm, alignItems: "center" },
+    filterGroup: { flexGrow: 1 },
+    scopeGroup: {},
+    emptyTitle: { fontSize: 17, fontWeight: "700", color: colors.text },
+    muted: { fontSize: 14, lineHeight: 20, color: colors.textMuted },
+    list: { gap: spacing.md },
+    recipeCard: { gap: spacing.sm },
+    cardHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+    cardTitleCol: { flex: 1, gap: 4 },
+    titleRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: spacing.xs },
+    recipeName: { fontSize: 17, fontWeight: "700", color: colors.text },
+    recipeMeta: {
+      fontSize: 13,
+      color: colors.textMuted,
+      borderRadius: radii.sm,
+    },
+    cardActions: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
+  });

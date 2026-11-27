@@ -4,8 +4,9 @@ import { useState } from "react";
 import { StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import type { Reading, ReadingInput, ReadingPatch } from "../../api/batches";
 import type { Beverage } from "../../api/recipes";
+import { useThemedStyles } from "../../state/theme";
 import { useUnits } from "../../state/units";
-import { colors, DESKTOP_BREAKPOINT, radii, spacing } from "../../theme";
+import { DESKTOP_BREAKPOINT, radii, spacing, type ThemeColors } from "../../theme";
 import { parseNumber, useOnUnitSystemChange } from "../calculators/parseNumber";
 import { Banner, Button, Card, TextField } from "../ui";
 import { formatDateTime, formatTemperature } from "./batchFlows";
@@ -34,6 +35,7 @@ export function ReadingsSection({
   onDeleteReading,
   saving = false,
 }: ReadingsSectionProps) {
+  const styles = useThemedStyles(createStyles);
   const canContribute = canContributeProp ?? canEdit;
   const { unitSystem } = useUnits();
   const { width } = useWindowDimensions();
@@ -370,65 +372,66 @@ export function ReadingsSection({
   );
 }
 
-const styles = StyleSheet.create({
-  root: { gap: spacing.lg },
-  layout: { gap: spacing.lg },
-  layoutDesktop: { flexDirection: "row", alignItems: "flex-start" },
-  column: { flex: 1 },
-  sectionTitle: { fontSize: 18, fontWeight: "700", color: colors.text },
-  muted: { fontSize: 13, lineHeight: 19, color: colors.textMuted },
-  fieldRow: { flexDirection: "row", gap: spacing.sm, flexWrap: "wrap" },
-  halfField: { flex: 1, minWidth: 130 },
-  formActions: { flexDirection: "row", gap: spacing.sm, flexWrap: "wrap" },
-  list: { gap: spacing.sm },
-  readingRow: {
-    padding: spacing.md,
-    borderRadius: radii.md,
-    backgroundColor: colors.surfaceSubtle,
-    borderWidth: 1,
-    borderColor: colors.border,
-    gap: spacing.xs,
-  },
-  readingHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  readingDate: { fontSize: 13, fontWeight: "700", color: colors.text },
-  readingSource: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: colors.textMuted,
-    textTransform: "uppercase",
-  },
-  metricsWrap: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 6,
-    marginTop: 2,
-  },
-  metricPill: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: radii.pill,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-  },
-  metricText: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: colors.text,
-    fontVariant: ["tabular-nums"],
-  },
-  readingNote: {
-    fontSize: 13,
-    color: colors.textMuted,
-    marginTop: 2,
-  },
-  rowActions: {
-    flexDirection: "row",
-    gap: spacing.xs,
-    marginTop: 2,
-  },
-});
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    root: { gap: spacing.lg },
+    layout: { gap: spacing.lg },
+    layoutDesktop: { flexDirection: "row", alignItems: "flex-start" },
+    column: { flex: 1 },
+    sectionTitle: { fontSize: 18, fontWeight: "700", color: colors.text },
+    muted: { fontSize: 13, lineHeight: 19, color: colors.textMuted },
+    fieldRow: { flexDirection: "row", gap: spacing.sm, flexWrap: "wrap" },
+    halfField: { flex: 1, minWidth: 130 },
+    formActions: { flexDirection: "row", gap: spacing.sm, flexWrap: "wrap" },
+    list: { gap: spacing.sm },
+    readingRow: {
+      padding: spacing.md,
+      borderRadius: radii.md,
+      backgroundColor: colors.surfaceSubtle,
+      borderWidth: 1,
+      borderColor: colors.border,
+      gap: spacing.xs,
+    },
+    readingHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+    },
+    readingDate: { fontSize: 13, fontWeight: "700", color: colors.text },
+    readingSource: {
+      fontSize: 11,
+      fontWeight: "600",
+      color: colors.textMuted,
+      textTransform: "uppercase",
+    },
+    metricsWrap: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 6,
+      marginTop: 2,
+    },
+    metricPill: {
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      borderRadius: radii.pill,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.borderStrong,
+    },
+    metricText: {
+      fontSize: 13,
+      fontWeight: "700",
+      color: colors.text,
+      fontVariant: ["tabular-nums"],
+    },
+    readingNote: {
+      fontSize: 13,
+      color: colors.textMuted,
+      marginTop: 2,
+    },
+    rowActions: {
+      flexDirection: "row",
+      gap: spacing.xs,
+      marginTop: 2,
+    },
+  });

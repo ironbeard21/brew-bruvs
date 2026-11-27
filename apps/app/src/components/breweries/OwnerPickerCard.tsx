@@ -3,7 +3,8 @@ import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import type { Brewery } from "../../api/breweries";
 import { ROLE_LABELS } from "../../state/permissions";
-import { colors, spacing } from "../../theme";
+import { useThemedStyles } from "../../state/theme";
+import { spacing, type ThemeColors } from "../../theme";
 import { Banner, Button, Card, SegmentedControl } from "../ui";
 
 const ME_VALUE = "__me__";
@@ -24,6 +25,7 @@ export function OwnerPickerCard({
   onChangeBreweryId,
   testID = "owner-picker-card",
 }: OwnerPickerCardProps) {
+  const styles = useThemedStyles(createStyles);
   if (writableBreweries.length === 0) return null;
 
   const options = [
@@ -67,6 +69,7 @@ export function MoveToBreweryBar({
   onMove,
   testID = "move-to-brewery",
 }: MoveToBreweryBarProps) {
+  const styles = useThemedStyles(createStyles);
   const [open, setOpen] = useState(false);
   const [targetId, setTargetId] = useState<string>(writableBreweries[0]?.id ?? "");
   const [error, setError] = useState<string | null>(null);
@@ -132,9 +135,10 @@ export function MoveToBreweryBar({
   );
 }
 
-const styles = StyleSheet.create({
-  col: { gap: spacing.xs },
-  row: { flexDirection: "row", flexWrap: "wrap", gap: spacing.xs },
-  title: { fontSize: 15, fontWeight: "700", color: colors.text },
-  muted: { fontSize: 13, color: colors.textMuted },
-});
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    col: { gap: spacing.xs },
+    row: { flexDirection: "row", flexWrap: "wrap", gap: spacing.xs },
+    title: { fontSize: 15, fontWeight: "700", color: colors.text },
+    muted: { fontSize: 13, color: colors.textMuted },
+  });

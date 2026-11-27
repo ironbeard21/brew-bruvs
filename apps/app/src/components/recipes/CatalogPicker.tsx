@@ -2,8 +2,9 @@
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { type CatalogItem, type CatalogKind, useCatalogSearch } from "../../api/catalog";
+import { useThemedStyles } from "../../state/theme";
 import type { UnitSystem } from "../../state/units";
-import { colors, radii, spacing } from "../../theme";
+import { radii, spacing, type ThemeColors } from "../../theme";
 import { formatFixed } from "../calculators/parseNumber";
 import { formatEquipmentVolume } from "../equipment/equipmentUnits";
 import { Banner, Button, TextField } from "../ui";
@@ -74,6 +75,7 @@ export function CatalogPicker({
   unitSystem = "us",
   customFetch,
 }: CatalogPickerProps) {
+  const styles = useThemedStyles(createStyles);
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
 
@@ -164,32 +166,33 @@ export function CatalogPicker({
   );
 }
 
-const styles = StyleSheet.create({
-  wrapper: { gap: spacing.xs },
-  searchRow: { flexDirection: "row", alignItems: "flex-end", gap: spacing.sm, flexWrap: "wrap" },
-  inputFlex: { flex: 1, minWidth: 180 },
-  customBtnWrap: { paddingBottom: 0 },
-  resultsBox: {
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    backgroundColor: colors.surface,
-    overflow: "hidden",
-  },
-  statusText: {
-    padding: spacing.md,
-    fontSize: 13,
-    color: colors.textMuted,
-  },
-  optionRow: {
-    minHeight: 44,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 9,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    justifyContent: "center",
-    gap: 2,
-  },
-  optionName: { fontSize: 14, fontWeight: "600", color: colors.text },
-  optionMeta: { fontSize: 12, color: colors.textMuted },
-});
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    wrapper: { gap: spacing.xs },
+    searchRow: { flexDirection: "row", alignItems: "flex-end", gap: spacing.sm, flexWrap: "wrap" },
+    inputFlex: { flex: 1, minWidth: 180 },
+    customBtnWrap: { paddingBottom: 0 },
+    resultsBox: {
+      borderRadius: radii.md,
+      borderWidth: 1,
+      borderColor: colors.borderStrong,
+      backgroundColor: colors.surface,
+      overflow: "hidden",
+    },
+    statusText: {
+      padding: spacing.md,
+      fontSize: 13,
+      color: colors.textMuted,
+    },
+    optionRow: {
+      minHeight: 44,
+      paddingHorizontal: spacing.md,
+      paddingVertical: 9,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+      justifyContent: "center",
+      gap: 2,
+    },
+    optionName: { fontSize: 14, fontWeight: "600", color: colors.text },
+    optionMeta: { fontSize: 12, color: colors.textMuted },
+  });

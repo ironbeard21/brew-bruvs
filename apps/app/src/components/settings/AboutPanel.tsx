@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
 import type { CatalogAttribution, CatalogSource } from "../../api/catalog";
-import { colors, radii, spacing } from "../../theme";
+import { useThemedStyles } from "../../state/theme";
+import { radii, spacing, type ThemeColors } from "../../theme";
 import { Banner, Card } from "../ui";
 import { PRIVACY_POLICY_URL } from "./PrivacyPolicyPanel";
 
@@ -103,6 +104,7 @@ export function AboutPanel({
   error = null,
   onOpenPrivacyPolicy,
 }: AboutPanelProps) {
+  const styles = useThemedStyles(createStyles);
   const sourceCodeUrl = sourceUrl && isHttpUrl(sourceUrl) ? sourceUrl : SOURCE_CODE_URL;
   const sourceRows: { id: string; source: CatalogSource }[] = attribution
     ? Object.entries(attribution.sources).map(([id, source]) => ({ id, source }))
@@ -229,73 +231,74 @@ export function AboutPanel({
   );
 }
 
-const styles = StyleSheet.create({
-  root: { gap: spacing.lg },
-  sectionTitle: { fontSize: 18, fontWeight: "700", color: colors.text },
-  body: { fontSize: 14, lineHeight: 21, color: colors.text },
-  muted: { fontSize: 13, lineHeight: 19, color: colors.textMuted },
-  licenseBox: {
-    padding: spacing.md,
-    borderRadius: radii.md,
-    backgroundColor: colors.accentSoft,
-    borderWidth: 1,
-    borderColor: colors.accent,
-    gap: spacing.sm,
-  },
-  licenseHeading: { fontSize: 15, fontWeight: "800", color: colors.accentPressed },
-  linkRow: { gap: 6 },
-  link: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: colors.accent,
-    textDecorationLine: "underline",
-  },
-  sourceList: { gap: spacing.sm },
-  sourceRow: {
-    padding: spacing.md,
-    borderRadius: radii.md,
-    backgroundColor: colors.surfaceSubtle,
-    borderWidth: 1,
-    borderColor: colors.border,
-    gap: 4,
-  },
-  sourceHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    flexWrap: "wrap",
-    gap: spacing.xs,
-  },
-  sourceName: { fontSize: 14, fontWeight: "700", color: colors.text, flex: 1, minWidth: 180 },
-  licenseBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: radii.pill,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-  },
-  licenseBadgeText: { fontSize: 12, fontWeight: "700", color: colors.accentPressed },
-  sourceMeta: { flexDirection: "row", flexWrap: "wrap", gap: spacing.md },
-  sourceId: { fontSize: 12, fontWeight: "600", color: colors.textMuted },
-  sourceCommit: {
-    fontSize: 12,
-    color: colors.textMuted,
-    fontVariant: ["tabular-nums"],
-  },
-  guidelinesNote: {
-    paddingTop: spacing.xs,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  rawAttributionBox: {
-    padding: spacing.md,
-    borderRadius: radii.md,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    gap: spacing.xs,
-  },
-  rawHeading: { fontSize: 13, fontWeight: "700", color: colors.text },
-  rawText: { fontSize: 12, lineHeight: 18, color: colors.textMuted },
-});
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    root: { gap: spacing.lg },
+    sectionTitle: { fontSize: 18, fontWeight: "700", color: colors.text },
+    body: { fontSize: 14, lineHeight: 21, color: colors.text },
+    muted: { fontSize: 13, lineHeight: 19, color: colors.textMuted },
+    licenseBox: {
+      padding: spacing.md,
+      borderRadius: radii.md,
+      backgroundColor: colors.accentSoft,
+      borderWidth: 1,
+      borderColor: colors.accent,
+      gap: spacing.sm,
+    },
+    licenseHeading: { fontSize: 15, fontWeight: "800", color: colors.accentPressed },
+    linkRow: { gap: 6 },
+    link: {
+      fontSize: 13,
+      fontWeight: "600",
+      color: colors.accent,
+      textDecorationLine: "underline",
+    },
+    sourceList: { gap: spacing.sm },
+    sourceRow: {
+      padding: spacing.md,
+      borderRadius: radii.md,
+      backgroundColor: colors.surfaceSubtle,
+      borderWidth: 1,
+      borderColor: colors.border,
+      gap: 4,
+    },
+    sourceHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "flex-start",
+      flexWrap: "wrap",
+      gap: spacing.xs,
+    },
+    sourceName: { fontSize: 14, fontWeight: "700", color: colors.text, flex: 1, minWidth: 180 },
+    licenseBadge: {
+      paddingHorizontal: 10,
+      paddingVertical: 3,
+      borderRadius: radii.pill,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.borderStrong,
+    },
+    licenseBadgeText: { fontSize: 12, fontWeight: "700", color: colors.accentPressed },
+    sourceMeta: { flexDirection: "row", flexWrap: "wrap", gap: spacing.md },
+    sourceId: { fontSize: 12, fontWeight: "600", color: colors.textMuted },
+    sourceCommit: {
+      fontSize: 12,
+      color: colors.textMuted,
+      fontVariant: ["tabular-nums"],
+    },
+    guidelinesNote: {
+      paddingTop: spacing.xs,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+    },
+    rawAttributionBox: {
+      padding: spacing.md,
+      borderRadius: radii.md,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      gap: spacing.xs,
+    },
+    rawHeading: { fontSize: 13, fontWeight: "700", color: colors.text },
+    rawText: { fontSize: 12, lineHeight: 18, color: colors.textMuted },
+  });

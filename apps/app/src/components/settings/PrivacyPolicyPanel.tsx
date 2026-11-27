@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
-import { colors, radii, spacing } from "../../theme";
+import { useThemedStyles } from "../../state/theme";
+import { radii, spacing, type ThemeColors } from "../../theme";
 import { Card } from "../ui";
 
 export const PRIVACY_POLICY_URL =
@@ -41,6 +42,7 @@ const POLICY_SECTIONS: readonly { heading: string; bullets: readonly string[] }[
 ];
 
 export function PrivacyPolicyPanel() {
+  const styles = useThemedStyles(createStyles);
   return (
     <View style={styles.root} testID="privacy-policy-panel">
       <Card>
@@ -83,31 +85,32 @@ export function PrivacyPolicyPanel() {
   );
 }
 
-const styles = StyleSheet.create({
-  root: { gap: spacing.lg },
-  summaryBox: {
-    padding: spacing.md,
-    borderRadius: radii.md,
-    backgroundColor: colors.successSoft,
-    borderWidth: 1,
-    borderColor: colors.success,
-    gap: spacing.xs,
-  },
-  summaryHeading: { fontSize: 15, fontWeight: "800", color: colors.success },
-  section: { gap: spacing.xs },
-  sectionTitle: { fontSize: 16, fontWeight: "700", color: colors.text },
-  body: { fontSize: 14, lineHeight: 21, color: colors.text },
-  muted: { fontSize: 13, lineHeight: 19, color: colors.textMuted },
-  footer: {
-    paddingTop: spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    gap: spacing.xs,
-  },
-  link: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: colors.accent,
-    textDecorationLine: "underline",
-  },
-});
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    root: { gap: spacing.lg },
+    summaryBox: {
+      padding: spacing.md,
+      borderRadius: radii.md,
+      backgroundColor: colors.successSoft,
+      borderWidth: 1,
+      borderColor: colors.success,
+      gap: spacing.xs,
+    },
+    summaryHeading: { fontSize: 15, fontWeight: "800", color: colors.success },
+    section: { gap: spacing.xs },
+    sectionTitle: { fontSize: 16, fontWeight: "700", color: colors.text },
+    body: { fontSize: 14, lineHeight: 21, color: colors.text },
+    muted: { fontSize: 13, lineHeight: 19, color: colors.textMuted },
+    footer: {
+      paddingTop: spacing.sm,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      gap: spacing.xs,
+    },
+    link: {
+      fontSize: 13,
+      fontWeight: "600",
+      color: colors.accent,
+      textDecorationLine: "underline",
+    },
+  });

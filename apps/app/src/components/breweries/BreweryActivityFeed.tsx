@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { type ActivityEvent, useBreweryActivity } from "../../api/activity";
-import { colors, radii, spacing } from "../../theme";
+import { useThemedStyles } from "../../state/theme";
+import { radii, spacing, type ThemeColors } from "../../theme";
 import { formatBatchStatus, formatDateTime } from "../batches/batchFlows";
 import { Banner, Button, Card } from "../ui";
 
@@ -90,6 +91,7 @@ export function BreweryActivityFeed({
   pageSize,
   customFetch,
 }: BreweryActivityFeedProps) {
+  const styles = useThemedStyles(createStyles);
   const activityQuery = useBreweryActivity(
     serverUrl,
     authToken,
@@ -202,50 +204,51 @@ export function BreweryActivityFeed({
   );
 }
 
-const styles = StyleSheet.create({
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    gap: spacing.sm,
-  },
-  headerCol: { flex: 1, gap: 2 },
-  title: { fontSize: 18, fontWeight: "700", color: colors.text },
-  subtitle: { fontSize: 12, color: colors.textMuted },
-  emptyText: { fontSize: 14, lineHeight: 20, color: colors.textMuted },
-  list: { gap: spacing.xs },
-  eventRow: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: radii.md,
-    backgroundColor: colors.surfaceSubtle,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  eventRowPressed: {
-    backgroundColor: colors.accentSoft,
-    borderColor: colors.accent,
-  },
-  eventInner: { gap: 4 },
-  eventMetaRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: spacing.xs,
-  },
-  verbPill: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: radii.pill,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-  },
-  verbPillText: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: colors.accentPressed,
-  },
-  eventTime: { fontSize: 11, color: colors.textMuted },
-  eventSummary: { fontSize: 14, lineHeight: 20, color: colors.text },
-});
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    header: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "flex-start",
+      gap: spacing.sm,
+    },
+    headerCol: { flex: 1, gap: 2 },
+    title: { fontSize: 18, fontWeight: "700", color: colors.text },
+    subtitle: { fontSize: 12, color: colors.textMuted },
+    emptyText: { fontSize: 14, lineHeight: 20, color: colors.textMuted },
+    list: { gap: spacing.xs },
+    eventRow: {
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      borderRadius: radii.md,
+      backgroundColor: colors.surfaceSubtle,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    eventRowPressed: {
+      backgroundColor: colors.accentSoft,
+      borderColor: colors.accent,
+    },
+    eventInner: { gap: 4 },
+    eventMetaRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      gap: spacing.xs,
+    },
+    verbPill: {
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      borderRadius: radii.pill,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.borderStrong,
+    },
+    verbPillText: {
+      fontSize: 11,
+      fontWeight: "700",
+      color: colors.accentPressed,
+    },
+    eventTime: { fontSize: 11, color: colors.textMuted },
+    eventSummary: { fontSize: 14, lineHeight: 20, color: colors.text },
+  });

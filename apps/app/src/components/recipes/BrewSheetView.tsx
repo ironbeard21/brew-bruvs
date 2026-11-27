@@ -4,8 +4,9 @@ import { useEffect } from "react";
 import { Platform, StyleSheet, Text, View } from "react-native";
 import type { CatalogStyle } from "../../api/catalog";
 import type { RecipeDetail, RecipeFileFormat, RecipeVersion } from "../../api/recipes";
+import { useThemedStyles } from "../../state/theme";
 import { useUnits } from "../../state/units";
-import { colors, radii, spacing } from "../../theme";
+import { radii, spacing, type ThemeColors } from "../../theme";
 import { formatMass, formatTemperature, formatVolume } from "../batches/batchFlows";
 import { Banner, Button, Card } from "../ui";
 import { computeLiveRecipeStats, draftFromVersion } from "./liveStats";
@@ -64,6 +65,7 @@ export function BrewSheetView({
   exportNotice = null,
   exportError = null,
 }: BrewSheetViewProps) {
+  const styles = useThemedStyles(createStyles);
   const { unitSystem } = useUnits();
 
   // Inject clean @media print stylesheet on web while BrewSheetView is mounted
@@ -415,114 +417,115 @@ export function BrewSheetView({
   );
 }
 
-const styles = StyleSheet.create({
-  root: { gap: spacing.md },
-  toolbar: {
-    flexDirection: "row",
-    alignItems: "center",
-    flexWrap: "wrap",
-    gap: spacing.xs,
-  },
-  sheet: {
-    backgroundColor: colors.surface,
-  },
-  sheetBody: {
-    gap: spacing.lg,
-  },
-  docHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    flexWrap: "wrap",
-    gap: spacing.sm,
-    paddingBottom: spacing.md,
-    borderBottomWidth: 2,
-    borderBottomColor: colors.text,
-  },
-  docTitleCol: { flex: 1, minWidth: 200, gap: 4 },
-  docTitle: { fontSize: 24, fontWeight: "800", color: colors.text },
-  docSubtitle: { fontSize: 14, fontWeight: "600", color: colors.textMuted },
-  metaGrid: { alignItems: "flex-end", gap: 2 },
-  metaItem: { fontSize: 13, fontWeight: "700", color: colors.text },
-  statsBar: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: spacing.sm,
-  },
-  statBox: {
-    flex: 1,
-    minWidth: 96,
-    padding: spacing.sm,
-    borderRadius: radii.sm,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    backgroundColor: colors.surfaceSubtle,
-    gap: 2,
-  },
-  statLabel: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: colors.textMuted,
-    textTransform: "uppercase",
-  },
-  statValue: {
-    fontSize: 17,
-    fontWeight: "800",
-    color: colors.text,
-    fontVariant: ["tabular-nums"],
-  },
-  creditBar: {
-    padding: spacing.sm,
-    borderRadius: radii.sm,
-    backgroundColor: colors.surfaceSubtle,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  creditText: { fontSize: 12, color: colors.textMuted },
-  section: { gap: spacing.xs },
-  sectionHeading: {
-    fontSize: 15,
-    fontWeight: "800",
-    color: colors.text,
-    textTransform: "uppercase",
-    letterSpacing: 0.4,
-    paddingBottom: 4,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.borderStrong,
-  },
-  row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "baseline",
-    flexWrap: "wrap",
-    gap: spacing.sm,
-    paddingVertical: 5,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  rowPrimary: { fontSize: 14, fontWeight: "600", color: colors.text },
-  rowSecondary: {
-    fontSize: 13,
-    color: colors.textMuted,
-    fontVariant: ["tabular-nums"],
-  },
-  muted: { fontSize: 13, color: colors.textMuted },
-  notesText: { fontSize: 14, lineHeight: 20, color: colors.text },
-  logGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: spacing.md,
-    paddingTop: spacing.xs,
-  },
-  logCell: {
-    width: "46%",
-    minWidth: 150,
-    gap: 8,
-  },
-  logLabel: { fontSize: 12, fontWeight: "600", color: colors.textMuted },
-  logBlankLine: {
-    height: 18,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.borderStrong,
-  },
-});
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    root: { gap: spacing.md },
+    toolbar: {
+      flexDirection: "row",
+      alignItems: "center",
+      flexWrap: "wrap",
+      gap: spacing.xs,
+    },
+    sheet: {
+      backgroundColor: colors.surface,
+    },
+    sheetBody: {
+      gap: spacing.lg,
+    },
+    docHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "flex-start",
+      flexWrap: "wrap",
+      gap: spacing.sm,
+      paddingBottom: spacing.md,
+      borderBottomWidth: 2,
+      borderBottomColor: colors.text,
+    },
+    docTitleCol: { flex: 1, minWidth: 200, gap: 4 },
+    docTitle: { fontSize: 24, fontWeight: "800", color: colors.text },
+    docSubtitle: { fontSize: 14, fontWeight: "600", color: colors.textMuted },
+    metaGrid: { alignItems: "flex-end", gap: 2 },
+    metaItem: { fontSize: 13, fontWeight: "700", color: colors.text },
+    statsBar: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: spacing.sm,
+    },
+    statBox: {
+      flex: 1,
+      minWidth: 96,
+      padding: spacing.sm,
+      borderRadius: radii.sm,
+      borderWidth: 1,
+      borderColor: colors.borderStrong,
+      backgroundColor: colors.surfaceSubtle,
+      gap: 2,
+    },
+    statLabel: {
+      fontSize: 11,
+      fontWeight: "700",
+      color: colors.textMuted,
+      textTransform: "uppercase",
+    },
+    statValue: {
+      fontSize: 17,
+      fontWeight: "800",
+      color: colors.text,
+      fontVariant: ["tabular-nums"],
+    },
+    creditBar: {
+      padding: spacing.sm,
+      borderRadius: radii.sm,
+      backgroundColor: colors.surfaceSubtle,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    creditText: { fontSize: 12, color: colors.textMuted },
+    section: { gap: spacing.xs },
+    sectionHeading: {
+      fontSize: 15,
+      fontWeight: "800",
+      color: colors.text,
+      textTransform: "uppercase",
+      letterSpacing: 0.4,
+      paddingBottom: 4,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.borderStrong,
+    },
+    row: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "baseline",
+      flexWrap: "wrap",
+      gap: spacing.sm,
+      paddingVertical: 5,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    rowPrimary: { fontSize: 14, fontWeight: "600", color: colors.text },
+    rowSecondary: {
+      fontSize: 13,
+      color: colors.textMuted,
+      fontVariant: ["tabular-nums"],
+    },
+    muted: { fontSize: 13, color: colors.textMuted },
+    notesText: { fontSize: 14, lineHeight: 20, color: colors.text },
+    logGrid: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: spacing.md,
+      paddingTop: spacing.xs,
+    },
+    logCell: {
+      width: "46%",
+      minWidth: 150,
+      gap: 8,
+    },
+    logLabel: { fontSize: 12, fontWeight: "600", color: colors.textMuted },
+    logBlankLine: {
+      height: 18,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.borderStrong,
+    },
+  });

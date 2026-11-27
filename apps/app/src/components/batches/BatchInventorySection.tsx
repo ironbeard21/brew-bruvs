@@ -2,8 +2,9 @@
 import { StyleSheet, Text, View } from "react-native";
 import type { BatchDetail } from "../../api/batches";
 import type { BatchStats, InventoryChange, Reservation, ShoppingList } from "../../api/inventory";
+import { useThemedStyles } from "../../state/theme";
 import { useUnits } from "../../state/units";
-import { colors, radii, spacing } from "../../theme";
+import { radii, spacing, type ThemeColors } from "../../theme";
 import { formatInventoryAmount } from "../inventory/inventoryUnits";
 import { Banner, Button, Card } from "../ui";
 
@@ -21,6 +22,7 @@ export function BatchInventoryChangeBanner({
   onOpenShoppingList,
   onDismiss,
 }: BatchInventoryChangeBannerProps) {
+  const styles = useThemedStyles(createStyles);
   const { unitSystem } = useUnits();
   const hasContent =
     change.reserved.length > 0 || change.short.length > 0 || change.used || change.released;
@@ -127,6 +129,7 @@ export function BatchInventorySection({
   onOpenInventory,
   onOpenShoppingList,
 }: BatchInventorySectionProps) {
+  const styles = useThemedStyles(createStyles);
   const { unitSystem } = useUnits();
 
   const plannedShortfalls =
@@ -285,111 +288,112 @@ export function BatchInventorySection({
   );
 }
 
-const styles = StyleSheet.create({
-  root: { gap: spacing.lg },
-  changeBox: {
-    padding: spacing.md,
-    borderRadius: radii.md,
-    backgroundColor: colors.surfaceSubtle,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    gap: spacing.sm,
-  },
-  changeTitle: { fontSize: 15, fontWeight: "700", color: colors.text },
-  sectionTitle: { fontSize: 18, fontWeight: "700", color: colors.text },
-  rowBetween: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    flexWrap: "wrap",
-    gap: spacing.sm,
-  },
-  actionRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.xs },
-  flexCol: { flex: 1, minWidth: 160, gap: 2 },
-  group: { gap: 4 },
-  groupLabel: { fontSize: 13, fontWeight: "700", color: colors.success },
-  lineRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    flexWrap: "wrap",
-    gap: spacing.xs,
-    paddingVertical: 4,
-  },
-  lineName: { fontSize: 14, fontWeight: "600", color: colors.text },
-  reservedQty: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: colors.success,
-    fontVariant: ["tabular-nums"],
-  },
-  shortBox: {
-    padding: spacing.sm,
-    borderRadius: radii.md,
-    backgroundColor: colors.accentSoft,
-    borderWidth: 1,
-    borderColor: colors.accent,
-    gap: 4,
-  },
-  shortTitle: { fontSize: 13, fontWeight: "700", color: colors.accentPressed },
-  shortQty: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: colors.error,
-    fontVariant: ["tabular-nums"],
-  },
-  muted: { fontSize: 13, lineHeight: 19, color: colors.textMuted },
-  list: { gap: spacing.xs },
-  resRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: spacing.md,
-    borderRadius: radii.md,
-    backgroundColor: colors.surfaceSubtle,
-    borderWidth: 1,
-    borderColor: colors.border,
-    gap: spacing.sm,
-  },
-  statePill: {
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: radii.pill,
-    borderWidth: 1,
-  },
-  stateReserved: { backgroundColor: colors.accentSoft, borderColor: colors.accent },
-  stateUsed: { backgroundColor: colors.successSoft, borderColor: colors.success },
-  stateReleased: { backgroundColor: colors.surface, borderColor: colors.borderStrong },
-  statePillText: { fontSize: 12, fontWeight: "700", textTransform: "capitalize" },
-  stateReservedText: { color: colors.accentPressed },
-  stateUsedText: { color: colors.success },
-  stateReleasedText: { color: colors.textMuted },
-  statsWrap: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
-  statChip: {
-    minWidth: 88,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: radii.md,
-    backgroundColor: colors.surfaceSubtle,
-    borderWidth: 1,
-    borderColor: colors.border,
-    gap: 2,
-  },
-  statLabel: { fontSize: 11, fontWeight: "700", color: colors.textMuted },
-  statVal: {
-    fontSize: 16,
-    fontWeight: "800",
-    color: colors.text,
-    fontVariant: ["tabular-nums"],
-  },
-  aaBox: {
-    padding: spacing.md,
-    borderRadius: radii.md,
-    backgroundColor: colors.successSoft,
-    borderWidth: 1,
-    borderColor: colors.success,
-    gap: 4,
-  },
-  aaTitle: { fontSize: 13, fontWeight: "700", color: colors.success },
-  aaItem: { fontSize: 13, color: colors.text },
-});
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    root: { gap: spacing.lg },
+    changeBox: {
+      padding: spacing.md,
+      borderRadius: radii.md,
+      backgroundColor: colors.surfaceSubtle,
+      borderWidth: 1,
+      borderColor: colors.borderStrong,
+      gap: spacing.sm,
+    },
+    changeTitle: { fontSize: 15, fontWeight: "700", color: colors.text },
+    sectionTitle: { fontSize: 18, fontWeight: "700", color: colors.text },
+    rowBetween: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      flexWrap: "wrap",
+      gap: spacing.sm,
+    },
+    actionRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.xs },
+    flexCol: { flex: 1, minWidth: 160, gap: 2 },
+    group: { gap: 4 },
+    groupLabel: { fontSize: 13, fontWeight: "700", color: colors.success },
+    lineRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      flexWrap: "wrap",
+      gap: spacing.xs,
+      paddingVertical: 4,
+    },
+    lineName: { fontSize: 14, fontWeight: "600", color: colors.text },
+    reservedQty: {
+      fontSize: 13,
+      fontWeight: "700",
+      color: colors.success,
+      fontVariant: ["tabular-nums"],
+    },
+    shortBox: {
+      padding: spacing.sm,
+      borderRadius: radii.md,
+      backgroundColor: colors.accentSoft,
+      borderWidth: 1,
+      borderColor: colors.accent,
+      gap: 4,
+    },
+    shortTitle: { fontSize: 13, fontWeight: "700", color: colors.accentPressed },
+    shortQty: {
+      fontSize: 13,
+      fontWeight: "700",
+      color: colors.error,
+      fontVariant: ["tabular-nums"],
+    },
+    muted: { fontSize: 13, lineHeight: 19, color: colors.textMuted },
+    list: { gap: spacing.xs },
+    resRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      padding: spacing.md,
+      borderRadius: radii.md,
+      backgroundColor: colors.surfaceSubtle,
+      borderWidth: 1,
+      borderColor: colors.border,
+      gap: spacing.sm,
+    },
+    statePill: {
+      paddingHorizontal: 10,
+      paddingVertical: 3,
+      borderRadius: radii.pill,
+      borderWidth: 1,
+    },
+    stateReserved: { backgroundColor: colors.accentSoft, borderColor: colors.accent },
+    stateUsed: { backgroundColor: colors.successSoft, borderColor: colors.success },
+    stateReleased: { backgroundColor: colors.surface, borderColor: colors.borderStrong },
+    statePillText: { fontSize: 12, fontWeight: "700", textTransform: "capitalize" },
+    stateReservedText: { color: colors.accentPressed },
+    stateUsedText: { color: colors.success },
+    stateReleasedText: { color: colors.textMuted },
+    statsWrap: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
+    statChip: {
+      minWidth: 88,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      borderRadius: radii.md,
+      backgroundColor: colors.surfaceSubtle,
+      borderWidth: 1,
+      borderColor: colors.border,
+      gap: 2,
+    },
+    statLabel: { fontSize: 11, fontWeight: "700", color: colors.textMuted },
+    statVal: {
+      fontSize: 16,
+      fontWeight: "800",
+      color: colors.text,
+      fontVariant: ["tabular-nums"],
+    },
+    aaBox: {
+      padding: spacing.md,
+      borderRadius: radii.md,
+      backgroundColor: colors.successSoft,
+      borderWidth: 1,
+      borderColor: colors.success,
+      gap: 4,
+    },
+    aaTitle: { fontSize: 13, fontWeight: "700", color: colors.success },
+    aaItem: { fontSize: 13, color: colors.text },
+  });

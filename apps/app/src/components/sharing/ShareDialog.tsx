@@ -14,7 +14,8 @@ import {
   visibilityCacheKey,
 } from "../../api/sharing";
 import { useOptionalBrewery } from "../../state/brewery";
-import { colors, radii, spacing } from "../../theme";
+import { useThemedStyles } from "../../state/theme";
+import { radii, spacing, type ThemeColors } from "../../theme";
 import { Banner, Button, Card, SegmentedControl, TextField } from "../ui";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -78,6 +79,7 @@ export function SharePanel({
   showTitle = false,
   customFetch,
 }: SharePanelProps) {
+  const styles = useThemedStyles(createStyles);
   const queryClient = useQueryClient();
   const breweryCtx = useOptionalBrewery();
   const allBreweries = breweriesProp ?? breweryCtx.breweries;
@@ -508,6 +510,7 @@ export function ShareDialog({
   breweries,
   customFetch,
 }: ShareDialogProps) {
+  const styles = useThemedStyles(createStyles);
   if (!open) return null;
 
   return (
@@ -563,147 +566,148 @@ export function ShareDialog({
   );
 }
 
-const styles = StyleSheet.create({
-  panelRoot: { gap: spacing.md },
-  section: { gap: spacing.sm },
-  title: { fontSize: 18, fontWeight: "700", color: colors.text },
-  subTitle: { fontSize: 15, fontWeight: "700", color: colors.text },
-  hintText: { fontSize: 12, lineHeight: 17, color: colors.textMuted },
-  checkboxRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.sm,
-    minHeight: 44,
-    padding: spacing.sm,
-    borderRadius: radii.md,
-    backgroundColor: colors.accentSoft,
-    borderWidth: 1,
-    borderColor: colors.accent,
-  },
-  checkbox: {
-    width: 22,
-    height: 22,
-    borderRadius: 4,
-    borderWidth: 2,
-    borderColor: colors.accentPressed,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: colors.surface,
-  },
-  checkboxChecked: {
-    backgroundColor: colors.accent,
-  },
-  checkmark: {
-    color: colors.accentText,
-    fontSize: 14,
-    fontWeight: "700",
-  },
-  checkboxLabel: {
-    flex: 1,
-    fontSize: 13,
-    lineHeight: 18,
-    color: colors.accentPressed,
-  },
-  sharesSection: {
-    gap: spacing.sm,
-    paddingTop: spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  shareList: { gap: spacing.xs },
-  shareRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    flexWrap: "wrap",
-    gap: spacing.xs,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 8,
-    borderRadius: radii.sm,
-    backgroundColor: colors.surfaceSubtle,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  shareMeta: { flex: 1, minWidth: 150, gap: 2 },
-  shareNameRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 6 },
-  shareName: { fontSize: 14, fontWeight: "600", color: colors.text },
-  kindBadge: {
-    paddingHorizontal: 7,
-    paddingVertical: 1,
-    borderRadius: radii.pill,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-  },
-  kindBadgeText: { fontSize: 11, fontWeight: "700", color: colors.textMuted },
-  shareLevel: { fontSize: 12, color: colors.textMuted },
-  shareRowActions: { flexDirection: "row", alignItems: "center", gap: spacing.xs },
-  emptyText: { fontSize: 13, color: colors.textMuted },
-  breweryPickerSection: { gap: spacing.sm },
-  breweryChips: { flexDirection: "row", flexWrap: "wrap", gap: spacing.xs },
-  breweryChip: {
-    minHeight: 38,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: radii.pill,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    backgroundColor: colors.surfaceSubtle,
-    justifyContent: "center",
-  },
-  breweryChipSelected: {
-    borderColor: colors.accent,
-    backgroundColor: colors.accentSoft,
-  },
-  breweryChipText: { fontSize: 13, fontWeight: "600", color: colors.textMuted },
-  breweryChipTextSelected: { color: colors.accentPressed, fontWeight: "700" },
-  modalOverlay: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: spacing.md,
-    zIndex: 9999,
-  },
-  modalBackdrop: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(28, 25, 23, 0.58)",
-  },
-  modalSheet: {
-    width: "100%",
-    maxWidth: 560,
-    maxHeight: "90%",
-    zIndex: 1,
-  },
-  modalScroll: {
-    flexGrow: 1,
-    justifyContent: "center",
-  },
-  modalCard: {
-    backgroundColor: colors.surface,
-    shadowColor: "#000",
-    shadowOpacity: 0.22,
-    shadowRadius: 16,
-    elevation: 8,
-  },
-  modalHeader: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    gap: spacing.sm,
-    paddingBottom: spacing.xs,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  modalTitleCol: { flex: 1, gap: 2 },
-  modalTypeLabel: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: colors.accentPressed,
-    textTransform: "uppercase",
-    letterSpacing: 0.6,
-  },
-});
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    panelRoot: { gap: spacing.md },
+    section: { gap: spacing.sm },
+    title: { fontSize: 18, fontWeight: "700", color: colors.text },
+    subTitle: { fontSize: 15, fontWeight: "700", color: colors.text },
+    hintText: { fontSize: 12, lineHeight: 17, color: colors.textMuted },
+    checkboxRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.sm,
+      minHeight: 44,
+      padding: spacing.sm,
+      borderRadius: radii.md,
+      backgroundColor: colors.accentSoft,
+      borderWidth: 1,
+      borderColor: colors.accent,
+    },
+    checkbox: {
+      width: 22,
+      height: 22,
+      borderRadius: 4,
+      borderWidth: 2,
+      borderColor: colors.accentPressed,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: colors.surface,
+    },
+    checkboxChecked: {
+      backgroundColor: colors.accent,
+    },
+    checkmark: {
+      color: colors.accentText,
+      fontSize: 14,
+      fontWeight: "700",
+    },
+    checkboxLabel: {
+      flex: 1,
+      fontSize: 13,
+      lineHeight: 18,
+      color: colors.accentPressed,
+    },
+    sharesSection: {
+      gap: spacing.sm,
+      paddingTop: spacing.sm,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+    },
+    shareList: { gap: spacing.xs },
+    shareRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      flexWrap: "wrap",
+      gap: spacing.xs,
+      paddingHorizontal: spacing.md,
+      paddingVertical: 8,
+      borderRadius: radii.sm,
+      backgroundColor: colors.surfaceSubtle,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    shareMeta: { flex: 1, minWidth: 150, gap: 2 },
+    shareNameRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 6 },
+    shareName: { fontSize: 14, fontWeight: "600", color: colors.text },
+    kindBadge: {
+      paddingHorizontal: 7,
+      paddingVertical: 1,
+      borderRadius: radii.pill,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.borderStrong,
+    },
+    kindBadgeText: { fontSize: 11, fontWeight: "700", color: colors.textMuted },
+    shareLevel: { fontSize: 12, color: colors.textMuted },
+    shareRowActions: { flexDirection: "row", alignItems: "center", gap: spacing.xs },
+    emptyText: { fontSize: 13, color: colors.textMuted },
+    breweryPickerSection: { gap: spacing.sm },
+    breweryChips: { flexDirection: "row", flexWrap: "wrap", gap: spacing.xs },
+    breweryChip: {
+      minHeight: 38,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: radii.pill,
+      borderWidth: 1,
+      borderColor: colors.borderStrong,
+      backgroundColor: colors.surfaceSubtle,
+      justifyContent: "center",
+    },
+    breweryChipSelected: {
+      borderColor: colors.accent,
+      backgroundColor: colors.accentSoft,
+    },
+    breweryChipText: { fontSize: 13, fontWeight: "600", color: colors.textMuted },
+    breweryChipTextSelected: { color: colors.accentPressed, fontWeight: "700" },
+    modalOverlay: {
+      flex: 1,
+      justifyContent: "center",
+      alignItems: "center",
+      padding: spacing.md,
+      zIndex: 9999,
+    },
+    modalBackdrop: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: colors.overlay,
+    },
+    modalSheet: {
+      width: "100%",
+      maxWidth: 560,
+      maxHeight: "90%",
+      zIndex: 1,
+    },
+    modalScroll: {
+      flexGrow: 1,
+      justifyContent: "center",
+    },
+    modalCard: {
+      backgroundColor: colors.surface,
+      shadowColor: colors.shadow,
+      shadowOpacity: 0.22,
+      shadowRadius: 16,
+      elevation: 8,
+    },
+    modalHeader: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      justifyContent: "space-between",
+      gap: spacing.sm,
+      paddingBottom: spacing.xs,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    modalTitleCol: { flex: 1, gap: 2 },
+    modalTypeLabel: {
+      fontSize: 11,
+      fontWeight: "700",
+      color: colors.accentPressed,
+      textTransform: "uppercase",
+      letterSpacing: 0.6,
+    },
+  });

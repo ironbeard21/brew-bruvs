@@ -11,8 +11,9 @@ import {
   useRevokeApiToken,
   useUpdateMe,
 } from "../../api/auth";
+import { useThemedStyles } from "../../state/theme";
 import { type UnitSystem, useUnits } from "../../state/units";
-import { colors, DESKTOP_BREAKPOINT, radii, spacing } from "../../theme";
+import { DESKTOP_BREAKPOINT, radii, spacing, type ThemeColors } from "../../theme";
 import { formatDateTime } from "../batches/batchFlows";
 import { Banner, Button, Card, SegmentedControl, TextField } from "../ui";
 
@@ -53,6 +54,7 @@ async function copyOrShare(label: string, value: string): Promise<string> {
 }
 
 export function SettingsPanel({ serverUrl, authToken, user, customFetch }: SettingsPanelProps) {
+  const styles = useThemedStyles(createStyles);
   const { width } = useWindowDimensions();
   const isDesktop = width >= DESKTOP_BREAKPOINT;
   const { unitSystem, setUnitSystem } = useUnits();
@@ -375,70 +377,71 @@ export function SettingsPanel({ serverUrl, authToken, user, customFetch }: Setti
   );
 }
 
-const styles = StyleSheet.create({
-  root: { gap: spacing.lg },
-  row: { gap: spacing.lg },
-  rowDesktop: { flexDirection: "row", alignItems: "flex-start" },
-  column: { flex: 1 },
-  sectionTitle: { fontSize: 18, fontWeight: "700", color: colors.text },
-  subHeading: { fontSize: 15, fontWeight: "700", color: colors.text, marginTop: spacing.xs },
-  muted: { fontSize: 13, lineHeight: 19, color: colors.textMuted },
-  mutedSmall: { fontSize: 12, color: colors.textMuted },
-  fieldGroup: { gap: spacing.xs },
-  fieldLabel: { fontSize: 14, fontWeight: "600", color: colors.text },
-  tokenFormRow: { gap: spacing.md },
-  tokenFormRowDesktop: { flexDirection: "row", alignItems: "flex-end" },
-  tokenNameCol: { flex: 2 },
-  tokenScopeCol: { flex: 1 },
-  secretBox: {
-    padding: spacing.md,
-    borderRadius: radii.md,
-    backgroundColor: colors.accentSoft,
-    borderWidth: 1,
-    borderColor: colors.accent,
-    gap: spacing.sm,
-  },
-  secretTitle: { fontSize: 13, fontWeight: "700", color: colors.accentPressed },
-  secretValue: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: colors.text,
-    padding: spacing.sm,
-    borderRadius: radii.sm,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-  },
-  secretActions: { flexDirection: "row", gap: spacing.xs, flexWrap: "wrap" },
-  list: { gap: spacing.sm },
-  tokenRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    flexWrap: "wrap",
-    gap: spacing.sm,
-    padding: spacing.md,
-    borderRadius: radii.md,
-    backgroundColor: colors.surfaceSubtle,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  tokenMeta: { flex: 1, minWidth: 180, gap: 4 },
-  badgeRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 6 },
-  tokenTitle: { fontSize: 15, fontWeight: "700", color: colors.text },
-  kindBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: radii.pill,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-  },
-  kindBadgeText: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: colors.textMuted,
-    textTransform: "uppercase",
-  },
-  scopeText: { fontSize: 12, fontWeight: "600", color: colors.accentPressed },
-});
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    root: { gap: spacing.lg },
+    row: { gap: spacing.lg },
+    rowDesktop: { flexDirection: "row", alignItems: "flex-start" },
+    column: { flex: 1 },
+    sectionTitle: { fontSize: 18, fontWeight: "700", color: colors.text },
+    subHeading: { fontSize: 15, fontWeight: "700", color: colors.text, marginTop: spacing.xs },
+    muted: { fontSize: 13, lineHeight: 19, color: colors.textMuted },
+    mutedSmall: { fontSize: 12, color: colors.textMuted },
+    fieldGroup: { gap: spacing.xs },
+    fieldLabel: { fontSize: 14, fontWeight: "600", color: colors.text },
+    tokenFormRow: { gap: spacing.md },
+    tokenFormRowDesktop: { flexDirection: "row", alignItems: "flex-end" },
+    tokenNameCol: { flex: 2 },
+    tokenScopeCol: { flex: 1 },
+    secretBox: {
+      padding: spacing.md,
+      borderRadius: radii.md,
+      backgroundColor: colors.accentSoft,
+      borderWidth: 1,
+      borderColor: colors.accent,
+      gap: spacing.sm,
+    },
+    secretTitle: { fontSize: 13, fontWeight: "700", color: colors.accentPressed },
+    secretValue: {
+      fontSize: 13,
+      fontWeight: "600",
+      color: colors.text,
+      padding: spacing.sm,
+      borderRadius: radii.sm,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.borderStrong,
+    },
+    secretActions: { flexDirection: "row", gap: spacing.xs, flexWrap: "wrap" },
+    list: { gap: spacing.sm },
+    tokenRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      flexWrap: "wrap",
+      gap: spacing.sm,
+      padding: spacing.md,
+      borderRadius: radii.md,
+      backgroundColor: colors.surfaceSubtle,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    tokenMeta: { flex: 1, minWidth: 180, gap: 4 },
+    badgeRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 6 },
+    tokenTitle: { fontSize: 15, fontWeight: "700", color: colors.text },
+    kindBadge: {
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      borderRadius: radii.pill,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.borderStrong,
+    },
+    kindBadgeText: {
+      fontSize: 11,
+      fontWeight: "700",
+      color: colors.textMuted,
+      textTransform: "uppercase",
+    },
+    scopeText: { fontSize: 12, fontWeight: "600", color: colors.accentPressed },
+  });

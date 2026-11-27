@@ -4,7 +4,8 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useCurrentUser } from "../../api/auth";
 import { useCreateBatchNote, useMyBatches } from "../../api/batches";
 import { useOptionalServer } from "../../state/server";
-import { colors, radii, spacing } from "../../theme";
+import { useThemedStyles } from "../../state/theme";
+import { radii, spacing, type ThemeColors } from "../../theme";
 import { Banner, Button } from "../ui";
 
 export interface FormulaDisclosureProps {
@@ -14,6 +15,7 @@ export interface FormulaDisclosureProps {
 }
 
 export function FormulaDisclosure({ title = "Formula", formula, notes }: FormulaDisclosureProps) {
+  const styles = useThemedStyles(createStyles);
   const [expanded, setExpanded] = useState(false);
 
   return (
@@ -78,6 +80,7 @@ function SaveToBatchNoteConnected({
   noteBody,
   customFetch,
 }: SaveToBatchNoteConnectedProps) {
+  const styles = useThemedStyles(createStyles);
   const currentUser = useCurrentUser(serverUrl, authToken, customFetch);
   const signedIn = Boolean(currentUser.data);
 
@@ -207,101 +210,102 @@ function SaveToBatchNoteConnected({
   );
 }
 
-const styles = StyleSheet.create({
-  formulaContainer: {
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surfaceSubtle,
-    overflow: "hidden",
-  },
-  formulaHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    minHeight: 40,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 8,
-  },
-  formulaHeaderText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: colors.accentPressed,
-  },
-  formulaChevron: {
-    fontSize: 11,
-    color: colors.accentPressed,
-  },
-  formulaBody: {
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.md,
-    paddingTop: spacing.xs,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    gap: spacing.xs,
-  },
-  formulaText: {
-    fontSize: 13,
-    lineHeight: 19,
-    color: colors.text,
-    fontWeight: "500",
-  },
-  formulaNotes: {
-    fontSize: 12,
-    lineHeight: 18,
-    color: colors.textMuted,
-  },
-  saveContainer: {
-    gap: spacing.sm,
-    paddingTop: spacing.xs,
-  },
-  savePanel: {
-    gap: spacing.sm,
-    padding: spacing.md,
-    borderRadius: radii.md,
-    backgroundColor: colors.surfaceSubtle,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  savePreviewLabel: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: colors.textMuted,
-    textTransform: "uppercase",
-    letterSpacing: 0.4,
-  },
-  savePreviewText: {
-    fontSize: 13,
-    lineHeight: 19,
-    color: colors.text,
-  },
-  batchPicker: {
-    gap: spacing.xs,
-  },
-  batchOption: {
-    minHeight: 44,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 8,
-    borderRadius: radii.sm,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    justifyContent: "center",
-  },
-  batchOptionSelected: {
-    borderColor: colors.accent,
-    backgroundColor: colors.accentSoft,
-  },
-  batchName: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: colors.text,
-  },
-  batchNameSelected: {
-    color: colors.accentPressed,
-  },
-  batchMeta: {
-    fontSize: 12,
-    color: colors.textMuted,
-  },
-});
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    formulaContainer: {
+      borderRadius: radii.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surfaceSubtle,
+      overflow: "hidden",
+    },
+    formulaHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      minHeight: 40,
+      paddingHorizontal: spacing.md,
+      paddingVertical: 8,
+    },
+    formulaHeaderText: {
+      fontSize: 13,
+      fontWeight: "600",
+      color: colors.accentPressed,
+    },
+    formulaChevron: {
+      fontSize: 11,
+      color: colors.accentPressed,
+    },
+    formulaBody: {
+      paddingHorizontal: spacing.md,
+      paddingBottom: spacing.md,
+      paddingTop: spacing.xs,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      gap: spacing.xs,
+    },
+    formulaText: {
+      fontSize: 13,
+      lineHeight: 19,
+      color: colors.text,
+      fontWeight: "500",
+    },
+    formulaNotes: {
+      fontSize: 12,
+      lineHeight: 18,
+      color: colors.textMuted,
+    },
+    saveContainer: {
+      gap: spacing.sm,
+      paddingTop: spacing.xs,
+    },
+    savePanel: {
+      gap: spacing.sm,
+      padding: spacing.md,
+      borderRadius: radii.md,
+      backgroundColor: colors.surfaceSubtle,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    savePreviewLabel: {
+      fontSize: 12,
+      fontWeight: "700",
+      color: colors.textMuted,
+      textTransform: "uppercase",
+      letterSpacing: 0.4,
+    },
+    savePreviewText: {
+      fontSize: 13,
+      lineHeight: 19,
+      color: colors.text,
+    },
+    batchPicker: {
+      gap: spacing.xs,
+    },
+    batchOption: {
+      minHeight: 44,
+      paddingHorizontal: spacing.md,
+      paddingVertical: 8,
+      borderRadius: radii.sm,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      justifyContent: "center",
+    },
+    batchOptionSelected: {
+      borderColor: colors.accent,
+      backgroundColor: colors.accentSoft,
+    },
+    batchName: {
+      fontSize: 14,
+      fontWeight: "600",
+      color: colors.text,
+    },
+    batchNameSelected: {
+      color: colors.accentPressed,
+    },
+    batchMeta: {
+      fontSize: 12,
+      color: colors.textMuted,
+    },
+  });
