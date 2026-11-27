@@ -40,7 +40,8 @@ export function AppShell({ children, title, subtitle }: AppShellProps) {
   const onInventory = pathname === "/inventory" || pathname.startsWith("/inventory/");
   const onEquipment = pathname === "/equipment" || pathname.startsWith("/equipment/");
   const onBreweries = pathname === "/breweries" || pathname.startsWith("/breweries/");
-  const onSettings = pathname === "/settings" || pathname === "/admin";
+  const onSettings =
+    pathname === "/settings" || pathname === "/admin" || pathname === "/integrations";
   const onAbout = pathname === "/about";
   const onServer = pathname === "/connect" || pathname === "/login";
 

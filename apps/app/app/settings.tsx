@@ -81,6 +81,12 @@ export default function SettingsScreen() {
           onPress={() => {}}
           testID="subnav-settings"
         />
+        <Button
+          label="Integrations"
+          variant="secondary"
+          onPress={() => router.push("/integrations")}
+          testID="subnav-integrations"
+        />
         {user.isAdmin ? (
           <Button
             label="Server Admin"

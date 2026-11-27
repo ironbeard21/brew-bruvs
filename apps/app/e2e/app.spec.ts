@@ -513,4 +513,89 @@ test.describe("Brew-Bruvs app shell", () => {
     await expect(page).toHaveURL(/\/privacy$/);
     await expect(page.getByTestId("privacy-summary-box")).toContainText("self-hosted server");
   });
+
+  test("integrations: connect hydrometer device, receive reading, and check webhooks & Brewfather", async ({
+    page,
+  }) => {
+    test.setTimeout(45_000);
+    await page.goto("/connect");
+    await page.getByTestId("connect-submit-button").click();
+    await expect(page).toHaveURL(/\/login$/);
+
+    await page.getByTestId("auth-email-input").fill("admin@brew.test");
+    await page.getByTestId("auth-password-input").fill("hop-secret-123");
+    await page.getByTestId("auth-login-submit").click();
+    await expect(page.getByTestId("signed-in-name")).toHaveText("Head Brewer");
+
+    // Open Integrations from Settings sub-nav
+    await page.getByTestId("nav-settings").click();
+    await expect(page).toHaveURL(/\/settings$/);
+    await page.getByTestId("subnav-integrations").click();
+    await expect(page).toHaveURL(/\/integrations$/);
+    await expect(page.getByTestId("devices-panel")).toBeVisible();
+
+    // Add an iSpindel linked to the first editable batch
+    await page.getByTestId("device-name-input").fill("E2E iSpindel");
+    await page.locator('[data-testid^="device-batch-option-"]').first().click();
+    await page.getByTestId("device-create-button").click();
+
+    await expect(page.getByTestId("issued-device-secret")).toBeVisible();
+    const issuedUrl = (await page.getByTestId("issued-device-url").textContent())?.trim() ?? "";
+    const initialToken =
+      (await page.getByTestId("issued-device-token").textContent())?.trim() ?? "";
+    expect(issuedUrl).toContain("/api/device-readings?token=");
+    expect(initialToken).toMatch(/^bb_/);
+
+    // Send a real device reading to the issued URL and confirm it arrives on the device card
+    const ingestRes = await page.request.post(issuedUrl, {
+      data: {
+        name: "E2E iSpindel",
+        gravity: 1.022,
+        "gravity-unit": "SG",
+        temperature: 20.0,
+        "temp-units": "C",
+      },
+    });
+    expect(ingestRes.ok()).toBe(true);
+
+    await page.getByTestId("devices-refresh-button").click();
+    await expect(page.locator('[data-testid^="device-last-reading-"]').first()).toContainText(
+      "1.022 SG",
+    );
+    await expect(page.locator('[data-testid^="device-last-reading-"]').first()).toContainText(
+      "68.0 °F",
+    );
+
+    // Rotate token and revoke device cleanly
+    await page.locator('[data-testid^="device-rotate-"]').first().click();
+    await expect(page.getByTestId("issued-device-token")).not.toHaveText(initialToken);
+
+    await page.locator('[data-testid^="device-revoke-"]').first().click();
+    await page.locator('[data-testid^="device-confirm-revoke-"]').first().click();
+    await expect(page.getByTestId("device-notice")).toContainText("Device revoked");
+
+    // Webhooks tab: private addresses are blocked
+    await page.getByRole("tab", { name: "Outgoing webhooks" }).click();
+    await expect(page.getByTestId("webhooks-panel")).toBeVisible();
+    await page.getByTestId("webhook-name-input").fill("Private Blocked Hook");
+    await page.getByTestId("webhook-url-input").fill("http://127.0.0.1/blocked");
+    await page.getByTestId("webhook-create-button").click();
+    await expect(page.getByTestId("webhook-error")).toContainText(/public/i);
+
+    // Brewfather tab: renders privacy notice; exercise full draft review against local mock server
+    await page.getByRole("tab", { name: "Brewfather import" }).click();
+    await expect(page.getByTestId("brewfather-key-privacy-banner")).toContainText("never stored");
+
+    if (!process.env.PLAYWRIGHT_BASE_URL) {
+      await page.getByTestId("brewfather-user-id-input").fill("demo-bf-user");
+      await page.getByTestId("brewfather-api-key-input").fill("demo-bf-key");
+      await page.getByTestId("brewfather-preview-button").click();
+      await expect(page.getByTestId("brewfather-review-screen")).toBeVisible();
+      await expect(page.getByTestId("brewfather-recipe-credit-0")).toContainText("Robin Brewer");
+      await page.getByTestId("brewfather-save-button").click();
+      await expect(page.getByTestId("brewfather-complete-banner")).toContainText(
+        "Imported 1 recipe, 1 batch, and 2 inventory items",
+      );
+    }
+  });
 });

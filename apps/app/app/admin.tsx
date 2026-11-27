@@ -58,6 +58,12 @@ export default function AdminScreen() {
           onPress={() => router.push("/settings")}
           testID="subnav-settings"
         />
+        <Button
+          label="Integrations"
+          variant="secondary"
+          onPress={() => router.push("/integrations")}
+          testID="subnav-integrations"
+        />
         <Button label="Server Admin" variant="primary" onPress={() => {}} testID="subnav-admin" />
         <Button
           label="About & Licenses"
