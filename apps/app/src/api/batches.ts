@@ -333,6 +333,7 @@ export function useCreateBatch(
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["batches", serverUrl] }),
         queryClient.invalidateQueries({ queryKey: ["my-batches", serverUrl] }),
+        queryClient.invalidateQueries({ queryKey: ["shopping-list", serverUrl] }),
       ]);
     },
   });
