@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { schema } from "@brew-bruvs/db";
 import { z } from "@hono/zod-openapi";
-import { EquipmentProfile, EquipmentProfileInput, Visibility } from "./recipes.ts";
+import { AllowedActions, EquipmentProfile, EquipmentProfileInput, Visibility } from "./recipes.ts";
 
 const dimensions = {
   batchSizeL: true,
@@ -57,6 +57,10 @@ export const EquipmentItem = EquipmentProfile.pick(dimensions)
     updatedAt: z.string(),
   })
   .openapi("EquipmentItem");
+
+export const EquipmentItemDetail = EquipmentItem.extend({ can: AllowedActions }).openapi(
+  "EquipmentItemDetail",
+);
 
 export const EquipmentItemPage = z
   .object({ items: z.array(EquipmentItem), nextOffset: z.int().nonnegative().nullable() })

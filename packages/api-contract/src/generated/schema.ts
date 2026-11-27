@@ -2935,6 +2935,7 @@ export interface components {
         } | null;
         RecipeDetail: components["schemas"]["Recipe"] & {
             version: components["schemas"]["RecipeVersion"];
+            can: components["schemas"]["AllowedActions"];
         };
         RecipeVersion: {
             /** Format: uuid */
@@ -2976,6 +2977,13 @@ export interface components {
             /** @enum {string} */
             colorEbc: "below" | "inside" | "above" | "unknown";
         } | null;
+        /** @description What the caller may do with this object: owner, brewery role and shares all count. There is no read flag: getting the object means you can read it. */
+        AllowedActions: {
+            contribute: boolean;
+            edit: boolean;
+            delete: boolean;
+            share: boolean;
+        };
         CreateRecipe: components["schemas"]["RecipeVersionInput"] & {
             /** @enum {string} */
             beverage: "beer" | "mead" | "wine" | "cider";
@@ -3126,6 +3134,9 @@ export interface components {
             efficiencyPct?: number | null;
             fermenterLossL?: number | null;
         };
+        EquipmentProfileDetail: components["schemas"]["EquipmentProfile"] & {
+            can: components["schemas"]["AllowedActions"];
+        };
         EquipmentProfilePatch: {
             name?: string;
             /** @description The catalog equipment row this profile started from */
@@ -3208,6 +3219,7 @@ export interface components {
             }[];
             /** @description Where the batch can move next: any later status, or one step back */
             allowedStatuses: components["schemas"]["BatchStatus"][];
+            can: components["schemas"]["AllowedActions"];
         };
         CreateBatch: {
             /** Format: uuid */
@@ -3411,6 +3423,9 @@ export interface components {
             mouthfeel?: number | null;
             overall?: number | null;
         };
+        NoteDetail: components["schemas"]["Note"] & {
+            can: components["schemas"]["AllowedActions"];
+        };
         /** @description Scores merge into the existing ones; null clears one */
         NotePatch: {
             body?: string;
@@ -3470,6 +3485,9 @@ export interface components {
             catalogId?: string;
             /** Format: uuid */
             breweryId?: string;
+        };
+        EquipmentItemDetail: components["schemas"]["EquipmentItem"] & {
+            can: components["schemas"]["AllowedActions"];
         };
         EquipmentItemPatch: {
             /** @description Volume into the fermenter */
@@ -3670,6 +3688,9 @@ export interface components {
             }[];
             /** @description Items below their threshold */
             lowStock: components["schemas"]["InventoryItem"][];
+        };
+        InventoryItemDetail: components["schemas"]["InventoryItem"] & {
+            can: components["schemas"]["AllowedActions"];
         };
         InventoryItemPatch: {
             name?: string;
@@ -4774,7 +4795,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["EquipmentProfile"];
+                    "application/json": components["schemas"]["EquipmentProfileDetail"];
                 };
             };
             /** @description Error */
@@ -5996,7 +6017,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Note"];
+                    "application/json": components["schemas"]["NoteDetail"];
                 };
             };
             /** @description Error */
@@ -6265,7 +6286,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["EquipmentItem"];
+                    "application/json": components["schemas"]["EquipmentItemDetail"];
                 };
             };
             /** @description Error */
@@ -7735,7 +7756,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["InventoryItem"];
+                    "application/json": components["schemas"]["InventoryItemDetail"];
                 };
             };
             /** @description Error */

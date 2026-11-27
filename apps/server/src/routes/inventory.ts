@@ -6,6 +6,7 @@ import type { AppEnv } from "../auth/middleware.ts";
 import {
   CreateInventoryItem,
   InventoryItem,
+  InventoryItemDetail,
   InventoryItemPatch,
   InventoryPage,
   InventoryScope,
@@ -79,7 +80,7 @@ const routes = {
     operationId: "getInventoryItem",
     summary: "One inventory item",
     request: { params: id },
-    responses: { 200: json(InventoryItem, "Item"), ...errorResponses(400, 404) },
+    responses: { 200: json(InventoryItemDetail, "Item"), ...errorResponses(400, 404) },
   }),
   update: createRoute({
     ...inventory,

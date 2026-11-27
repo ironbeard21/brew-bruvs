@@ -22,7 +22,10 @@ describe.skipIf(!TEST_DATABASE_URL)("equipment API on PostgreSQL", () => {
       expect((await call(app, "GET", item, { token: annToken })).status).toBe(404);
       const owned = await call(app, "GET", item, { token: adminToken });
       expect(owned.status).toBe(200);
-      expect(owned.json).toEqual(created.json);
+      expect(owned.json).toEqual({
+        ...created.json,
+        can: { contribute: true, edit: true, delete: true, share: true },
+      });
 
       await sql.query(
         "INSERT INTO shares (resource_type, resource_id, to_user_id, level) VALUES ('equipment_item', $1, $2, 'read')",
@@ -30,7 +33,10 @@ describe.skipIf(!TEST_DATABASE_URL)("equipment API on PostgreSQL", () => {
       );
       const shared = await call(app, "GET", item, { token: annToken });
       expect(shared.status).toBe(200);
-      expect(shared.json).toEqual(owned.json);
+      expect(shared.json).toEqual({
+        ...created.json,
+        can: { contribute: false, edit: false, delete: false, share: false },
+      });
       expect((await call(app, "DELETE", item, { token: annToken })).status).toBe(403);
     });
   }, 15_000);

@@ -17,6 +17,7 @@ import type {
 import { ApiError, pgCode } from "../errors.ts";
 import type { Action, User } from "../permissions.ts";
 import {
+  allowedActions,
   authorizeRow,
   newId,
   newOwner,
@@ -170,9 +171,13 @@ export function createRecipeService(
     return row;
   }
 
-  async function detail(tx: Tx, recipe: RecipeRow & { latestVersion: number }) {
+  async function detail(tx: Tx, user: User | null, recipe: RecipeRow & { latestVersion: number }) {
     const version = await viewVersion(tx, await versionRow(tx, recipe.id, recipe.latestVersion));
-    return { ...viewRecipe(recipe), version };
+    return {
+      ...viewRecipe(recipe),
+      version,
+      can: await allowedActions(tx, user, "recipe", recipe),
+    };
   }
 
   async function insertRecipe(
@@ -191,7 +196,7 @@ export function createRecipeService(
       .returning();
     const row = { ...(recipe as RecipeRow), latestVersion: 1 };
     await insertVersion(tx, row, 1, version, user.id);
-    return detail(tx, row);
+    return detail(tx, user, row);
   }
 
   return {
@@ -253,7 +258,9 @@ export function createRecipeService(
     },
 
     async get(viewer: User | null, id: string) {
-      return db.transaction(async (tx) => detail(tx, await authorize(tx, viewer, "read", id)));
+      return db.transaction(async (tx) =>
+        detail(tx, viewer, await authorize(tx, viewer, "read", id)),
+      );
     },
 
     async versions(viewer: User | null, id: string) {

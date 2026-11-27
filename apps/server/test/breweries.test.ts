@@ -711,4 +711,93 @@ describe.skipIf(!TEST_DATABASE_URL)("breweries API on PostgreSQL", () => {
       expect(item.json.heldByUserId).toBe(from.id);
     });
   });
+
+  it("tells each role what it can do on detail responses", async () => {
+    await withBrewery(async ({ app, brewery, people }) => {
+      const post = async (path: string, body: object, token = people.owner.token) => {
+        const r = await call(app, "POST", path, { token, body: { ...body, breweryId: brewery } });
+        expect(r.status, `${path} ${JSON.stringify(r.json)}`).toBe(201);
+        return r.json;
+      };
+      const recipe = await post("/api/recipes", beer);
+      const things = {
+        recipes: recipe.id as string,
+        batches: (await post("/api/batches", { recipeId: recipe.id })).id as string,
+        notes: (await post("/api/notes", { body: "Smells good" })).id as string,
+        inventory: (await post("/api/inventory", { name: "Oats", quantity: 1, quantityUnit: "kg" }))
+          .id as string,
+        equipment: (await post("/api/equipment", { name: "Kettle" })).id as string,
+        "equipment-profiles": (await post("/api/equipment-profiles", { name: "Kettle" }))
+          .id as string,
+      };
+      const expected = {
+        owner: { contribute: true, edit: true, delete: true, share: true },
+        brewer: { contribute: true, edit: true, delete: false, share: false },
+        member: { contribute: true, edit: false, delete: false, share: false },
+        viewer: { contribute: false, edit: false, delete: false, share: false },
+      };
+      for (const [segment, id] of Object.entries(things)) {
+        for (const role of ROLES) {
+          const r = await call(app, "GET", `/api/${segment}/${id}`, { token: people[role].token });
+          expect([r.status, r.json.can], `${segment} as ${role}`).toEqual([200, expected[role]]);
+        }
+        const outsider = await call(app, "GET", `/api/${segment}/${id}`, {
+          token: people.outsider.token,
+        });
+        expect(outsider.status, segment).toBe(404);
+      }
+
+      // Responses that seed the app's detail cache carry it too, for whoever made the call.
+      const byBrewer = await post("/api/recipes", beer, people.brewer.token);
+      expect(byBrewer.can).toEqual(expected.brewer);
+      const batch = await post("/api/batches", { recipeId: byBrewer.id }, people.brewer.token);
+      expect(batch.can).toEqual(expected.brewer);
+      const moved = await call(app, "POST", `/api/batches/${batch.id}/status`, {
+        token: people.brewer.token,
+        body: { status: "fermenting" },
+      });
+      expect([moved.status, (moved.json.batch as Json)?.can]).toEqual([200, expected.brewer]);
+      const fork = await call(app, "POST", `/api/recipes/${byBrewer.id}/fork`, {
+        token: people.member.token,
+        body: {},
+      });
+      expect([fork.status, fork.json.can]).toEqual([
+        201,
+        { contribute: true, edit: true, delete: true, share: true },
+      ]);
+    });
+  });
+
+  it("counts shares and gives anonymous visitors no actions", async () => {
+    await withBrewery(async ({ app, people }) => {
+      const owner = people.owner.token;
+      const outsider = people.outsider.token;
+      const recipe = await call(app, "POST", "/api/recipes", { token: owner, body: beer });
+      const path = `/api/recipes/${recipe.json.id}`;
+      const none = { contribute: false, edit: false, delete: false, share: false };
+
+      const shared = await call(app, "POST", `${path}/shares`, {
+        token: owner,
+        body: { email: people.outsider.email, level: "read" },
+      });
+      expect(shared.status).toBe(201);
+      expect((await call(app, "GET", path, { token: outsider })).json.can).toEqual(none);
+
+      await call(app, "DELETE", `${path}/shares/${shared.json.id}`, { token: owner });
+      await call(app, "POST", `${path}/shares`, {
+        token: owner,
+        body: { email: people.outsider.email, level: "edit" },
+      });
+      expect((await call(app, "GET", path, { token: outsider })).json.can).toEqual({
+        contribute: true,
+        edit: true,
+        delete: false,
+        share: false,
+      });
+
+      await call(app, "PATCH", path, { token: owner, body: { visibility: "public" } });
+      const anonymous = await call(app, "GET", path);
+      expect([anonymous.status, anonymous.json.can]).toEqual([200, none]);
+    });
+  });
 });

@@ -123,6 +123,7 @@ const SAMPLE_RECIPE: RecipeDetail = {
   latestVersion: 1,
   createdAt: "2026-11-01T12:00:00Z",
   updatedAt: "2026-11-01T12:00:00Z",
+  can: { contribute: true, edit: true, delete: true, share: true },
   version: {
     id: "44444444-4444-7444-8444-444444444444",
     version: 1,

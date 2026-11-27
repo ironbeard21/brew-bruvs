@@ -4,7 +4,16 @@ import { and, eq } from "drizzle-orm";
 import type { EquipmentItemInput, EquipmentItemPatch } from "../contracts/equipment-items.ts";
 import { ApiError } from "../errors.ts";
 import type { Action, User } from "../permissions.ts";
-import { authorizeRow, denied, newId, ownerOf, readableBy, signedIn, type Tx } from "./access.ts";
+import {
+  allowedActions,
+  authorizeRow,
+  denied,
+  newId,
+  ownerOf,
+  readableBy,
+  signedIn,
+  type Tx,
+} from "./access.ts";
 
 const { activityEvents, equipment, equipmentItems, memberships, shares } = schema;
 const shareableType = "equipment_item";
@@ -148,7 +157,9 @@ export function createEquipmentItemService(db: Db, { baseUrl }: { baseUrl: strin
     },
 
     async get(viewer: User | null, id: string) {
-      return view(await authorizeItem(db, signedIn(viewer), "read", id));
+      const user = signedIn(viewer);
+      const item = await authorizeItem(db, user, "read", id);
+      return { ...view(item), can: await allowedActions(db, user, "equipment_item", item) };
     },
 
     async update(viewer: User | null, id: string, patch: EquipmentItemPatch) {

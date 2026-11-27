@@ -5,7 +5,7 @@
 import { schema } from "@brew-bruvs/db";
 import { z } from "@hono/zod-openapi";
 import { InventoryChange } from "./inventory.ts";
-import { Beverage, Visibility } from "./recipes.ts";
+import { AllowedActions, Beverage, Visibility } from "./recipes.ts";
 
 const { TASTING_SCORE_MAX } = schema;
 
@@ -79,6 +79,7 @@ export const BatchDetail = Batch.extend({
   allowedStatuses: z.array(BatchStatus).openapi({
     description: "Where the batch can move next: any later status, or one step back",
   }),
+  can: AllowedActions,
 }).openapi("BatchDetail");
 
 export const BatchPage = z
@@ -252,6 +253,8 @@ export const Note = z
     updatedAt: z.string(),
   })
   .openapi("Note");
+
+export const NoteDetail = Note.extend({ can: AllowedActions }).openapi("NoteDetail");
 
 export const NotePage = z
   .object({ items: z.array(Note), nextOffset: z.int().nullable() })

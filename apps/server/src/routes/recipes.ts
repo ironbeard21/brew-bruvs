@@ -8,6 +8,7 @@ import {
   CreateEquipmentProfile,
   CreateRecipe,
   EquipmentProfile,
+  EquipmentProfileDetail,
   EquipmentProfilePatch,
   ForkInput,
   Recipe,
@@ -198,7 +199,7 @@ const routes = {
     operationId: "getEquipmentProfile",
     summary: "One equipment profile",
     request: { params: id },
-    responses: { 200: json(EquipmentProfile, "Profile"), ...errorResponses(400, 404) },
+    responses: { 200: json(EquipmentProfileDetail, "Profile"), ...errorResponses(400, 404) },
   }),
   updateProfile: createRoute({
     ...profile,

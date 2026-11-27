@@ -37,22 +37,17 @@ export function denied(user: User | null, action: Action, resource: Resource, wh
   return null;
 }
 
-/** Checks `action` on a loaded row with its shares; throws 404 or 403. */
-export async function authorizeRow(
-  tx: Tx,
-  user: User | null,
-  action: Action,
-  type: ShareableType,
-  row: { id: string; ownerUserId: string | null; ownerBreweryId: string | null } & {
-    visibility: Resource["visibility"];
-  },
-  what: string,
-) {
+type OwnedRow = { id: string; ownerUserId: string | null; ownerBreweryId: string | null } & {
+  visibility: Resource["visibility"];
+};
+
+/** A loaded row as can() sees it, with its shares. */
+async function resourceOf(tx: Tx, type: ShareableType, row: OwnedRow): Promise<Resource> {
   const grants = await tx
     .select()
     .from(shares)
     .where(and(eq(shares.resourceType, type), eq(shares.resourceId, row.id)));
-  const resource: Resource = {
+  return {
     owner: ownerOf(row),
     visibility: row.visibility,
     shares: grants.map((s) => ({
@@ -62,8 +57,35 @@ export async function authorizeRow(
       level: s.level,
     })),
   };
-  const err = denied(user, action, resource, what);
+}
+
+/** Checks `action` on a loaded row with its shares; throws 404 or 403. */
+export async function authorizeRow(
+  tx: Tx,
+  user: User | null,
+  action: Action,
+  type: ShareableType,
+  row: OwnedRow,
+  what: string,
+) {
+  const err = denied(user, action, await resourceOf(tx, type, row), what);
   if (err) throw err;
+}
+
+/** What `user` may do with a row they can read, for detail responses (`can`). */
+export async function allowedActions(
+  tx: Tx,
+  user: User | null,
+  type: ShareableType,
+  row: OwnedRow,
+) {
+  const resource = await resourceOf(tx, type, row);
+  return {
+    contribute: can(user, "contribute", resource),
+    edit: can(user, "edit", resource),
+    delete: can(user, "delete", resource),
+    share: can(user, "share", resource),
+  };
 }
 
 /**

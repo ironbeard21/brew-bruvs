@@ -4,6 +4,7 @@ import { type AppEnv, requireSession } from "../auth/middleware.ts";
 import {
   EquipmentHolderInput,
   EquipmentItem,
+  EquipmentItemDetail,
   EquipmentItemInput,
   EquipmentItemPage,
   EquipmentItemPatch,
@@ -56,7 +57,10 @@ const routes = {
     operationId: "getEquipmentItem",
     summary: "Read an equipment item",
     request: { params },
-    responses: { 200: json(EquipmentItem, "Equipment item"), ...errorResponses(400, 401, 404) },
+    responses: {
+      200: json(EquipmentItemDetail, "Equipment item"),
+      ...errorResponses(400, 401, 404),
+    },
   }),
   patch: createRoute({
     ...common,
