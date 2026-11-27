@@ -45,136 +45,136 @@ Each becomes one GitHub issue using the Task template. Every task ends with `pnp
 
 Lead Claude · Review Codex · Depends: P1-16 · Contract change
 
-- [ ] Brewery roles become Owner, Brewer, Member, Viewer (Decision 1). Breweries get a description
-- [ ] Inventory items add lot, location, alpha acid (hops), purchased on, a low-stock threshold, and a tradeable flag and quantity (unused until swaps, Phase 4)
-- [ ] `inventory_reservations`: batch, inventory item, quantity, state (reserved, used, released)
-- [ ] Equipment items add type, condition, and held by (a user)
-- [ ] `integrations`: owner, kind (ispindel, tilt, rapt, webhook_out, …), name, config, secret token hash, linked batch, last seen
-- [ ] `activity_events`: actor, brewery, verb, object type and id, at
-- [ ] `shareable_type` adds inventory and equipment where missing; equipment profiles become shareable
-- [ ] Migration applies, and its down file rolls back cleanly
+- [x] Brewery roles become Owner, Brewer, Member, Viewer (Decision 1). Breweries get a description
+- [x] Inventory items add lot, location, alpha acid (hops), purchased on, a low-stock threshold, and a tradeable flag and quantity (unused until swaps, Phase 4)
+- [x] `inventory_reservations`: batch, inventory item, quantity, state (reserved, used, released)
+- [x] Equipment items add type, condition, and held by (a user)
+- [x] `integrations`: owner, kind (ispindel, tilt, rapt, webhook_out, …), name, config, secret token hash, linked batch, last seen
+- [x] `activity_events`: actor, brewery, verb, object type and id, at
+- [x] `shareable_type` adds inventory and equipment where missing; equipment profiles become shareable
+- [x] Migration applies, and its down file rolls back cleanly
 
 ### P2-02 Row-level security
 
 Lead Claude · Review Codex · Depends: P2-01, P2-03 to P2-06 · Contract change · ADR-0011
 
-- [ ] Postgres policies on every owned table, mirroring `can()`: owner → brewery role → share → visibility
-- [ ] The server connects as a role without `BYPASSRLS` and sets the signed-in user and their memberships per transaction; migrations and jobs use a separate role
-- [ ] Parity tests run the same permission cases through the API and straight against the database
-- [ ] Docker Compose and `.env.example` gain the second database role; the upgrade path for existing installs is documented
+- [x] Postgres policies on every owned table, mirroring `can()`: owner → brewery role → share → visibility
+- [x] The server connects as a role without `BYPASSRLS` and sets the signed-in user and their memberships per transaction; migrations and jobs use a separate role
+- [x] Parity tests run the same permission cases through the API and straight against the database
+- [x] Docker Compose and `.env.example` gain the second database role; the upgrade path for existing installs is documented
 
 ### P2-03 Breweries API
 
 Lead Claude · Review Codex · Depends: P2-01
 
-- [ ] Create, rename and delete a brewery; list your breweries
-- [ ] Invite by email or one-time code (same server), accept, leave, remove a member, change roles, transfer ownership (a brewery always has an owner)
-- [ ] Recipes, batches, notes and equipment profiles can be created as the brewery's, or moved from you to a brewery you can write to
-- [ ] Members can log readings and notes on brewery batches but can't edit recipes or batches. This adds a "contribute" action to `can()`
-- [ ] Each route: success, permission-denied and validation-error tests, with one case per role
+- [x] Create, rename and delete a brewery; list your breweries
+- [x] Invite by email or one-time code (same server), accept, leave, remove a member, change roles, transfer ownership (a brewery always has an owner)
+- [x] Recipes, batches, notes and equipment profiles can be created as the brewery's, or moved from you to a brewery you can write to
+- [x] Members can log readings and notes on brewery batches but can't edit recipes or batches. This adds a "contribute" action to `can()`
+- [x] Each route: success, permission-denied and validation-error tests, with one case per role
 
 ### P2-04 Inventory API
 
 Lead Claude · Review Codex · Depends: P2-01
 
-- [ ] Items: add, edit, delete, list, search; personal or brewery-owned; stored in SI (kg, L, each)
-- [ ] Starting a batch reserves its ingredients from the batch owner's inventory, matched by catalog id and then by name. It reports what's short instead of refusing to start
-- [ ] Packaging (beer) or bottling (mead, wine, cider) uses up the reservations; deleting the batch or undoing the move releases them
-- [ ] Low-stock list (below threshold), and a shopping list: shortfalls of planned batches plus items below threshold
-- [ ] Hop alpha acid from inventory can override the recipe's in a batch's stats (brew-math recalculates; nothing is computed outside it)
+- [x] Items: add, edit, delete, list, search; personal or brewery-owned; stored in SI (kg, L, each)
+- [x] Starting a batch reserves its ingredients from the batch owner's inventory, matched by catalog id and then by name. It reports what's short instead of refusing to start
+- [x] Packaging (beer) or bottling (mead, wine, cider) uses up the reservations; deleting the batch or undoing the move releases them
+- [x] Low-stock list (below threshold), and a shopping list: shortfalls of planned batches plus items below threshold
+- [x] Hop alpha acid from inventory can override the recipe's in a batch's stats (brew-math recalculates; nothing is computed outside it)
 
 ### P2-05 Equipment API
 
 Lead Codex · Review Claude · Depends: P2-01
 
-- [ ] Equipment items: add, edit, delete, list; personal or brewery-owned; can start from a catalog row
-- [ ] Lending inside a brewery: "held by" a member, with history in the activity feed
-- [ ] Each route: success, permission-denied and validation-error tests
+- [x] Equipment items: add, edit, delete, list; personal or brewery-owned; can start from a catalog row
+- [x] Lending inside a brewery: "held by" a member, with history in the activity feed
+- [x] Each route: success, permission-denied and validation-error tests
 
 ### P2-06 Sharing and activity
 
 Lead Claude · Review Codex · Depends: P2-01
 
-- [ ] Visibility and share routes for batches, notes, inventory, equipment and equipment profiles, like recipes have (Phase 1 follow-up)
-- [ ] Activity feed per brewery: batch started and moved, reading logged, inventory used, member joined, item lent; paged, newest first
-- [ ] Only members see a brewery's feed
+- [x] Visibility and share routes for batches, notes, inventory, equipment and equipment profiles, like recipes have (Phase 1 follow-up)
+- [x] Activity feed per brewery: batch started and moved, reading logged, inventory used, member joined, item lent; paged, newest first
+- [x] Only members see a brewery's feed
 
 ### P2-07 Device readings
 
 Lead Codex · Review Claude · Depends: P2-01
 
-- [ ] An integration gives the brewer a URL with a secret token. Devices post to it with no user session. Tokens are stored hashed and can be revoked and rotated
-- [ ] Payload parsers for iSpindel and GravityMon, Tilt (through TiltBridge and TiltPi) and RAPT. Readings land on the linked batch with source `device`
-- [ ] Conversions (Plato to SG, °F to °C, gravity correction) come from brew-math only
-- [ ] Rate limit per token, payload size limit; tests use recorded real payloads
+- [x] An integration gives the brewer a URL with a secret token. Devices post to it with no user session. Tokens are stored hashed and can be revoked and rotated
+- [x] Payload parsers for iSpindel and GravityMon, Tilt (through TiltBridge and TiltPi) and RAPT. Readings land on the linked batch with source `device`
+- [x] Conversions (Plato to SG, °F to °C, gravity correction) come from brew-math only
+- [x] Rate limit per token, payload size limit; tests use recorded real payloads
 
 ### P2-08 Webhooks out
 
 Lead Codex · Review Claude · Depends: P2-01
 
-- [ ] Send batch events (status moves, readings, reminders due) to URLs a user adds, signed with HMAC-SHA256
-- [ ] Retries with backoff, then marked failing; a test-send button
-- [ ] The same public-address checks as URL import (no private or local addresses, re-checked on every delivery)
+- [x] Send batch events (status moves, readings, reminders due) to URLs a user adds, signed with HMAC-SHA256
+- [x] Retries with backoff, then marked failing; a test-send button
+- [x] The same public-address checks as URL import (no private or local addresses, re-checked on every delivery)
 
 ### P2-09 Brewfather import
 
 Lead Codex · Review Claude · Depends: P2-01, P2-04
 
-- [ ] With the user's own Brewfather API key, import recipes, batches (with readings) and inventory. Recipes become drafts to review, as in P1-08
-- [ ] The key is used for that import only and never stored or logged
-- [ ] Recipe credit is kept when Brewfather records an outside source; unmatched ingredients import as free text
-- [ ] Tests use recorded API responses, never the live service
+- [x] With the user's own Brewfather API key, import recipes, batches (with readings) and inventory. Recipes become drafts to review, as in P1-08
+- [x] The key is used for that import only and never stored or logged
+- [x] Recipe credit is kept when Brewfather records an outside source; unmatched ingredients import as free text
+- [x] Tests use recorded API responses, never the live service
 
 ### P2-10 Release readiness
 
 Lead Codex · Review Antigravity · Depends: none
 
-- [ ] Backups: a documented `pg_dump` backup and restore, with a CI test that restores a backup into a fresh database
-- [ ] Upgrades: CI starts the Phase 1 pre-release image with data, upgrades to the new image, and checks nothing was lost
-- [ ] Images tagged by version (`1.0.0`, `1.0`, `latest`); release notes from Conventional Commits
-- [ ] `SOURCE_URL` setting (defaults to the upstream repo), shown on the About page, so a modified server links to its own source as the AGPL requires
-- [ ] Install, upgrade and backup guide in `docs/`; security headers reviewed
-- [ ] Phase 1 leftover: `generate.py` produces the `ppgToPotentialSg` golden cases
+- [x] Backups: a documented `pg_dump` backup and restore, with a CI test that restores a backup into a fresh database
+- [x] Upgrades: CI starts the Phase 1 pre-release image with data, upgrades to the new image, and checks nothing was lost
+- [x] Images tagged by version (`1.0.0`, `1.0`, `latest`); release notes from Conventional Commits
+- [x] `SOURCE_URL` setting (defaults to the upstream repo), shown on the About page, so a modified server links to its own source as the AGPL requires
+- [x] Install, upgrade and backup guide in `docs/`; security headers reviewed
+- [x] Phase 1 leftover: `generate.py` produces the `ppgToPotentialSg` golden cases
 
 ### P2-11 Breweries (app)
 
 Lead Antigravity · Review Claude · Depends: P2-03
 
-- [ ] Create a brewery, invite members, accept invites, change roles, leave, transfer ownership
-- [ ] Switch between "me" and a brewery; recipes, batches and inventory show who owns them
-- [ ] Controls hide what your role can't do; the server still refuses it
+- [x] Create a brewery, invite members, accept invites, change roles, leave, transfer ownership
+- [x] Switch between "me" and a brewery; recipes, batches and inventory show who owns them
+- [x] Controls hide what your role can't do; the server still refuses it
 
 ### P2-12 Inventory and shopping list (app)
 
 Lead Antigravity · Review Claude · Depends: P2-04
 
-- [ ] Inventory list and editor in the user's units; scan-friendly search
-- [ ] Starting a batch shows what gets reserved and what's short
-- [ ] Shopping list; low-stock alerts as local notifications (no push service, as in Phase 1)
+- [x] Inventory list and editor in the user's units; scan-friendly search
+- [x] Starting a batch shows what gets reserved and what's short
+- [x] Shopping list; low-stock alerts as local notifications (no push service, as in Phase 1)
 
 ### P2-13 Sharing, equipment and activity (app)
 
 Lead Antigravity · Review Claude · Depends: P2-05, P2-06
 
-- [ ] One share dialog for recipes, batches, notes, inventory and equipment: visibility, plus people and breweries with read or edit
-- [ ] Equipment list with "held by" and lending
-- [ ] Brewery activity feed
+- [x] One share dialog for recipes, batches, notes, inventory and equipment: visibility, plus people and breweries with read or edit
+- [x] Equipment list with "held by" and lending
+- [x] Brewery activity feed
 
 ### P2-14 Integrations (app)
 
 Lead Antigravity · Review Claude · Depends: P2-07, P2-08, P2-09
 
-- [ ] Add a device: pick the kind, link a batch, copy its URL and token, see the last reading arrive
-- [ ] Webhooks: add, test-send, see failures
-- [ ] Brewfather import with draft review
+- [x] Add a device: pick the kind, link a batch, copy its URL and token, see the last reading arrive
+- [x] Webhooks: add, test-send, see failures
+- [x] Brewfather import with draft review
 
 ### P2-15 Store-ready app builds
 
 Lead Antigravity · Review Claude · Depends: none
 
-- [ ] EAS build profiles for TestFlight and Play internal testing; icons, splash, store listing text and screenshots
-- [ ] Privacy policy (no tracking, data stays on the user's server) linked in the app and the listings
-- [ ] Phase 1 leftovers: native file picker for imports, and syncing all due reminders when the app opens
+- [x] EAS build profiles for TestFlight and Play internal testing; icons, splash, store listing text and screenshots
+- [x] Privacy policy (no tracking, data stays on the user's server) linked in the app and the listings
+- [x] Phase 1 leftovers: native file picker for imports, and syncing all due reminders when the app opens
 
 ### P2-16 End-to-end journeys
 
@@ -188,7 +188,7 @@ Lead Codex · Review Antigravity · Depends: screens as they land
 Owner: you · Depends: everything above for the gate
 
 - [x] Decide the open questions (see Decisions below)
-- [ ] Open issues P2-01 to P2-16 from this file
+- [x] Open issues P2-01 to P2-16 from this file
 - [ ] Run the exit gate; submit the apps to the stores; tag `1.0.0`
 
 ## Decisions
