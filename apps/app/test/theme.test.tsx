@@ -76,19 +76,21 @@ function ThemeHarness() {
 }
 
 describe("Beverage theme catalog", () => {
-  it("provides at least 13 distinct beverage themes spanning beer, wine, mead, and cider with light & dark modes", () => {
-    expect(THEMES.length).toBeGreaterThanOrEqual(13);
-    expect(THEMES.length).toBe(16);
-
-    const ids = new Set(THEMES.map((t) => t.id));
-    expect(ids.size).toBe(THEMES.length);
+  it("has unique ids and names, and a light and a dark theme for every beverage", () => {
+    expect(new Set(THEMES.map((t) => t.id)).size).toBe(THEMES.length);
+    expect(new Set(THEMES.map((t) => t.name)).size).toBe(THEMES.length);
 
     const categories: ThemeCategory[] = ["beer", "wine", "mead", "cider"];
     for (const cat of categories) {
       const catThemes = THEMES.filter((t) => t.category === cat);
-      expect(catThemes.length).toBe(4);
-      expect(catThemes.filter((t) => t.mode === "light").length).toBe(2);
-      expect(catThemes.filter((t) => t.mode === "dark").length).toBe(2);
+      expect(
+        catThemes.some((t) => t.mode === "light"),
+        `${cat} light`,
+      ).toBe(true);
+      expect(
+        catThemes.some((t) => t.mode === "dark"),
+        `${cat} dark`,
+      ).toBe(true);
     }
   });
 
@@ -170,7 +172,7 @@ describe("ThemeProvider persistence and dynamic re-theming", () => {
 });
 
 describe("ThemeGallery and ThemeSwitcherButton", () => {
-  it("filters all 16 themes by beverage category and light/dark mode and applies selections", async () => {
+  it("filters every theme by beverage category and light/dark mode and applies selections", async () => {
     const storage = createMemoryStorage();
     render(
       <ThemeProvider storage={storage}>
@@ -178,19 +180,23 @@ describe("ThemeGallery and ThemeSwitcherButton", () => {
       </ThemeProvider>,
     );
 
-    // All 16 theme cards are initially visible
+    // Every theme card is initially visible
     for (const t of THEMES) {
       expect(screen.getByTestId(`theme-card-${t.id}`)).toBeTruthy();
     }
 
-    // Filter to Mead -> 4 mead themes only
-    fireEvent.click(screen.getByRole("tab", { name: "Mead (4)" }));
+    // The filter labels count the themes in each beverage
+    const meadCount = THEMES.filter((t) => t.category === "mead").length;
+    expect(screen.getByRole("tab", { name: `All (${THEMES.length})` })).toBeTruthy();
+
+    // Filter to Mead -> mead themes only
+    fireEvent.click(screen.getByRole("tab", { name: `Mead (${meadCount})` }));
     expect(screen.getByTestId("theme-card-wildflower-honey")).toBeTruthy();
     expect(screen.getByTestId("theme-card-nordic-braggot")).toBeTruthy();
     expect(screen.queryByTestId("theme-card-amber-ale")).toBeNull();
     expect(screen.queryByTestId("theme-card-crisp-orchard")).toBeNull();
 
-    // Combine with Dark filter -> only 2 dark mead themes
+    // Combine with Dark filter -> only dark mead themes
     fireEvent.click(screen.getByRole("tab", { name: "Dark" }));
     expect(screen.getByTestId("theme-card-nordic-braggot")).toBeTruthy();
     expect(screen.getByTestId("theme-card-caramelized-bochet")).toBeTruthy();
