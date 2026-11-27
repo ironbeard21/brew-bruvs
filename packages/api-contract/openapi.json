@@ -1497,9 +1497,12 @@
             "properties": {
               "version": {
                 "$ref": "#/components/schemas/RecipeVersion"
+              },
+              "can": {
+                "$ref": "#/components/schemas/AllowedActions"
               }
             },
-            "required": ["version"]
+            "required": ["version", "can"]
           }
         ]
       },
@@ -1614,6 +1617,25 @@
         },
         "required": ["og", "fg", "abvPct", "ibu", "colorEbc"],
         "description": "Set when the version has a style"
+      },
+      "AllowedActions": {
+        "type": "object",
+        "properties": {
+          "contribute": {
+            "type": "boolean"
+          },
+          "edit": {
+            "type": "boolean"
+          },
+          "delete": {
+            "type": "boolean"
+          },
+          "share": {
+            "type": "boolean"
+          }
+        },
+        "required": ["contribute", "edit", "delete", "share"],
+        "description": "What the caller may do with this object: owner, brewery role and shares all count. There is no read flag: getting the object means you can read it."
       },
       "CreateRecipe": {
         "allOf": [
@@ -2019,6 +2041,22 @@
         "required": ["name"],
         "additionalProperties": false
       },
+      "EquipmentProfileDetail": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/EquipmentProfile"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "can": {
+                "$ref": "#/components/schemas/AllowedActions"
+              }
+            },
+            "required": ["can"]
+          }
+        ]
+      },
       "EquipmentProfilePatch": {
         "type": "object",
         "properties": {
@@ -2292,9 +2330,12 @@
                   "$ref": "#/components/schemas/BatchStatus"
                 },
                 "description": "Where the batch can move next: any later status, or one step back"
+              },
+              "can": {
+                "$ref": "#/components/schemas/AllowedActions"
               }
             },
-            "required": ["statusHistory", "allowedStatuses"]
+            "required": ["statusHistory", "allowedStatuses", "can"]
           }
         ]
       },
@@ -2861,6 +2902,22 @@
         "additionalProperties": false,
         "description": "BJCP score sheet: aroma /12, appearance /3, flavor /20, mouthfeel /5, overall /10"
       },
+      "NoteDetail": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Note"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "can": {
+                "$ref": "#/components/schemas/AllowedActions"
+              }
+            },
+            "required": ["can"]
+          }
+        ]
+      },
       "NotePatch": {
         "type": "object",
         "properties": {
@@ -3060,6 +3117,22 @@
           }
         },
         "additionalProperties": false
+      },
+      "EquipmentItemDetail": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/EquipmentItem"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "can": {
+                "$ref": "#/components/schemas/AllowedActions"
+              }
+            },
+            "required": ["can"]
+          }
+        ]
       },
       "EquipmentItemPatch": {
         "type": "object",
@@ -3690,6 +3763,22 @@
           }
         },
         "required": ["short", "lowStock"]
+      },
+      "InventoryItemDetail": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/InventoryItem"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "can": {
+                "$ref": "#/components/schemas/AllowedActions"
+              }
+            },
+            "required": ["can"]
+          }
+        ]
       },
       "InventoryItemPatch": {
         "type": "object",
@@ -6674,7 +6763,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/EquipmentProfile"
+                  "$ref": "#/components/schemas/EquipmentProfileDetail"
                 }
               }
             }
@@ -8479,7 +8568,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Note"
+                  "$ref": "#/components/schemas/NoteDetail"
                 }
               }
             }
@@ -8857,7 +8946,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/EquipmentItem"
+                  "$ref": "#/components/schemas/EquipmentItemDetail"
                 }
               }
             }
@@ -10911,7 +11000,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/InventoryItem"
+                  "$ref": "#/components/schemas/InventoryItemDetail"
                 }
               }
             }

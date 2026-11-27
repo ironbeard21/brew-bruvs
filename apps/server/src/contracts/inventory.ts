@@ -3,7 +3,7 @@
 // Quantities are SI in the item's unit: kg, L, or each (packs, tablets, …).
 
 import { z } from "@hono/zod-openapi";
-import { RecipeStats } from "./recipes.ts";
+import { AllowedActions, RecipeStats } from "./recipes.ts";
 
 const time = z.iso.datetime({ offset: true });
 const day = z.iso.date();
@@ -69,6 +69,10 @@ export const InventoryItem = z
     updatedAt: time,
   })
   .openapi("InventoryItem");
+
+export const InventoryItemDetail = InventoryItem.extend({ can: AllowedActions }).openapi(
+  "InventoryItemDetail",
+);
 
 export const InventoryPage = z
   .object({ items: z.array(InventoryItem), nextOffset: z.int().nullable() })

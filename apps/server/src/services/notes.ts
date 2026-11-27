@@ -6,7 +6,16 @@ import type { z } from "zod";
 import type { NoteInput, NotePatch, TastingScores } from "../contracts/batches.ts";
 import { ApiError } from "../errors.ts";
 import type { Action, User } from "../permissions.ts";
-import { authorizeRow, newId, newOwner, ownerOf, readableBy, signedIn, type Tx } from "./access.ts";
+import {
+  allowedActions,
+  authorizeRow,
+  newId,
+  newOwner,
+  ownerOf,
+  readableBy,
+  signedIn,
+  type Tx,
+} from "./access.ts";
 
 const { notes, recipes, batches, shares } = schema;
 type NoteRow = typeof notes.$inferSelect;
@@ -143,7 +152,8 @@ export function createNoteService(db: Db, opts: { baseUrl: string }) {
     },
 
     async get(viewer: User | null, id: string) {
-      return view(await authorize(db, viewer, "read", id));
+      const row = await authorize(db, viewer, "read", id);
+      return { ...view(row), can: await allowedActions(db, viewer, "note", row) };
     },
 
     async update(viewer: User | null, id: string, patch: z.infer<typeof NotePatch>) {

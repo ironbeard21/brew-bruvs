@@ -10,6 +10,13 @@ export const Visibility = z.enum(["private", "unlisted", "server", "public"]).op
     "private: owner, brewery and shares only. unlisted: anyone with the link, never listed. server: every signed-in user here. public: anyone.",
 });
 
+export const AllowedActions = z
+  .object({ contribute: z.boolean(), edit: z.boolean(), delete: z.boolean(), share: z.boolean() })
+  .openapi("AllowedActions", {
+    description:
+      "What the caller may do with this object: owner, brewery role and shares all count. There is no read flag: getting the object means you can read it.",
+  });
+
 const litres = z.number().positive().max(100_000);
 const loss = z.number().min(0).max(100_000);
 const optional = <T extends z.ZodType>(schema: T) => schema.nullable().optional();
@@ -64,6 +71,10 @@ export const EquipmentProfile = z
     updatedAt: z.string(),
   })
   .openapi("EquipmentProfile");
+
+export const EquipmentProfileDetail = EquipmentProfile.extend({ can: AllowedActions }).openapi(
+  "EquipmentProfileDetail",
+);
 
 // ── Recipe versions ───────────────────────────────────────────────────
 
@@ -202,7 +213,9 @@ export const Recipe = z
   })
   .openapi("Recipe");
 
-export const RecipeDetail = Recipe.extend({ version: RecipeVersion }).openapi("RecipeDetail");
+export const RecipeDetail = Recipe.extend({ version: RecipeVersion, can: AllowedActions }).openapi(
+  "RecipeDetail",
+);
 
 export const RecipePage = z
   .object({ items: z.array(Recipe), nextOffset: z.int().nullable() })

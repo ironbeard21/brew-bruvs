@@ -16,6 +16,7 @@ import { MEASUREMENTS } from "../contracts/batches.ts";
 import { ApiError } from "../errors.ts";
 import type { Action, User } from "../permissions.ts";
 import {
+  allowedActions,
   authorizeRow,
   newId,
   newOwner,
@@ -149,7 +150,11 @@ export function createBatchService(
     };
   }
 
-  async function detail(tx: Tx, row: { batch: BatchRow; recipeId: string; version: number }) {
+  async function detail(
+    tx: Tx,
+    user: User | null,
+    row: { batch: BatchRow; recipeId: string; version: number },
+  ) {
     const history = await tx
       .select({ status: batchStatusChanges.status, changedAt: batchStatusChanges.changedAt })
       .from(batchStatusChanges)
@@ -162,6 +167,7 @@ export function createBatchService(
         changedAt: h.changedAt.toISOString(),
       })),
       allowedStatuses: allowedStatuses(row.batch.beverage, row.batch.status),
+      can: await allowedActions(tx, user, "batch", row.batch),
     };
   }
 
@@ -352,12 +358,14 @@ export function createBatchService(
             })),
           );
         }
-        return detail(tx, { batch: row, recipeId: recipe.id, version: version.version });
+        return detail(tx, user, { batch: row, recipeId: recipe.id, version: version.version });
       });
     },
 
     async get(viewer: User | null, id: string) {
-      return db.transaction(async (tx) => detail(tx, await authorize(tx, viewer, "read", id)));
+      return db.transaction(async (tx) =>
+        detail(tx, viewer, await authorize(tx, viewer, "read", id)),
+      );
     },
 
     async setStatus(viewer: User | null, id: string, status: Status) {
@@ -418,7 +426,7 @@ export function createBatchService(
           if (!existing) schedule = await scheduleNutrients(tx, updated as BatchRow, now, user.id);
         }
         return {
-          batch: await detail(tx, { ...row, batch: updated as BatchRow }),
+          batch: await detail(tx, user, { ...row, batch: updated as BatchRow }),
           addedReminders: schedule.added,
           scheduleError: schedule.error,
           inventory,

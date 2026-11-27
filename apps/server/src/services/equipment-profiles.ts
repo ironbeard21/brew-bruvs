@@ -6,7 +6,15 @@ import type { z } from "zod";
 import type { CreateEquipmentProfile, EquipmentProfilePatch } from "../contracts/recipes.ts";
 import { ApiError, pgCode } from "../errors.ts";
 import type { Action, User } from "../permissions.ts";
-import { authorizeRow, newId, newOwner, ownerOf, signedIn, type Tx } from "./access.ts";
+import {
+  allowedActions,
+  authorizeRow,
+  newId,
+  newOwner,
+  ownerOf,
+  signedIn,
+  type Tx,
+} from "./access.ts";
 
 const { equipmentProfiles, shares } = schema;
 type ProfileRow = typeof equipmentProfiles.$inferSelect;
@@ -94,7 +102,8 @@ export function createEquipmentProfileService(db: Db, opts: { baseUrl: string })
     },
 
     async get(viewer: User | null, id: string) {
-      return view(await authorize(db, viewer, "read", id));
+      const row = await authorize(db, viewer, "read", id);
+      return { ...view(row), can: await allowedActions(db, viewer, "equipment_profile", row) };
     },
 
     async update(viewer: User | null, id: string, patch: z.infer<typeof EquipmentProfilePatch>) {

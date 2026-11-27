@@ -10,6 +10,7 @@ import {
   BatchStatus,
   CreateBatch,
   Note,
+  NoteDetail,
   NoteInput,
   NotePage,
   NotePatch,
@@ -224,7 +225,7 @@ const routes = {
     operationId: "getNote",
     summary: "One note",
     request: { params: id },
-    responses: { 200: json(Note, "Note"), ...errorResponses(400, 404) },
+    responses: { 200: json(NoteDetail, "Note"), ...errorResponses(400, 404) },
   }),
   updateNote: createRoute({
     ...note,

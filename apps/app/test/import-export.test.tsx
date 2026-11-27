@@ -267,6 +267,7 @@ describe("BrewSheetView", () => {
       latestVersion: 1,
       createdAt: "2026-11-22T12:00:00Z",
       updatedAt: "2026-11-22T12:00:00Z",
+      can: { contribute: true, edit: true, delete: true, share: true },
       version: {
         id: "v-1",
         version: 1,

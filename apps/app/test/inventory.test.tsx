@@ -840,6 +840,7 @@ describe("BatchInventoryChangeBanner and BatchInventorySection", () => {
       updatedAt: "2026-11-10T10:00:00Z",
       statusHistory: [],
       allowedStatuses: ["fermenting"],
+      can: { contribute: true, edit: true, delete: true, share: true },
     };
     const reservations: Reservation[] = [
       {
