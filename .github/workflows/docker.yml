@@ -45,6 +45,20 @@ jobs:
       BASE_URL: http://127.0.0.1:8080
       SOURCE_URL: https://source.example.test/brew-bruvs
       PLAYWRIGHT_BASE_URL: http://127.0.0.1:8080
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: brew
+          POSTGRES_DB: brew
+          POSTGRES_PASSWORD: e2e-test-only
+        ports:
+          - 5432/tcp
+        options: >-
+          --health-cmd "pg_isready -h 127.0.0.1 -U brew -d brew"
+          --health-interval 2s
+          --health-timeout 2s
+          --health-retries 15
     steps:
       - uses: actions/checkout@v6
       - uses: pnpm/action-setup@v6
@@ -60,8 +74,13 @@ jobs:
         run: |
           count=$(docker compose -f docker/compose.yml exec -T postgres psql -v ON_ERROR_STOP=1 -U brew -d brew -Atc "SELECT count(*) FROM hops WHERE id = 'hop-columbus' AND 'Zeus' = ANY(aliases)")
           test "$count" -eq 1
-      - name: Run Playwright against Compose
-        run: pnpm test:e2e
+      - name: Run Playwright against Compose and the webhook fixture
+        env:
+          TEST_DATABASE_URL: postgres://brew:e2e-test-only@127.0.0.1:${{ job.services.postgres.ports[5432] }}/brew
+        run: |
+          mkdir -p apps/app/dist
+          docker compose -f docker/compose.yml cp app:/srv/brew-bruvs/web/. apps/app/dist
+          pnpm test:e2e
       - uses: actions/upload-artifact@v7
         if: failure()
         with:

@@ -514,8 +514,9 @@ test.describe("Brew-Bruvs app shell", () => {
     await expect(page.getByTestId("privacy-summary-box")).toContainText("self-hosted server");
   });
 
-  test("integrations: connect hydrometer device, receive reading, and check webhooks & Brewfather", async ({
+  test("integrations: plot a hydrometer reading and check webhooks & Brewfather", async ({
     page,
+    request,
   }) => {
     test.setTimeout(45_000);
     await page.goto("/connect");
@@ -547,7 +548,7 @@ test.describe("Brew-Bruvs app shell", () => {
     expect(initialToken).toMatch(/^bb_/);
 
     // Send a real device reading to the issued URL and confirm it arrives on the device card
-    const ingestRes = await page.request.post(issuedUrl, {
+    const ingestRes = await request.post(issuedUrl, {
       data: {
         name: "E2E iSpindel",
         gravity: 1.022,
@@ -565,6 +566,14 @@ test.describe("Brew-Bruvs app shell", () => {
     await expect(page.locator('[data-testid^="device-last-reading-"]').first()).toContainText(
       "68.0 °F",
     );
+
+    // Follow the device's batch link and verify the uploaded values in the chart.
+    await page.locator('[data-testid^="device-open-batch-"]').first().click();
+    await expect(page).toHaveURL(/\/batches\/[0-9a-f-]+$/);
+    const chart = page.getByTestId("fermentation-chart");
+    await expect(chart.getByTestId("chart-latest-sg")).toHaveText("1.022");
+    await expect(chart.getByTestId("chart-latest-temp")).toHaveText("68.0 °F");
+    await page.goto("/integrations");
 
     // Rotate token and revoke device cleanly
     await page.locator('[data-testid^="device-rotate-"]').first().click();

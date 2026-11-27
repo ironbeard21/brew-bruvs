@@ -24,7 +24,7 @@
     },
     "test:e2e": {
       "cache": false,
-      "passThroughEnv": ["PLAYWRIGHT_BASE_URL"]
+      "passThroughEnv": ["PLAYWRIGHT_BASE_URL", "TEST_DATABASE_URL"]
     },
     "build": {
       "dependsOn": ["^build"],
