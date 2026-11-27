@@ -180,8 +180,8 @@ Lead Antigravity · Review Claude · Depends: none
 
 Lead Codex · Review Antigravity · Depends: screens as they land
 
-- [ ] Playwright with two and three users: brewery invite and roles, Member limits, reservations and the shopping list, a device payload reaching the chart, a webhook reaching a test receiver
-- [ ] Backup-and-restore and upgrade jobs from P2-10 are required checks on `main`
+- [x] Playwright with two and three users: brewery invite and roles, Member limits, reservations and the shopping list, a device payload reaching the chart, a webhook reaching a test receiver
+- [x] Backup-and-restore and upgrade jobs from P2-10 are required checks on `main`
 
 ### P2-17 Decisions, gate check and 1.0 (maintainer)
 
