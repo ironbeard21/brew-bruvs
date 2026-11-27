@@ -15,6 +15,7 @@ import {
   radii,
   spacing,
   THEME_CATEGORY_LABELS,
+  THEMES,
   type ThemeCategory,
   type ThemeColors,
   type ThemeDefinition,
@@ -25,12 +26,14 @@ import { Button, SegmentedControl, type SegmentedOption } from "./ui";
 type CategoryFilter = "all" | ThemeCategory;
 type ModeFilter = "all" | ThemeMode;
 
+const countIn = (category: ThemeCategory) => THEMES.filter((t) => t.category === category).length;
+
 const CATEGORY_OPTIONS: readonly SegmentedOption<CategoryFilter>[] = [
-  { value: "all", label: "All (16)" },
-  { value: "beer", label: "Beer (4)" },
-  { value: "wine", label: "Wine (4)" },
-  { value: "mead", label: "Mead (4)" },
-  { value: "cider", label: "Cider (4)" },
+  { value: "all", label: `All (${THEMES.length})` },
+  ...(["beer", "wine", "mead", "cider"] as const).map((category) => ({
+    value: category,
+    label: `${THEME_CATEGORY_LABELS[category]} (${countIn(category)})`,
+  })),
 ];
 
 const MODE_OPTIONS: readonly SegmentedOption<ModeFilter>[] = [
@@ -214,8 +217,8 @@ export function ThemeGallery({ inModal = false, onSelectTheme }: ThemeGalleryPro
           <View style={styles.sectionTitleCol}>
             <Text style={styles.sectionTitle}>Beverage Themes</Text>
             <Text style={styles.sectionSubtitle}>
-              Choose from 16 craft beer, wine, mead, and cider themes across bright daytime and dark
-              cellar palettes. Saved locally on this device and available offline.
+              Choose from {THEMES.length} craft beer, wine, mead, and cider themes across bright
+              daytime and dark cellar palettes. Saved locally on this device and available offline.
             </Text>
           </View>
           <View style={styles.currentChip} testID="theme-current-badge">
