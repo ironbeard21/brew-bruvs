@@ -5,7 +5,7 @@ import { StatusBar } from "expo-status-bar";
 import { useEffect, useRef, useState } from "react";
 import { AppState } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { useCurrentUser } from "../src/api/auth";
+import { useCurrentUser, useSyncCallerCache } from "../src/api/auth";
 import { syncDueRemindersOnOpen } from "../src/notifications";
 import { BreweryProvider } from "../src/state/brewery";
 import { ServerProvider, useServer } from "../src/state/server";
@@ -89,6 +89,13 @@ function ServerUnitSync() {
   return null;
 }
 
+function SessionCacheSync() {
+  const { serverUrl, authToken } = useServer();
+  const currentUser = useCurrentUser(serverUrl, authToken);
+  useSyncCallerCache(serverUrl, currentUser.data?.id ?? null, currentUser.isPending);
+  return null;
+}
+
 export default function RootLayout() {
   const [queryClient] = useState(
     () =>
@@ -108,6 +115,7 @@ export default function RootLayout() {
         <UnitsProvider>
           <ServerProvider>
             <BreweryProvider>
+              <SessionCacheSync />
               <ServerUnitSync />
               <DueReminderSync />
               <StatusBar style="dark" />

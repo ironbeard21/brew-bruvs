@@ -220,11 +220,13 @@ function batchSummary(b: StoredBatch) {
   };
 }
 
-function batchDetail(b: StoredBatch) {
+function batchDetail(b: StoredBatch, viewer: StoredUser | null) {
+  const shares = resourceShares.get(`batch:${b.id}`) ?? [];
   return {
     ...batchSummary(b),
     statusHistory: b.statusHistory,
     allowedStatuses: allowedStatusesFor(b.beverage, b.status),
+    can: allowedActionsFor(viewer, b.owner, shares),
   };
 }
 
@@ -595,10 +597,51 @@ function recipeSummary(r: StoredRecipe) {
   };
 }
 
-function recipeDetail(r: StoredRecipe) {
+function allowedActionsFor(
+  viewer: StoredUser | null,
+  owner: { type: "user" | "brewery"; id: string },
+  shares: readonly StoredShare[],
+): { contribute: boolean; edit: boolean; delete: boolean; share: boolean } {
+  const roleActions: Record<BreweryRole, readonly string[]> = {
+    owner: ["contribute", "edit", "delete", "share"],
+    brewer: ["contribute", "edit"],
+    member: ["contribute"],
+    viewer: [],
+  };
+  const check = (action: "contribute" | "edit" | "delete" | "share"): boolean => {
+    if (!viewer) return false;
+    if (owner.type === "user" && owner.id === viewer.id) return true;
+    const roleOf = (breweryId: string) =>
+      breweries.get(breweryId)?.members.find((m) => m.userId === viewer.id)?.role;
+    if (owner.type === "brewery") {
+      const role = roleOf(owner.id);
+      if (role && roleActions[role].includes(action)) return true;
+    }
+    for (const share of shares) {
+      if (share.level !== "edit") continue;
+      if (action !== "contribute" && action !== "edit") continue;
+      if (share.user?.id === viewer.id) return true;
+      if (share.breweryId) {
+        const role = roleOf(share.breweryId);
+        if (role && roleActions[role].includes(action)) return true;
+      }
+    }
+    return false;
+  };
+  return {
+    contribute: check("contribute"),
+    edit: check("edit"),
+    delete: check("delete"),
+    share: check("share"),
+  };
+}
+
+function recipeDetail(r: StoredRecipe, viewer: StoredUser | null) {
+  const shares = [...r.shares, ...(resourceShares.get(`recipe:${r.id}`) ?? [])];
   return {
     ...recipeSummary(r),
     version: r.versions[r.versions.length - 1],
+    can: allowedActionsFor(viewer, r.owner, shares),
   };
 }
 
@@ -1205,7 +1248,7 @@ const server = createServer(async (req, res) => {
       shares: [],
     };
     recipes.set(id, recipe);
-    return sendJson(res, 201, recipeDetail(recipe));
+    return sendJson(res, 201, recipeDetail(recipe, user));
   }
 
   const exportMatch = pathname.match(/^\/api\/recipes\/([^/]+)\/versions\/(\d+)\/export$/);
@@ -1257,7 +1300,8 @@ const server = createServer(async (req, res) => {
     if (!recipe)
       return sendJson(res, 404, { error: { code: "not_found", message: "Recipe not found" } });
 
-    if (!sub && method === "GET") return sendJson(res, 200, recipeDetail(recipe));
+    if (!sub && method === "GET")
+      return sendJson(res, 200, recipeDetail(recipe, getUserForRequest(req)));
     if (!sub && method === "PATCH") {
       const data = JSON.parse(await readBody(req)) as { visibility?: StoredRecipe["visibility"] };
       if (data.visibility) recipe.visibility = data.visibility;
@@ -1349,7 +1393,7 @@ const server = createServer(async (req, res) => {
         shares: [],
       };
       recipes.set(newId, forked);
-      return sendJson(res, 201, recipeDetail(forked));
+      return sendJson(res, 201, recipeDetail(forked, user));
     }
     if (sub === "shares" && !subId && method === "GET") {
       return sendJson(res, 200, recipe.shares);
@@ -1480,7 +1524,7 @@ const server = createServer(async (req, res) => {
       reminders: [],
     };
     batches.set(id, b);
-    return sendJson(res, 201, batchDetail(b));
+    return sendJson(res, 201, batchDetail(b, user));
   }
 
   const batchSub = pathname.match(
@@ -1493,7 +1537,7 @@ const server = createServer(async (req, res) => {
     const b = batches.get(batchId);
     if (!b) return sendJson(res, 404, { error: { code: "not_found", message: "Batch not found" } });
 
-    if (!sub && method === "GET") return sendJson(res, 200, batchDetail(b));
+    if (!sub && method === "GET") return sendJson(res, 200, batchDetail(b, getUserForRequest(req)));
     if (!sub && method === "DELETE") {
       for (const r of batchReservations) {
         if (r.batchId === batchId && r.state === "reserved") r.state = "released";
@@ -1672,7 +1716,7 @@ const server = createServer(async (req, res) => {
       }
 
       return sendJson(res, 200, {
-        batch: batchDetail(b),
+        batch: batchDetail(b, getUserForRequest(req)),
         addedReminders: [],
         scheduleError: null,
         inventory,

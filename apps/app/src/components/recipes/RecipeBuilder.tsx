@@ -185,9 +185,9 @@ export function RecipeBuilder({
   saveLabel,
   customFetch,
 }: RecipeBuilderProps) {
-  const canEdit = canEditProp ?? canManage;
-  const canDelete = canDeleteProp ?? canManage;
-  const canShare = canShareProp ?? canManage;
+  const canEdit = canEditProp ?? (recipe ? recipe.can.edit : canManage);
+  const canDelete = canDeleteProp ?? (recipe ? recipe.can.delete : canManage);
+  const canShare = canShareProp ?? (recipe ? recipe.can.share : canManage);
   const { unitSystem } = useUnits();
   const { width } = useWindowDimensions();
   const isDesktop = width >= DESKTOP_BREAKPOINT;
@@ -593,7 +593,7 @@ export function RecipeBuilder({
         </Card>
       ) : null}
 
-      {recipe ? (
+      {recipe && canShare ? (
         <RecipeSharingCard
           serverUrl={serverUrl}
           authToken={authToken}

@@ -173,10 +173,12 @@ export default function BatchDetailScreen() {
   }
 
   const userId = currentUser.data?.id ?? null;
-  const canContribute = canPerformOnOwner(userId, breweries, batch.owner, "contribute");
-  const canEdit = canPerformOnOwner(userId, breweries, batch.owner, "edit");
-  const canDelete = canPerformOnOwner(userId, breweries, batch.owner, "delete");
-  const canShare = canPerformOnOwner(userId, breweries, batch.owner, "share");
+  const canContribute = batch.can.contribute;
+  const canEdit = batch.can.edit;
+  const canDelete = batch.can.delete;
+  const canShare = batch.can.share;
+  // Device integrations require edit on the batch owner itself (shares don't grant device access).
+  const canConnectDevice = canPerformOnOwner(userId, breweries, batch.owner, "edit");
   const canMoveToBrewery =
     batch.owner.type === "user" && batch.owner.id === userId && writableBreweries.length > 0;
   const flow = getStatusFlow(batch.beverage);
@@ -207,7 +209,7 @@ export default function BatchDetailScreen() {
       }
 
       // When packaging/bottling consumes reservations, check low-stock thresholds and trigger local alerts.
-      if (res.inventory?.used && serverUrl) {
+      if (res.inventory?.used && serverUrl && canInspectBatchInventory) {
         try {
           const lowItems = await fetchLowStock(serverUrl, authToken, ownerBreweryId);
           const workspaceName = ownerBreweryId
@@ -265,7 +267,7 @@ export default function BatchDetailScreen() {
               onPress={() => router.push(`/recipes/${batch.recipe.id}`)}
               testID="batch-open-recipe-button"
             />
-            {canEdit ? (
+            {canConnectDevice ? (
               <Button
                 label="Connect device"
                 variant="secondary"

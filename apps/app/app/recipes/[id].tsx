@@ -22,7 +22,7 @@ import { RecipeBuilder } from "../../src/components/recipes/RecipeBuilder";
 import { ShareDialog } from "../../src/components/sharing/ShareDialog";
 import { Banner, Button, Card } from "../../src/components/ui";
 import { useOptionalBrewery } from "../../src/state/brewery";
-import { canPerformOnOwner, canWriteBrewery } from "../../src/state/permissions";
+import { canWriteBrewery } from "../../src/state/permissions";
 import { useServer } from "../../src/state/server";
 import { spacing } from "../../src/theme";
 
@@ -93,14 +93,18 @@ export default function RecipeDetailScreen() {
 
   const recipe = detailQuery.data;
   const userId = currentUser.data?.id ?? null;
-  const canEdit = canPerformOnOwner(userId, breweries, recipe.owner, "edit");
-  const canDelete = canPerformOnOwner(userId, breweries, recipe.owner, "delete");
-  const canShare = canPerformOnOwner(userId, breweries, recipe.owner, "share");
+  const canEdit = recipe.can.edit;
+  const canDelete = recipe.can.delete;
+  const canShare = recipe.can.share;
   const canStartBatchInWorkspace = Boolean(
     userId && (!activeBrewery || canWriteBrewery(activeBrewery.role)),
   );
   const canMoveToBrewery =
     recipe.owner.type === "user" && recipe.owner.id === userId && writableBreweries.length > 0;
+  const recipeOwnerWritableBreweryId =
+    recipe.owner.type === "brewery" && writableBreweries.some((b) => b.id === recipe.owner.id)
+      ? recipe.owner.id
+      : null;
   const targetBreweryIdForBatch =
     activeBrewery && canWriteBrewery(activeBrewery.role) ? activeBrewery.id : undefined;
 
@@ -252,7 +256,7 @@ export default function RecipeDetailScreen() {
         canEdit={canEdit}
         canDelete={canDelete}
         canShare={canShare}
-        activeBreweryId={recipe.owner.type === "brewery" ? recipe.owner.id : null}
+        activeBreweryId={recipeOwnerWritableBreweryId}
         onSaveVersion={handleSaveVersion}
         {...(currentUser.data ? { onFork: handleFork } : {})}
         onDelete={handleDelete}
