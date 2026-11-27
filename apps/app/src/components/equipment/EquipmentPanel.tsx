@@ -19,8 +19,9 @@ import {
   useUpdateEquipmentItem,
 } from "../../api/equipment";
 import { canPerformOnOwner, canWriteBrewery, ROLE_LABELS } from "../../state/permissions";
+import { useThemedStyles } from "../../state/theme";
 import { useUnits } from "../../state/units";
-import { colors, radii, spacing } from "../../theme";
+import { radii, spacing, type ThemeColors } from "../../theme";
 import { OwnerBadge, RoleBadge } from "../OwnerBadge";
 import { ShareDialog } from "../sharing/ShareDialog";
 import { Banner, Button, Card, SegmentedControl, TextField } from "../ui";
@@ -58,6 +59,7 @@ export function EquipmentPanel({
   breweries,
   customFetch,
 }: EquipmentPanelProps) {
+  const styles = useThemedStyles(createStyles);
   const { unitSystem } = useUnits();
   const activeBreweryId = activeBrewery?.id ?? null;
   const workspaceLabel = activeBrewery ? activeBrewery.name : "Me (personal)";
@@ -631,116 +633,117 @@ export function EquipmentPanel({
   );
 }
 
-const styles = StyleSheet.create({
-  root: { gap: spacing.lg },
-  topRow: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    flexWrap: "wrap",
-    gap: spacing.sm,
-  },
-  searchWrap: { flex: 1, minWidth: 220 },
-  topButtons: { flexDirection: "row", gap: spacing.xs, flexWrap: "wrap" },
-  filtersRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    flexWrap: "wrap",
-    gap: spacing.sm,
-  },
-  list: { gap: spacing.sm },
-  itemHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    flexWrap: "wrap",
-    gap: spacing.sm,
-  },
-  itemTitleCol: { flex: 1, minWidth: 210, gap: 6 },
-  titleRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: spacing.xs },
-  itemName: { fontSize: 17, fontWeight: "700", color: colors.text },
-  typePill: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: radii.pill,
-    backgroundColor: colors.surfaceSubtle,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-  },
-  typePillText: { fontSize: 11, fontWeight: "700", color: colors.textMuted },
-  conditionPill: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: radii.pill,
-    backgroundColor: colors.successSoft,
-  },
-  conditionPillWarn: {
-    backgroundColor: colors.errorSoft,
-  },
-  conditionPillText: { fontSize: 11, fontWeight: "700", color: colors.success },
-  conditionPillTextWarn: { color: colors.error },
-  holderRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: spacing.xs },
-  holderBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: radii.pill,
-    borderWidth: 1,
-  },
-  holderBadgeLent: {
-    backgroundColor: colors.accentSoft,
-    borderColor: colors.accent,
-  },
-  holderBadgeHome: {
-    backgroundColor: colors.surfaceSubtle,
-    borderColor: colors.border,
-  },
-  holderBadgeText: { fontSize: 12, fontWeight: "700" },
-  holderBadgeTextLent: { color: colors.accentPressed },
-  holderBadgeTextHome: { color: colors.textMuted },
-  itemActions: { flexDirection: "row", alignItems: "center", gap: spacing.xs, flexWrap: "wrap" },
-  lendingBox: {
-    padding: spacing.md,
-    borderRadius: radii.md,
-    backgroundColor: colors.surfaceSubtle,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    gap: spacing.sm,
-  },
-  lendingTitle: { fontSize: 14, fontWeight: "700", color: colors.text },
-  memberPickerList: { gap: spacing.xs },
-  memberOption: {
-    minHeight: 44,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 8,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: spacing.sm,
-  },
-  memberOptionSelected: {
-    borderColor: colors.accent,
-    backgroundColor: colors.accentSoft,
-  },
-  memberOptionName: { fontSize: 14, fontWeight: "600", color: colors.text },
-  memberOptionNameSelected: { color: colors.accentPressed, fontWeight: "700" },
-  metaPills: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
-  metaPill: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: colors.textMuted,
-    backgroundColor: colors.surfaceSubtle,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: radii.sm,
-    borderWidth: 1,
-    borderColor: colors.border,
-    fontVariant: ["tabular-nums"],
-  },
-  notes: { fontSize: 13, lineHeight: 19, color: colors.textMuted },
-  emptyTitle: { fontSize: 17, fontWeight: "700", color: colors.text },
-  muted: { fontSize: 14, lineHeight: 20, color: colors.textMuted },
-});
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    root: { gap: spacing.lg },
+    topRow: {
+      flexDirection: "row",
+      alignItems: "flex-end",
+      flexWrap: "wrap",
+      gap: spacing.sm,
+    },
+    searchWrap: { flex: 1, minWidth: 220 },
+    topButtons: { flexDirection: "row", gap: spacing.xs, flexWrap: "wrap" },
+    filtersRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      flexWrap: "wrap",
+      gap: spacing.sm,
+    },
+    list: { gap: spacing.sm },
+    itemHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "flex-start",
+      flexWrap: "wrap",
+      gap: spacing.sm,
+    },
+    itemTitleCol: { flex: 1, minWidth: 210, gap: 6 },
+    titleRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: spacing.xs },
+    itemName: { fontSize: 17, fontWeight: "700", color: colors.text },
+    typePill: {
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      borderRadius: radii.pill,
+      backgroundColor: colors.surfaceSubtle,
+      borderWidth: 1,
+      borderColor: colors.borderStrong,
+    },
+    typePillText: { fontSize: 11, fontWeight: "700", color: colors.textMuted },
+    conditionPill: {
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      borderRadius: radii.pill,
+      backgroundColor: colors.successSoft,
+    },
+    conditionPillWarn: {
+      backgroundColor: colors.errorSoft,
+    },
+    conditionPillText: { fontSize: 11, fontWeight: "700", color: colors.success },
+    conditionPillTextWarn: { color: colors.error },
+    holderRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: spacing.xs },
+    holderBadge: {
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      borderRadius: radii.pill,
+      borderWidth: 1,
+    },
+    holderBadgeLent: {
+      backgroundColor: colors.accentSoft,
+      borderColor: colors.accent,
+    },
+    holderBadgeHome: {
+      backgroundColor: colors.surfaceSubtle,
+      borderColor: colors.border,
+    },
+    holderBadgeText: { fontSize: 12, fontWeight: "700" },
+    holderBadgeTextLent: { color: colors.accentPressed },
+    holderBadgeTextHome: { color: colors.textMuted },
+    itemActions: { flexDirection: "row", alignItems: "center", gap: spacing.xs, flexWrap: "wrap" },
+    lendingBox: {
+      padding: spacing.md,
+      borderRadius: radii.md,
+      backgroundColor: colors.surfaceSubtle,
+      borderWidth: 1,
+      borderColor: colors.borderStrong,
+      gap: spacing.sm,
+    },
+    lendingTitle: { fontSize: 14, fontWeight: "700", color: colors.text },
+    memberPickerList: { gap: spacing.xs },
+    memberOption: {
+      minHeight: 44,
+      paddingHorizontal: spacing.md,
+      paddingVertical: 8,
+      borderRadius: radii.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: spacing.sm,
+    },
+    memberOptionSelected: {
+      borderColor: colors.accent,
+      backgroundColor: colors.accentSoft,
+    },
+    memberOptionName: { fontSize: 14, fontWeight: "600", color: colors.text },
+    memberOptionNameSelected: { color: colors.accentPressed, fontWeight: "700" },
+    metaPills: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
+    metaPill: {
+      fontSize: 12,
+      fontWeight: "600",
+      color: colors.textMuted,
+      backgroundColor: colors.surfaceSubtle,
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      borderRadius: radii.sm,
+      borderWidth: 1,
+      borderColor: colors.border,
+      fontVariant: ["tabular-nums"],
+    },
+    notes: { fontSize: 13, lineHeight: 19, color: colors.textMuted },
+    emptyTitle: { fontSize: 17, fontWeight: "700", color: colors.text },
+    muted: { fontSize: 14, lineHeight: 20, color: colors.textMuted },
+  });

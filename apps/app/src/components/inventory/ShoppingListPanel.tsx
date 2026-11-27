@@ -5,8 +5,9 @@ import type { Brewery } from "../../api/breweries";
 import { type InventoryItem, useShoppingList } from "../../api/inventory";
 import { notifyLowStockItems } from "../../notifications";
 import { canPerformOnOwner } from "../../state/permissions";
+import { useThemedStyles } from "../../state/theme";
 import { useUnits } from "../../state/units";
-import { colors, radii, spacing } from "../../theme";
+import { radii, spacing, type ThemeColors } from "../../theme";
 import { OwnerBadge } from "../OwnerBadge";
 import { Banner, Button, Card } from "../ui";
 import { formatInventoryAmount, formatShoppingListText } from "./inventoryUnits";
@@ -44,6 +45,7 @@ export function ShoppingListPanel({
   onRestockItem,
   customFetch,
 }: ShoppingListPanelProps) {
+  const styles = useThemedStyles(createStyles);
   const { unitSystem } = useUnits();
   const breweryId = activeBrewery?.id ?? null;
   const workspaceLabel = activeBrewery ? activeBrewery.name : "Me (personal)";
@@ -246,62 +248,63 @@ export function ShoppingListPanel({
   );
 }
 
-const styles = StyleSheet.create({
-  root: { gap: spacing.lg },
-  headerRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    flexWrap: "wrap",
-    gap: spacing.sm,
-  },
-  flexCol: { flex: 1, minWidth: 200, gap: 4 },
-  actionsRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.xs },
-  title: { fontSize: 18, fontWeight: "700", color: colors.text },
-  sectionTitle: { fontSize: 17, fontWeight: "700", color: colors.text },
-  emptyTitle: { fontSize: 17, fontWeight: "700", color: colors.text },
-  muted: { fontSize: 14, lineHeight: 20, color: colors.textMuted },
-  metaText: { fontSize: 13, color: colors.textMuted },
-  list: { gap: spacing.sm },
-  row: {
-    padding: spacing.md,
-    borderRadius: radii.md,
-    backgroundColor: colors.surfaceSubtle,
-    borderWidth: 1,
-    borderColor: colors.border,
-    gap: spacing.xs,
-  },
-  rowHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    flexWrap: "wrap",
-    gap: spacing.sm,
-  },
-  titleRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: spacing.xs },
-  itemName: { fontSize: 15, fontWeight: "700", color: colors.text },
-  shortBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: radii.pill,
-    backgroundColor: colors.accentSoft,
-    borderWidth: 1,
-    borderColor: colors.accent,
-  },
-  shortBadgeText: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: colors.accentPressed,
-    fontVariant: ["tabular-nums"],
-  },
-  batchChips: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 6 },
-  batchChip: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: radii.pill,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-  },
-  batchChipText: { fontSize: 12, fontWeight: "700", color: colors.accentPressed },
-});
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    root: { gap: spacing.lg },
+    headerRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "flex-start",
+      flexWrap: "wrap",
+      gap: spacing.sm,
+    },
+    flexCol: { flex: 1, minWidth: 200, gap: 4 },
+    actionsRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.xs },
+    title: { fontSize: 18, fontWeight: "700", color: colors.text },
+    sectionTitle: { fontSize: 17, fontWeight: "700", color: colors.text },
+    emptyTitle: { fontSize: 17, fontWeight: "700", color: colors.text },
+    muted: { fontSize: 14, lineHeight: 20, color: colors.textMuted },
+    metaText: { fontSize: 13, color: colors.textMuted },
+    list: { gap: spacing.sm },
+    row: {
+      padding: spacing.md,
+      borderRadius: radii.md,
+      backgroundColor: colors.surfaceSubtle,
+      borderWidth: 1,
+      borderColor: colors.border,
+      gap: spacing.xs,
+    },
+    rowHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      flexWrap: "wrap",
+      gap: spacing.sm,
+    },
+    titleRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: spacing.xs },
+    itemName: { fontSize: 15, fontWeight: "700", color: colors.text },
+    shortBadge: {
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      borderRadius: radii.pill,
+      backgroundColor: colors.accentSoft,
+      borderWidth: 1,
+      borderColor: colors.accent,
+    },
+    shortBadgeText: {
+      fontSize: 13,
+      fontWeight: "700",
+      color: colors.accentPressed,
+      fontVariant: ["tabular-nums"],
+    },
+    batchChips: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 6 },
+    batchChip: {
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      borderRadius: radii.pill,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.borderStrong,
+    },
+    batchChipText: { fontSize: 12, fontWeight: "700", color: colors.accentPressed },
+  });

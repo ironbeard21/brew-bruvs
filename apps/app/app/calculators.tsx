@@ -21,7 +21,8 @@ import { StrikeSpargeCalculator } from "../src/components/calculators/StrikeSpar
 import { SulfiteCalculator } from "../src/components/calculators/SulfiteCalculator";
 import { UnitConverter } from "../src/components/calculators/UnitConverter";
 import { YeastCalculator } from "../src/components/calculators/YeastCalculator";
-import { colors, DESKTOP_BREAKPOINT, radii, spacing } from "../src/theme";
+import { useThemedStyles } from "../src/state/theme";
+import { DESKTOP_BREAKPOINT, radii, spacing, type ThemeColors } from "../src/theme";
 
 type CalculatorGroupId = "gravity" | "mash-boil" | "yeast-packaging" | "mead-wine";
 type GroupFilter = "all" | CalculatorGroupId;
@@ -199,6 +200,7 @@ function isCalculatorId(value: string): value is CalculatorId {
 }
 
 export default function CalculatorsScreen() {
+  const styles = useThemedStyles(createStyles);
   const { width } = useWindowDimensions();
   const isDesktop = width >= DESKTOP_BREAKPOINT;
   const params = useLocalSearchParams<{ calc?: string }>();
@@ -328,121 +330,122 @@ export default function CalculatorsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  workspace: {
-    gap: spacing.lg,
-  },
-  workspaceDesktop: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: spacing.lg,
-  },
-  sidebar: {
-    width: 224,
-    backgroundColor: colors.surface,
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
-    gap: spacing.md,
-  },
-  sidebarGroup: {
-    gap: 3,
-  },
-  groupHeading: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: colors.textMuted,
-    textTransform: "uppercase",
-    letterSpacing: 0.6,
-    paddingHorizontal: spacing.sm,
-    paddingBottom: 4,
-  },
-  sidebarItem: {
-    minHeight: 36,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 7,
-    borderRadius: radii.sm,
-    justifyContent: "center",
-  },
-  sidebarItemSelected: {
-    backgroundColor: colors.accentSoft,
-    borderWidth: 1,
-    borderColor: colors.accent,
-  },
-  sidebarItemText: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: colors.text,
-  },
-  sidebarItemTextSelected: {
-    color: colors.accentPressed,
-    fontWeight: "700",
-  },
-  mobileNav: {
-    gap: spacing.sm,
-  },
-  filterRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 6,
-  },
-  filterChip: {
-    minHeight: 34,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: radii.pill,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    justifyContent: "center",
-  },
-  filterChipSelected: {
-    backgroundColor: colors.accent,
-    borderColor: colors.accent,
-  },
-  filterChipText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: colors.textMuted,
-  },
-  filterChipTextSelected: {
-    color: colors.accentText,
-  },
-  pillGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 6,
-    backgroundColor: colors.surfaceSubtle,
-    padding: spacing.sm,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  pillItem: {
-    minHeight: 36,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-    borderRadius: radii.sm,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    justifyContent: "center",
-  },
-  pillItemSelected: {
-    backgroundColor: colors.accentSoft,
-    borderColor: colors.accent,
-  },
-  pillItemText: {
-    fontSize: 13,
-    fontWeight: "500",
-    color: colors.text,
-  },
-  pillItemTextSelected: {
-    color: colors.accentPressed,
-    fontWeight: "700",
-  },
-  mainPane: {
-    flex: 1,
-  },
-});
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    workspace: {
+      gap: spacing.lg,
+    },
+    workspaceDesktop: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      gap: spacing.lg,
+    },
+    sidebar: {
+      width: 224,
+      backgroundColor: colors.surface,
+      borderRadius: radii.lg,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: spacing.md,
+      gap: spacing.md,
+    },
+    sidebarGroup: {
+      gap: 3,
+    },
+    groupHeading: {
+      fontSize: 11,
+      fontWeight: "700",
+      color: colors.textMuted,
+      textTransform: "uppercase",
+      letterSpacing: 0.6,
+      paddingHorizontal: spacing.sm,
+      paddingBottom: 4,
+    },
+    sidebarItem: {
+      minHeight: 36,
+      paddingHorizontal: spacing.sm,
+      paddingVertical: 7,
+      borderRadius: radii.sm,
+      justifyContent: "center",
+    },
+    sidebarItemSelected: {
+      backgroundColor: colors.accentSoft,
+      borderWidth: 1,
+      borderColor: colors.accent,
+    },
+    sidebarItemText: {
+      fontSize: 14,
+      fontWeight: "500",
+      color: colors.text,
+    },
+    sidebarItemTextSelected: {
+      color: colors.accentPressed,
+      fontWeight: "700",
+    },
+    mobileNav: {
+      gap: spacing.sm,
+    },
+    filterRow: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 6,
+    },
+    filterChip: {
+      minHeight: 34,
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+      borderRadius: radii.pill,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      justifyContent: "center",
+    },
+    filterChipSelected: {
+      backgroundColor: colors.accent,
+      borderColor: colors.accent,
+    },
+    filterChipText: {
+      fontSize: 12,
+      fontWeight: "600",
+      color: colors.textMuted,
+    },
+    filterChipTextSelected: {
+      color: colors.accentText,
+    },
+    pillGrid: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 6,
+      backgroundColor: colors.surfaceSubtle,
+      padding: spacing.sm,
+      borderRadius: radii.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    pillItem: {
+      minHeight: 36,
+      paddingHorizontal: 10,
+      paddingVertical: 7,
+      borderRadius: radii.sm,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      justifyContent: "center",
+    },
+    pillItemSelected: {
+      backgroundColor: colors.accentSoft,
+      borderColor: colors.accent,
+    },
+    pillItemText: {
+      fontSize: 13,
+      fontWeight: "500",
+      color: colors.text,
+    },
+    pillItemTextSelected: {
+      color: colors.accentPressed,
+      fontWeight: "700",
+    },
+    mainPane: {
+      flex: 1,
+    },
+  });

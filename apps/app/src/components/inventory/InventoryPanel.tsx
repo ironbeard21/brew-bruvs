@@ -14,8 +14,9 @@ import {
 } from "../../api/inventory";
 import { notifyLowStockItems } from "../../notifications";
 import { canPerformOnOwner, canWriteBrewery, ROLE_LABELS } from "../../state/permissions";
+import { useThemedStyles } from "../../state/theme";
 import { useUnits } from "../../state/units";
-import { colors, radii, spacing } from "../../theme";
+import { radii, spacing, type ThemeColors } from "../../theme";
 import { OwnerBadge } from "../OwnerBadge";
 import { ShareDialog } from "../sharing/ShareDialog";
 import { Banner, Button, Card, SegmentedControl, TextField } from "../ui";
@@ -53,6 +54,7 @@ export function InventoryPanel({
   onOpenShoppingList,
   customFetch,
 }: InventoryPanelProps) {
+  const styles = useThemedStyles(createStyles);
   const { unitSystem } = useUnits();
   const breweryId = activeBrewery?.id ?? null;
   const workspaceLabel = activeBrewery ? activeBrewery.name : "Me (personal)";
@@ -502,98 +504,99 @@ export function InventoryPanel({
   );
 }
 
-const styles = StyleSheet.create({
-  root: { gap: spacing.lg },
-  topRow: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    flexWrap: "wrap",
-    gap: spacing.sm,
-  },
-  searchWrap: { flex: 1, minWidth: 220 },
-  topButtons: { flexDirection: "row", gap: spacing.xs, flexWrap: "wrap" },
-  filtersRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    flexWrap: "wrap",
-    gap: spacing.sm,
-  },
-  lowStockBar: { flexDirection: "row", alignItems: "center", gap: spacing.xs, flexWrap: "wrap" },
-  locationRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    flexWrap: "wrap",
-    gap: spacing.xs,
-  },
-  chipPrefix: { fontSize: 12, fontWeight: "700", color: colors.textMuted },
-  chip: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: radii.pill,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    backgroundColor: colors.surfaceSubtle,
-  },
-  chipActive: {
-    borderColor: colors.accent,
-    backgroundColor: colors.accentSoft,
-  },
-  chipText: { fontSize: 12, fontWeight: "600", color: colors.textMuted },
-  chipTextActive: { color: colors.accentPressed, fontWeight: "700" },
-  list: { gap: spacing.sm },
-  lowStockCard: { borderColor: colors.error },
-  itemHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    flexWrap: "wrap",
-    gap: spacing.sm,
-  },
-  itemTitleCol: { flex: 1, minWidth: 210, gap: 6 },
-  titleRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: spacing.xs },
-  itemName: { fontSize: 17, fontWeight: "700", color: colors.text },
-  lowPill: {
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: radii.pill,
-    backgroundColor: colors.errorSoft,
-    borderWidth: 1,
-    borderColor: colors.error,
-  },
-  lowPillText: { fontSize: 12, fontWeight: "700", color: colors.error },
-  qtyRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.md, alignItems: "center" },
-  qtyPrimary: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: colors.text,
-    fontVariant: ["tabular-nums"],
-  },
-  qtySecondary: {
-    fontSize: 13,
-    color: colors.textMuted,
-    fontVariant: ["tabular-nums"],
-  },
-  qtyReserved: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: colors.accentPressed,
-    fontVariant: ["tabular-nums"],
-  },
-  itemActions: { flexDirection: "row", alignItems: "center", gap: spacing.xs, flexWrap: "wrap" },
-  metaPills: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
-  metaPill: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: colors.textMuted,
-    backgroundColor: colors.surfaceSubtle,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: radii.sm,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  notes: { fontSize: 13, lineHeight: 19, color: colors.textMuted },
-  emptyTitle: { fontSize: 17, fontWeight: "700", color: colors.text },
-  muted: { fontSize: 14, lineHeight: 20, color: colors.textMuted },
-});
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    root: { gap: spacing.lg },
+    topRow: {
+      flexDirection: "row",
+      alignItems: "flex-end",
+      flexWrap: "wrap",
+      gap: spacing.sm,
+    },
+    searchWrap: { flex: 1, minWidth: 220 },
+    topButtons: { flexDirection: "row", gap: spacing.xs, flexWrap: "wrap" },
+    filtersRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      flexWrap: "wrap",
+      gap: spacing.sm,
+    },
+    lowStockBar: { flexDirection: "row", alignItems: "center", gap: spacing.xs, flexWrap: "wrap" },
+    locationRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      flexWrap: "wrap",
+      gap: spacing.xs,
+    },
+    chipPrefix: { fontSize: 12, fontWeight: "700", color: colors.textMuted },
+    chip: {
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+      borderRadius: radii.pill,
+      borderWidth: 1,
+      borderColor: colors.borderStrong,
+      backgroundColor: colors.surfaceSubtle,
+    },
+    chipActive: {
+      borderColor: colors.accent,
+      backgroundColor: colors.accentSoft,
+    },
+    chipText: { fontSize: 12, fontWeight: "600", color: colors.textMuted },
+    chipTextActive: { color: colors.accentPressed, fontWeight: "700" },
+    list: { gap: spacing.sm },
+    lowStockCard: { borderColor: colors.error },
+    itemHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "flex-start",
+      flexWrap: "wrap",
+      gap: spacing.sm,
+    },
+    itemTitleCol: { flex: 1, minWidth: 210, gap: 6 },
+    titleRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: spacing.xs },
+    itemName: { fontSize: 17, fontWeight: "700", color: colors.text },
+    lowPill: {
+      paddingHorizontal: 10,
+      paddingVertical: 3,
+      borderRadius: radii.pill,
+      backgroundColor: colors.errorSoft,
+      borderWidth: 1,
+      borderColor: colors.error,
+    },
+    lowPillText: { fontSize: 12, fontWeight: "700", color: colors.error },
+    qtyRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.md, alignItems: "center" },
+    qtyPrimary: {
+      fontSize: 15,
+      fontWeight: "700",
+      color: colors.text,
+      fontVariant: ["tabular-nums"],
+    },
+    qtySecondary: {
+      fontSize: 13,
+      color: colors.textMuted,
+      fontVariant: ["tabular-nums"],
+    },
+    qtyReserved: {
+      fontSize: 13,
+      fontWeight: "700",
+      color: colors.accentPressed,
+      fontVariant: ["tabular-nums"],
+    },
+    itemActions: { flexDirection: "row", alignItems: "center", gap: spacing.xs, flexWrap: "wrap" },
+    metaPills: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
+    metaPill: {
+      fontSize: 12,
+      fontWeight: "600",
+      color: colors.textMuted,
+      backgroundColor: colors.surfaceSubtle,
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      borderRadius: radii.sm,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    notes: { fontSize: 13, lineHeight: 19, color: colors.textMuted },
+    emptyTitle: { fontSize: 17, fontWeight: "700", color: colors.text },
+    muted: { fontSize: 14, lineHeight: 20, color: colors.textMuted },
+  });

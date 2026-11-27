@@ -9,8 +9,9 @@ import {
   scheduleTimerNotification,
 } from "../../notifications";
 import { appStorage } from "../../state/storage";
+import { useThemedStyles } from "../../state/theme";
 import { useUnits } from "../../state/units";
-import { colors, DESKTOP_BREAKPOINT, radii, spacing } from "../../theme";
+import { DESKTOP_BREAKPOINT, radii, spacing, type ThemeColors } from "../../theme";
 import { parseNumber } from "../calculators/parseNumber";
 import { Banner, Button, Card, TextField } from "../ui";
 import { type BrewDayTimerSpec, buildBrewDayPlan, formatDuration } from "./batchFlows";
@@ -60,6 +61,7 @@ export function BrewDayMode({
   recipeVersion,
   loadingRecipe = false,
 }: BrewDayModeProps) {
+  const styles = useThemedStyles(createStyles);
   const { unitSystem } = useUnits();
   const { width } = useWindowDimensions();
   const isDesktop = width >= DESKTOP_BREAKPOINT;
@@ -466,153 +468,154 @@ export function BrewDayMode({
   );
 }
 
-const styles = StyleSheet.create({
-  layout: { gap: spacing.lg },
-  layoutDesktop: { flexDirection: "row", alignItems: "flex-start" },
-  column: { flex: 1 },
-  headerRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    gap: spacing.sm,
-    flexWrap: "wrap",
-  },
-  headerText: {
-    flex: 1,
-    minWidth: 180,
-    gap: 2,
-  },
-  sectionTitle: { fontSize: 18, fontWeight: "700", color: colors.text },
-  subHeading: { fontSize: 15, fontWeight: "700", color: colors.text },
-  muted: { fontSize: 13, lineHeight: 19, color: colors.textMuted },
-  stepList: { gap: spacing.sm },
-  stepRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: spacing.sm,
-    padding: spacing.md,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-  },
-  stepRowDone: {
-    backgroundColor: colors.surfaceSubtle,
-    borderColor: colors.border,
-  },
-  checkbox: {
-    width: 24,
-    height: 24,
-    borderRadius: 6,
-    borderWidth: 2,
-    borderColor: colors.borderStrong,
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 1,
-  },
-  checkboxChecked: {
-    backgroundColor: colors.success,
-    borderColor: colors.success,
-  },
-  checkmark: {
-    color: colors.accentText,
-    fontSize: 14,
-    fontWeight: "800",
-  },
-  stepBody: {
-    flex: 1,
-    gap: 2,
-  },
-  stepTitle: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: colors.text,
-  },
-  stepTitleDone: {
-    textDecorationLine: "line-through",
-    color: colors.textMuted,
-  },
-  stepDetail: {
-    fontSize: 13,
-    color: colors.textMuted,
-  },
-  timerList: { gap: spacing.sm },
-  timerCard: {
-    padding: spacing.md,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surfaceSubtle,
-    gap: spacing.sm,
-  },
-  timerCardRunning: {
-    backgroundColor: colors.accentSoft,
-    borderColor: colors.accent,
-  },
-  timerCardDone: {
-    backgroundColor: colors.successSoft,
-    borderColor: colors.success,
-  },
-  timerTop: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: spacing.sm,
-  },
-  timerMeta: {
-    flex: 1,
-    gap: 2,
-  },
-  timerLabel: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: colors.text,
-  },
-  timerDetail: {
-    fontSize: 12,
-    color: colors.textMuted,
-  },
-  timerClock: {
-    fontSize: 22,
-    fontWeight: "800",
-    color: colors.accentPressed,
-    fontVariant: ["tabular-nums"],
-  },
-  timerClockDone: {
-    color: colors.success,
-  },
-  hopAlertsBox: {
-    padding: spacing.sm,
-    borderRadius: radii.sm,
-    backgroundColor: colors.surface,
-    gap: 4,
-  },
-  hopAlertText: {
-    fontSize: 12,
-    color: colors.text,
-  },
-  timerActions: {
-    flexDirection: "row",
-    gap: spacing.sm,
-    flexWrap: "wrap",
-  },
-  customTimerBox: {
-    paddingTop: spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    gap: spacing.sm,
-  },
-  customRow: {
-    flexDirection: "row",
-    gap: spacing.sm,
-    flexWrap: "wrap",
-  },
-  customLabelField: {
-    flex: 2,
-    minWidth: 160,
-  },
-  customMinField: {
-    flex: 1,
-    minWidth: 110,
-  },
-});
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    layout: { gap: spacing.lg },
+    layoutDesktop: { flexDirection: "row", alignItems: "flex-start" },
+    column: { flex: 1 },
+    headerRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "flex-start",
+      gap: spacing.sm,
+      flexWrap: "wrap",
+    },
+    headerText: {
+      flex: 1,
+      minWidth: 180,
+      gap: 2,
+    },
+    sectionTitle: { fontSize: 18, fontWeight: "700", color: colors.text },
+    subHeading: { fontSize: 15, fontWeight: "700", color: colors.text },
+    muted: { fontSize: 13, lineHeight: 19, color: colors.textMuted },
+    stepList: { gap: spacing.sm },
+    stepRow: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      gap: spacing.sm,
+      padding: spacing.md,
+      borderRadius: radii.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+    },
+    stepRowDone: {
+      backgroundColor: colors.surfaceSubtle,
+      borderColor: colors.border,
+    },
+    checkbox: {
+      width: 24,
+      height: 24,
+      borderRadius: 6,
+      borderWidth: 2,
+      borderColor: colors.borderStrong,
+      alignItems: "center",
+      justifyContent: "center",
+      marginTop: 1,
+    },
+    checkboxChecked: {
+      backgroundColor: colors.success,
+      borderColor: colors.success,
+    },
+    checkmark: {
+      color: colors.accentText,
+      fontSize: 14,
+      fontWeight: "800",
+    },
+    stepBody: {
+      flex: 1,
+      gap: 2,
+    },
+    stepTitle: {
+      fontSize: 15,
+      fontWeight: "600",
+      color: colors.text,
+    },
+    stepTitleDone: {
+      textDecorationLine: "line-through",
+      color: colors.textMuted,
+    },
+    stepDetail: {
+      fontSize: 13,
+      color: colors.textMuted,
+    },
+    timerList: { gap: spacing.sm },
+    timerCard: {
+      padding: spacing.md,
+      borderRadius: radii.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surfaceSubtle,
+      gap: spacing.sm,
+    },
+    timerCardRunning: {
+      backgroundColor: colors.accentSoft,
+      borderColor: colors.accent,
+    },
+    timerCardDone: {
+      backgroundColor: colors.successSoft,
+      borderColor: colors.success,
+    },
+    timerTop: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      gap: spacing.sm,
+    },
+    timerMeta: {
+      flex: 1,
+      gap: 2,
+    },
+    timerLabel: {
+      fontSize: 15,
+      fontWeight: "700",
+      color: colors.text,
+    },
+    timerDetail: {
+      fontSize: 12,
+      color: colors.textMuted,
+    },
+    timerClock: {
+      fontSize: 22,
+      fontWeight: "800",
+      color: colors.accentPressed,
+      fontVariant: ["tabular-nums"],
+    },
+    timerClockDone: {
+      color: colors.success,
+    },
+    hopAlertsBox: {
+      padding: spacing.sm,
+      borderRadius: radii.sm,
+      backgroundColor: colors.surface,
+      gap: 4,
+    },
+    hopAlertText: {
+      fontSize: 12,
+      color: colors.text,
+    },
+    timerActions: {
+      flexDirection: "row",
+      gap: spacing.sm,
+      flexWrap: "wrap",
+    },
+    customTimerBox: {
+      paddingTop: spacing.sm,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      gap: spacing.sm,
+    },
+    customRow: {
+      flexDirection: "row",
+      gap: spacing.sm,
+      flexWrap: "wrap",
+    },
+    customLabelField: {
+      flex: 2,
+      minWidth: 160,
+    },
+    customMinField: {
+      flex: 1,
+      minWidth: 110,
+    },
+  });

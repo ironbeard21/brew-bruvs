@@ -11,7 +11,8 @@ import {
 } from "../../api/breweries";
 import { useOptionalBrewery } from "../../state/brewery";
 import { canManageBrewery } from "../../state/permissions";
-import { colors, DESKTOP_BREAKPOINT, radii, spacing } from "../../theme";
+import { useThemedStyles } from "../../state/theme";
+import { DESKTOP_BREAKPOINT, radii, spacing, type ThemeColors } from "../../theme";
 import { RoleBadge } from "../OwnerBadge";
 import { Banner, Button, Card, TextField } from "../ui";
 import { InventoryPreviewCard } from "./InventoryPreviewCard";
@@ -46,6 +47,7 @@ export function BreweryHub({
   onAcceptedInvite,
   customFetch,
 }: BreweryHubProps) {
+  const styles = useThemedStyles(createStyles);
   const { width } = useWindowDimensions();
   const isDesktop = width >= DESKTOP_BREAKPOINT;
   const ctx = useOptionalBrewery();
@@ -382,53 +384,54 @@ export function BreweryHub({
   );
 }
 
-const styles = StyleSheet.create({
-  root: { gap: spacing.lg },
-  columns: { gap: spacing.lg },
-  columnsDesktop: { flexDirection: "row", alignItems: "flex-start" },
-  column: { flex: 1 },
-  stack: { gap: spacing.lg },
-  sectionTitle: { fontSize: 18, fontWeight: "700", color: colors.text },
-  subTitle: { fontSize: 15, fontWeight: "700", color: colors.text },
-  muted: { fontSize: 14, lineHeight: 20, color: colors.textMuted },
-  metaText: { fontSize: 12, color: colors.textMuted },
-  description: { fontSize: 14, lineHeight: 20, color: colors.text },
-  rowBetween: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    flexWrap: "wrap",
-    gap: spacing.sm,
-  },
-  flexCol: { flex: 1, minWidth: 180, gap: 2 },
-  list: { gap: spacing.sm },
-  breweryCard: {
-    padding: spacing.md,
-    borderRadius: radii.md,
-    backgroundColor: colors.surfaceSubtle,
-    borderWidth: 1,
-    borderColor: colors.border,
-    gap: spacing.sm,
-  },
-  breweryCardActive: {
-    borderColor: colors.accent,
-    backgroundColor: colors.accentSoft,
-  },
-  breweryName: { fontSize: 16, fontWeight: "700", color: colors.text },
-  actionsRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.xs },
-  inviteRow: {
-    padding: spacing.md,
-    borderRadius: radii.md,
-    backgroundColor: colors.surfaceSubtle,
-    borderWidth: 1,
-    borderColor: colors.border,
-    gap: spacing.xs,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: colors.border,
-    marginVertical: spacing.xs,
-  },
-  fieldRow: { flexDirection: "row", gap: spacing.sm, flexWrap: "wrap" },
-  halfField: { flex: 1, minWidth: 130 },
-});
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    root: { gap: spacing.lg },
+    columns: { gap: spacing.lg },
+    columnsDesktop: { flexDirection: "row", alignItems: "flex-start" },
+    column: { flex: 1 },
+    stack: { gap: spacing.lg },
+    sectionTitle: { fontSize: 18, fontWeight: "700", color: colors.text },
+    subTitle: { fontSize: 15, fontWeight: "700", color: colors.text },
+    muted: { fontSize: 14, lineHeight: 20, color: colors.textMuted },
+    metaText: { fontSize: 12, color: colors.textMuted },
+    description: { fontSize: 14, lineHeight: 20, color: colors.text },
+    rowBetween: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      flexWrap: "wrap",
+      gap: spacing.sm,
+    },
+    flexCol: { flex: 1, minWidth: 180, gap: 2 },
+    list: { gap: spacing.sm },
+    breweryCard: {
+      padding: spacing.md,
+      borderRadius: radii.md,
+      backgroundColor: colors.surfaceSubtle,
+      borderWidth: 1,
+      borderColor: colors.border,
+      gap: spacing.sm,
+    },
+    breweryCardActive: {
+      borderColor: colors.accent,
+      backgroundColor: colors.accentSoft,
+    },
+    breweryName: { fontSize: 16, fontWeight: "700", color: colors.text },
+    actionsRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.xs },
+    inviteRow: {
+      padding: spacing.md,
+      borderRadius: radii.md,
+      backgroundColor: colors.surfaceSubtle,
+      borderWidth: 1,
+      borderColor: colors.border,
+      gap: spacing.xs,
+    },
+    divider: {
+      height: 1,
+      backgroundColor: colors.border,
+      marginVertical: spacing.xs,
+    },
+    fieldRow: { flexDirection: "row", gap: spacing.sm, flexWrap: "wrap" },
+    halfField: { flex: 1, minWidth: 130 },
+  });

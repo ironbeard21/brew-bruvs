@@ -16,8 +16,9 @@ import { Banner, Button, Card, SegmentedControl, TextField } from "../../src/com
 import { useOptionalBrewery } from "../../src/state/brewery";
 import { canWriteBrewery, ROLE_LABELS } from "../../src/state/permissions";
 import { useServer } from "../../src/state/server";
+import { useThemedStyles } from "../../src/state/theme";
 import { useUnits } from "../../src/state/units";
-import { colors, radii, spacing } from "../../src/theme";
+import { radii, spacing, type ThemeColors } from "../../src/theme";
 
 type ScopeFilter = "all" | "mine" | "workspace";
 type StatusFilter = "all" | "planned" | "brewing" | "fermenting" | "primary" | "finished";
@@ -37,6 +38,7 @@ const STATUS_FILTER_OPTIONS: readonly { value: StatusFilter; label: string }[] =
 ];
 
 export default function BatchesScreen() {
+  const styles = useThemedStyles(createStyles);
   const router = useRouter();
   const { serverUrl, authToken } = useServer();
   const { unitSystem } = useUnits();
@@ -316,81 +318,82 @@ export default function BatchesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  toolbar: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    flexWrap: "wrap",
-    gap: spacing.sm,
-  },
-  toolbarLeft: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
-  startBox: {
-    padding: spacing.md,
-    borderRadius: radii.md,
-    backgroundColor: colors.surfaceSubtle,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    gap: spacing.md,
-  },
-  startTitle: { fontSize: 16, fontWeight: "700", color: colors.text },
-  emptyRecipeBox: { gap: spacing.sm },
-  recipePicker: { gap: spacing.xs },
-  recipeOption: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: spacing.md,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-  },
-  recipeOptionSelected: {
-    borderColor: colors.accent,
-    backgroundColor: colors.accentSoft,
-  },
-  recipeOptionName: { fontSize: 15, fontWeight: "600", color: colors.text },
-  recipeOptionNameSelected: { color: colors.accentPressed, fontWeight: "700" },
-  recipeOptionMeta: { fontSize: 12, fontWeight: "600", color: colors.textMuted },
-  list: { gap: spacing.sm },
-  batchCard: {
-    backgroundColor: colors.surface,
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.lg,
-    gap: spacing.xs,
-  },
-  batchCardPressed: {
-    backgroundColor: colors.surfaceSubtle,
-  },
-  batchHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    flexWrap: "wrap",
-    gap: spacing.sm,
-  },
-  batchName: { fontSize: 18, fontWeight: "700", color: colors.text },
-  badges: { flexDirection: "row", gap: 6, flexWrap: "wrap" },
-  bevBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: radii.pill,
-    backgroundColor: colors.surfaceSubtle,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-  },
-  bevBadgeText: { fontSize: 11, fontWeight: "700", color: colors.textMuted },
-  statusBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: radii.pill,
-    backgroundColor: colors.accentSoft,
-  },
-  statusBadgeText: { fontSize: 12, fontWeight: "700", color: colors.accentPressed },
-  batchMeta: { fontSize: 13, color: colors.textMuted },
-  emptyTitle: { fontSize: 17, fontWeight: "700", color: colors.text },
-  muted: { fontSize: 14, lineHeight: 20, color: colors.textMuted },
-});
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    toolbar: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      flexWrap: "wrap",
+      gap: spacing.sm,
+    },
+    toolbarLeft: { flexDirection: "row", alignItems: "center", gap: spacing.sm },
+    startBox: {
+      padding: spacing.md,
+      borderRadius: radii.md,
+      backgroundColor: colors.surfaceSubtle,
+      borderWidth: 1,
+      borderColor: colors.borderStrong,
+      gap: spacing.md,
+    },
+    startTitle: { fontSize: 16, fontWeight: "700", color: colors.text },
+    emptyRecipeBox: { gap: spacing.sm },
+    recipePicker: { gap: spacing.xs },
+    recipeOption: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      padding: spacing.md,
+      borderRadius: radii.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+    },
+    recipeOptionSelected: {
+      borderColor: colors.accent,
+      backgroundColor: colors.accentSoft,
+    },
+    recipeOptionName: { fontSize: 15, fontWeight: "600", color: colors.text },
+    recipeOptionNameSelected: { color: colors.accentPressed, fontWeight: "700" },
+    recipeOptionMeta: { fontSize: 12, fontWeight: "600", color: colors.textMuted },
+    list: { gap: spacing.sm },
+    batchCard: {
+      backgroundColor: colors.surface,
+      borderRadius: radii.lg,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: spacing.lg,
+      gap: spacing.xs,
+    },
+    batchCardPressed: {
+      backgroundColor: colors.surfaceSubtle,
+    },
+    batchHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      flexWrap: "wrap",
+      gap: spacing.sm,
+    },
+    batchName: { fontSize: 18, fontWeight: "700", color: colors.text },
+    badges: { flexDirection: "row", gap: 6, flexWrap: "wrap" },
+    bevBadge: {
+      paddingHorizontal: 10,
+      paddingVertical: 3,
+      borderRadius: radii.pill,
+      backgroundColor: colors.surfaceSubtle,
+      borderWidth: 1,
+      borderColor: colors.borderStrong,
+    },
+    bevBadgeText: { fontSize: 11, fontWeight: "700", color: colors.textMuted },
+    statusBadge: {
+      paddingHorizontal: 10,
+      paddingVertical: 3,
+      borderRadius: radii.pill,
+      backgroundColor: colors.accentSoft,
+    },
+    statusBadgeText: { fontSize: 12, fontWeight: "700", color: colors.accentPressed },
+    batchMeta: { fontSize: 13, color: colors.textMuted },
+    emptyTitle: { fontSize: 17, fontWeight: "700", color: colors.text },
+    muted: { fontSize: 14, lineHeight: 20, color: colors.textMuted },
+  });

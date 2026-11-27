@@ -8,8 +8,9 @@ import type {
   EquipmentItemInput,
   EquipmentItemPatch,
 } from "../../api/equipment";
+import { useThemedStyles } from "../../state/theme";
 import { useUnits } from "../../state/units";
-import { colors, radii, spacing } from "../../theme";
+import { radii, spacing, type ThemeColors } from "../../theme";
 import { parseNumber, useOnUnitSystemChange } from "../calculators/parseNumber";
 import { CatalogPicker } from "../recipes/CatalogPicker";
 import { Banner, Button, Card, SegmentedControl, TextField } from "../ui";
@@ -89,6 +90,7 @@ export function EquipmentEditorCard({
   onCancel,
   customFetch,
 }: EquipmentEditorCardProps) {
+  const styles = useThemedStyles(createStyles);
   const { unitSystem } = useUnits();
 
   const [name, setName] = useState(item?.name ?? "");
@@ -531,42 +533,43 @@ export function EquipmentEditorCard({
   );
 }
 
-const styles = StyleSheet.create({
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    gap: spacing.sm,
-  },
-  headerCol: { flex: 1, gap: 2 },
-  title: { fontSize: 18, fontWeight: "700", color: colors.text },
-  subtitle: { fontSize: 12, color: colors.textMuted },
-  fieldLabel: { fontSize: 14, fontWeight: "600", color: colors.text },
-  catalogBlock: {
-    padding: spacing.md,
-    borderRadius: radii.md,
-    backgroundColor: colors.surfaceSubtle,
-    borderWidth: 1,
-    borderColor: colors.border,
-    gap: spacing.sm,
-  },
-  catalogRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    flexWrap: "wrap",
-    gap: spacing.sm,
-  },
-  inlineButtons: { flexDirection: "row", gap: spacing.xs },
-  row: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
-  fieldHalf: { flex: 1, minWidth: 200 },
-  fieldThird: { flex: 1, minWidth: 150 },
-  conditionBlock: { gap: spacing.xs },
-  dimensionsHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    flexWrap: "wrap",
-    gap: spacing.xs,
-  },
-});
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    header: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "flex-start",
+      gap: spacing.sm,
+    },
+    headerCol: { flex: 1, gap: 2 },
+    title: { fontSize: 18, fontWeight: "700", color: colors.text },
+    subtitle: { fontSize: 12, color: colors.textMuted },
+    fieldLabel: { fontSize: 14, fontWeight: "600", color: colors.text },
+    catalogBlock: {
+      padding: spacing.md,
+      borderRadius: radii.md,
+      backgroundColor: colors.surfaceSubtle,
+      borderWidth: 1,
+      borderColor: colors.border,
+      gap: spacing.sm,
+    },
+    catalogRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      flexWrap: "wrap",
+      gap: spacing.sm,
+    },
+    inlineButtons: { flexDirection: "row", gap: spacing.xs },
+    row: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm },
+    fieldHalf: { flex: 1, minWidth: 200 },
+    fieldThird: { flex: 1, minWidth: 150 },
+    conditionBlock: { gap: spacing.xs },
+    dimensionsHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      flexWrap: "wrap",
+      gap: spacing.xs,
+    },
+  });

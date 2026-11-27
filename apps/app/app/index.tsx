@@ -2,9 +2,12 @@
 import { Redirect } from "expo-router";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { useServer } from "../src/state/server";
-import { colors } from "../src/theme";
+import { useTheme, useThemedStyles } from "../src/state/theme";
+import type { ThemeColors } from "../src/theme";
 
 export default function IndexScreen() {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const { hydrated, serverUrl, offlineMode } = useServer();
 
   if (!hydrated) {
@@ -26,11 +29,12 @@ export default function IndexScreen() {
   return <Redirect href="/connect" />;
 }
 
-const styles = StyleSheet.create({
-  loading: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: colors.canvas,
-  },
-});
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    loading: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: colors.canvas,
+    },
+  });

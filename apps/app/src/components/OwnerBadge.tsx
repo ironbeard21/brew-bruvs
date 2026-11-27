@@ -3,7 +3,8 @@ import { StyleSheet, Text, View } from "react-native";
 import type { Brewery, BreweryRole, ResourceOwner } from "../api/breweries";
 import { useOptionalBrewery } from "../state/brewery";
 import { formatOwnerLabel, ROLE_LABELS } from "../state/permissions";
-import { colors, radii } from "../theme";
+import { useThemedStyles } from "../state/theme";
+import { radii, type ThemeColors } from "../theme";
 
 export interface OwnerBadgeProps {
   owner: ResourceOwner;
@@ -13,6 +14,7 @@ export interface OwnerBadgeProps {
 }
 
 export function OwnerBadge({ owner, currentUserId, breweries, testID }: OwnerBadgeProps) {
+  const styles = useThemedStyles(createStyles);
   const ctx = useOptionalBrewery();
   const list = breweries ?? ctx.breweries;
   const info = formatOwnerLabel(owner, currentUserId, list);
@@ -55,6 +57,7 @@ export interface RoleBadgeProps {
 }
 
 export function RoleBadge({ role, testID }: RoleBadgeProps) {
+  const styles = useThemedStyles(createStyles);
   const label = ROLE_LABELS[role];
   const isOwner = role === "owner";
   const isBrewer = role === "brewer";
@@ -80,38 +83,39 @@ export function RoleBadge({ role, testID }: RoleBadgeProps) {
   );
 }
 
-const styles = StyleSheet.create({
-  badge: {
-    maxWidth: 220,
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: radii.pill,
-    borderWidth: 1,
-    alignSelf: "flex-start",
-  },
-  badgeBrewery: {
-    backgroundColor: colors.accentSoft,
-    borderColor: colors.accent,
-  },
-  badgeMine: {
-    backgroundColor: colors.successSoft,
-    borderColor: colors.success,
-  },
-  badgeShared: {
-    backgroundColor: colors.surfaceSubtle,
-    borderColor: colors.borderStrong,
-  },
-  text: {
-    fontSize: 12,
-    fontWeight: "700",
-  },
-  textBrewery: {
-    color: colors.accentPressed,
-  },
-  textMine: {
-    color: colors.success,
-  },
-  textShared: {
-    color: colors.textMuted,
-  },
-});
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    badge: {
+      maxWidth: 220,
+      paddingHorizontal: 10,
+      paddingVertical: 3,
+      borderRadius: radii.pill,
+      borderWidth: 1,
+      alignSelf: "flex-start",
+    },
+    badgeBrewery: {
+      backgroundColor: colors.accentSoft,
+      borderColor: colors.accent,
+    },
+    badgeMine: {
+      backgroundColor: colors.successSoft,
+      borderColor: colors.success,
+    },
+    badgeShared: {
+      backgroundColor: colors.surfaceSubtle,
+      borderColor: colors.borderStrong,
+    },
+    text: {
+      fontSize: 12,
+      fontWeight: "700",
+    },
+    textBrewery: {
+      color: colors.accentPressed,
+    },
+    textMine: {
+      color: colors.success,
+    },
+    textShared: {
+      color: colors.textMuted,
+    },
+  });

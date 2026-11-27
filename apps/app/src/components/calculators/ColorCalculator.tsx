@@ -2,8 +2,9 @@
 import { type GrainColor, mcu, moreySrm, units } from "@brew-bruvs/brew-math";
 import { useState } from "react";
 import { StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import { useThemedStyles } from "../../state/theme";
 import { useUnits } from "../../state/units";
-import { colors, DESKTOP_BREAKPOINT, radii, spacing } from "../../theme";
+import { DESKTOP_BREAKPOINT, radii, spacing, type ThemeColors } from "../../theme";
 import { Banner, Button, Card, ResultRow, TextField } from "../ui";
 import { FormulaDisclosure, SaveToBatchNote } from "./CalculatorExtras";
 import { convertText, formatFixed, parseNumber, useOnUnitSystemChange } from "./parseNumber";
@@ -64,6 +65,7 @@ function srmToDisplayHex(srm: number): string {
 }
 
 export function ColorCalculator() {
+  const styles = useThemedStyles(createStyles);
   const { unitSystem } = useUnits();
   const { width } = useWindowDimensions();
   const isDesktop = width >= DESKTOP_BREAKPOINT;
@@ -246,30 +248,31 @@ export function ColorCalculator() {
   );
 }
 
-const styles = StyleSheet.create({
-  layout: { gap: spacing.lg },
-  layoutDesktop: { flexDirection: "row", alignItems: "flex-start" },
-  column: { flex: 1 },
-  sectionTitle: { fontSize: 18, fontWeight: "700", color: colors.text },
-  sectionSubtitle: { fontSize: 14, lineHeight: 20, color: colors.textMuted },
-  rowPair: { flexDirection: "row", gap: spacing.sm, flexWrap: "wrap" },
-  flexOne: { flex: 1, minWidth: 110 },
-  listStack: { gap: spacing.sm },
-  itemCard: {
-    padding: spacing.md,
-    borderRadius: radii.md,
-    backgroundColor: colors.surfaceSubtle,
-    borderWidth: 1,
-    borderColor: colors.border,
-    gap: spacing.sm,
-  },
-  itemHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  itemTitle: { fontSize: 14, fontWeight: "700", color: colors.text },
-  swatchBar: {
-    height: 44,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-  },
-  resultsList: { gap: spacing.sm },
-});
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    layout: { gap: spacing.lg },
+    layoutDesktop: { flexDirection: "row", alignItems: "flex-start" },
+    column: { flex: 1 },
+    sectionTitle: { fontSize: 18, fontWeight: "700", color: colors.text },
+    sectionSubtitle: { fontSize: 14, lineHeight: 20, color: colors.textMuted },
+    rowPair: { flexDirection: "row", gap: spacing.sm, flexWrap: "wrap" },
+    flexOne: { flex: 1, minWidth: 110 },
+    listStack: { gap: spacing.sm },
+    itemCard: {
+      padding: spacing.md,
+      borderRadius: radii.md,
+      backgroundColor: colors.surfaceSubtle,
+      borderWidth: 1,
+      borderColor: colors.border,
+      gap: spacing.sm,
+    },
+    itemHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+    itemTitle: { fontSize: 14, fontWeight: "700", color: colors.text },
+    swatchBar: {
+      height: 44,
+      borderRadius: radii.md,
+      borderWidth: 1,
+      borderColor: colors.borderStrong,
+    },
+    resultsList: { gap: spacing.sm },
+  });

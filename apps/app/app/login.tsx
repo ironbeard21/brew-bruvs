@@ -6,9 +6,11 @@ import { AppShell } from "../src/components/AppShell";
 import { AuthPanel } from "../src/components/AuthPanel";
 import { Banner, Button, Card } from "../src/components/ui";
 import { useServer } from "../src/state/server";
-import { colors, spacing } from "../src/theme";
+import { useThemedStyles } from "../src/state/theme";
+import { spacing, type ThemeColors } from "../src/theme";
 
 export default function LoginScreen() {
+  const styles = useThemedStyles(createStyles);
   const router = useRouter();
   const { hydrated, serverUrl, authToken, setAuthToken, disconnectServer } = useServer();
   const health = useServerHealth(serverUrl);
@@ -82,25 +84,26 @@ export default function LoginScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  narrowColumn: {
-    width: "100%",
-    maxWidth: 560,
-    gap: spacing.lg,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: colors.text,
-  },
-  serverUrl: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: colors.accentPressed,
-  },
-  rowActions: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: spacing.sm,
-  },
-});
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    narrowColumn: {
+      width: "100%",
+      maxWidth: 560,
+      gap: spacing.lg,
+    },
+    sectionTitle: {
+      fontSize: 18,
+      fontWeight: "700",
+      color: colors.text,
+    },
+    serverUrl: {
+      fontSize: 15,
+      fontWeight: "600",
+      color: colors.accentPressed,
+    },
+    rowActions: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: spacing.sm,
+    },
+  });

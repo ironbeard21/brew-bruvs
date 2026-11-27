@@ -3,7 +3,8 @@ import { useEffect, useState } from "react";
 import { Platform, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import type { Reminder, ReminderInput, ReminderKind } from "../../api/batches";
 import { cancelReminderNotification, syncReminderNotifications } from "../../notifications";
-import { colors, DESKTOP_BREAKPOINT, radii, spacing } from "../../theme";
+import { useThemedStyles } from "../../state/theme";
+import { DESKTOP_BREAKPOINT, radii, spacing, type ThemeColors } from "../../theme";
 import { Banner, Button, Card, SegmentedControl, TextField } from "../ui";
 import { formatDateTime, formatReminderKind } from "./batchFlows";
 
@@ -42,6 +43,7 @@ export function RemindersSection({
   onCompleteReminder,
   saving = false,
 }: RemindersSectionProps) {
+  const styles = useThemedStyles(createStyles);
   const { width } = useWindowDimensions();
   const isDesktop = width >= DESKTOP_BREAKPOINT;
 
@@ -259,59 +261,60 @@ export function RemindersSection({
   );
 }
 
-const styles = StyleSheet.create({
-  layout: { gap: spacing.lg },
-  layoutDesktop: { flexDirection: "row", alignItems: "flex-start" },
-  column: { flex: 1 },
-  headerRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    gap: spacing.sm,
-    flexWrap: "wrap",
-  },
-  headerMeta: { flex: 1, minWidth: 180, gap: 2 },
-  sectionTitle: { fontSize: 18, fontWeight: "700", color: colors.text },
-  muted: { fontSize: 13, lineHeight: 19, color: colors.textMuted },
-  list: { gap: spacing.sm },
-  reminderRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    flexWrap: "wrap",
-    gap: spacing.sm,
-    padding: spacing.md,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surfaceSubtle,
-  },
-  reminderOverdue: {
-    backgroundColor: colors.errorSoft,
-    borderColor: colors.error,
-  },
-  reminderDone: {
-    backgroundColor: colors.surface,
-    opacity: 0.78,
-  },
-  reminderBody: { flex: 1, minWidth: 180, gap: 4 },
-  badgeRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm, flexWrap: "wrap" },
-  kindBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: radii.pill,
-    backgroundColor: colors.accentSoft,
-  },
-  kindBadgeText: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: colors.accentPressed,
-  },
-  dueText: { fontSize: 13, fontWeight: "600", color: colors.text },
-  dueTextOverdue: { color: colors.error },
-  noteText: { fontSize: 14, color: colors.text },
-  completedSection: { gap: spacing.xs, marginTop: spacing.sm },
-  completedHeader: { fontSize: 13, fontWeight: "700", color: colors.textMuted },
-  doneTitle: { fontSize: 14, fontWeight: "600", color: colors.success },
-  quickDaysRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.xs },
-});
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    layout: { gap: spacing.lg },
+    layoutDesktop: { flexDirection: "row", alignItems: "flex-start" },
+    column: { flex: 1 },
+    headerRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "flex-start",
+      gap: spacing.sm,
+      flexWrap: "wrap",
+    },
+    headerMeta: { flex: 1, minWidth: 180, gap: 2 },
+    sectionTitle: { fontSize: 18, fontWeight: "700", color: colors.text },
+    muted: { fontSize: 13, lineHeight: 19, color: colors.textMuted },
+    list: { gap: spacing.sm },
+    reminderRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      flexWrap: "wrap",
+      gap: spacing.sm,
+      padding: spacing.md,
+      borderRadius: radii.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surfaceSubtle,
+    },
+    reminderOverdue: {
+      backgroundColor: colors.errorSoft,
+      borderColor: colors.error,
+    },
+    reminderDone: {
+      backgroundColor: colors.surface,
+      opacity: 0.78,
+    },
+    reminderBody: { flex: 1, minWidth: 180, gap: 4 },
+    badgeRow: { flexDirection: "row", alignItems: "center", gap: spacing.sm, flexWrap: "wrap" },
+    kindBadge: {
+      paddingHorizontal: 10,
+      paddingVertical: 3,
+      borderRadius: radii.pill,
+      backgroundColor: colors.accentSoft,
+    },
+    kindBadgeText: {
+      fontSize: 12,
+      fontWeight: "700",
+      color: colors.accentPressed,
+    },
+    dueText: { fontSize: 13, fontWeight: "600", color: colors.text },
+    dueTextOverdue: { color: colors.error },
+    noteText: { fontSize: 14, color: colors.text },
+    completedSection: { gap: spacing.xs, marginTop: spacing.sm },
+    completedHeader: { fontSize: 13, fontWeight: "700", color: colors.textMuted },
+    doneTitle: { fontSize: 14, fontWeight: "600", color: colors.success },
+    quickDaysRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.xs },
+  });

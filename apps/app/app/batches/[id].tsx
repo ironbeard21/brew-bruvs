@@ -56,8 +56,9 @@ import { notifyLowStockItems } from "../../src/notifications";
 import { useOptionalBrewery } from "../../src/state/brewery";
 import { canPerformOnOwner } from "../../src/state/permissions";
 import { useServer } from "../../src/state/server";
+import { useThemedStyles } from "../../src/state/theme";
 import { useUnits } from "../../src/state/units";
-import { colors, radii, spacing } from "../../src/theme";
+import { radii, spacing, type ThemeColors } from "../../src/theme";
 
 type BatchTab = "readings" | "brewday" | "inventory" | "reminders" | "packaging" | "notes";
 
@@ -75,6 +76,7 @@ const TAB_OPTIONS: readonly { value: BatchTab; label: string; accessibilityLabel
 ];
 
 export default function BatchDetailScreen() {
+  const styles = useThemedStyles(createStyles);
   const router = useRouter();
   const params = useLocalSearchParams<{ id?: string }>();
   const batchId = typeof params.id === "string" ? params.id : "";
@@ -518,59 +520,65 @@ export default function BatchDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  headerRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    flexWrap: "wrap",
-    gap: spacing.sm,
-  },
-  headerMeta: { flex: 1, minWidth: 200, gap: 2 },
-  titleRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: spacing.xs },
-  headerActions: { flexDirection: "row", alignItems: "center", gap: spacing.xs, flexWrap: "wrap" },
-  sectionTitle: { fontSize: 18, fontWeight: "700", color: colors.text },
-  muted: { fontSize: 13, color: colors.textMuted },
-  flowTrack: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: spacing.xs,
-  },
-  stagePill: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: radii.pill,
-    borderWidth: 1,
-  },
-  stagePillPast: {
-    backgroundColor: colors.successSoft,
-    borderColor: colors.success,
-  },
-  stagePillCurrent: {
-    backgroundColor: colors.accent,
-    borderColor: colors.accentPressed,
-  },
-  stagePillAllowed: {
-    backgroundColor: colors.surface,
-    borderColor: colors.accent,
-  },
-  stagePillLocked: {
-    backgroundColor: colors.surfaceSubtle,
-    borderColor: colors.border,
-    opacity: 0.65,
-  },
-  stageText: { fontSize: 13, fontWeight: "600", color: colors.textMuted },
-  stageTextPast: { color: colors.success },
-  stageTextCurrent: { color: colors.accentText, fontWeight: "700" },
-  stageTextAllowed: { color: colors.accentPressed },
-  historyRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 6,
-    paddingTop: spacing.xs,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  historyLabel: { fontSize: 12, fontWeight: "700", color: colors.textMuted },
-  historyItem: { fontSize: 12, color: colors.textMuted },
-});
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    headerRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "flex-start",
+      flexWrap: "wrap",
+      gap: spacing.sm,
+    },
+    headerMeta: { flex: 1, minWidth: 200, gap: 2 },
+    titleRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: spacing.xs },
+    headerActions: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: spacing.xs,
+      flexWrap: "wrap",
+    },
+    sectionTitle: { fontSize: 18, fontWeight: "700", color: colors.text },
+    muted: { fontSize: 13, color: colors.textMuted },
+    flowTrack: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: spacing.xs,
+    },
+    stagePill: {
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      borderRadius: radii.pill,
+      borderWidth: 1,
+    },
+    stagePillPast: {
+      backgroundColor: colors.successSoft,
+      borderColor: colors.success,
+    },
+    stagePillCurrent: {
+      backgroundColor: colors.accent,
+      borderColor: colors.accentPressed,
+    },
+    stagePillAllowed: {
+      backgroundColor: colors.surface,
+      borderColor: colors.accent,
+    },
+    stagePillLocked: {
+      backgroundColor: colors.surfaceSubtle,
+      borderColor: colors.border,
+      opacity: 0.65,
+    },
+    stageText: { fontSize: 13, fontWeight: "600", color: colors.textMuted },
+    stageTextPast: { color: colors.success },
+    stageTextCurrent: { color: colors.accentText, fontWeight: "700" },
+    stageTextAllowed: { color: colors.accentPressed },
+    historyRow: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 6,
+      paddingTop: spacing.xs,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+    },
+    historyLabel: { fontSize: 12, fontWeight: "700", color: colors.textMuted },
+    historyItem: { fontSize: 12, color: colors.textMuted },
+  });

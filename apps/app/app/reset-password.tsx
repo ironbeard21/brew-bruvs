@@ -6,7 +6,8 @@ import { useRedeemPasswordReset } from "../src/api/auth";
 import { AppShell } from "../src/components/AppShell";
 import { Banner, Button, Card, TextField } from "../src/components/ui";
 import { useServer } from "../src/state/server";
-import { colors } from "../src/theme";
+import { useThemedStyles } from "../src/state/theme";
+import type { ThemeColors } from "../src/theme";
 
 function extractHashToken(): string {
   if (Platform.OS !== "web" || typeof window === "undefined") return "";
@@ -16,6 +17,7 @@ function extractHashToken(): string {
 }
 
 export default function ResetPasswordScreen() {
+  const styles = useThemedStyles(createStyles);
   const router = useRouter();
   const { serverUrl } = useServer();
   const redeemMutation = useRedeemPasswordReset(serverUrl);
@@ -124,7 +126,8 @@ export default function ResetPasswordScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  narrow: { width: "100%", maxWidth: 520 },
-  title: { fontSize: 18, fontWeight: "700", color: colors.text },
-});
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    narrow: { width: "100%", maxWidth: 520 },
+    title: { fontSize: 18, fontWeight: "700", color: colors.text },
+  });

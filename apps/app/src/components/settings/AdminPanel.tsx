@@ -11,7 +11,8 @@ import {
   useCreatePasswordResetLink,
   useSetUserDisabled,
 } from "../../api/auth";
-import { colors, DESKTOP_BREAKPOINT, radii, spacing } from "../../theme";
+import { useThemedStyles } from "../../state/theme";
+import { DESKTOP_BREAKPOINT, radii, spacing, type ThemeColors } from "../../theme";
 import { formatDateTime } from "../batches/batchFlows";
 import { Banner, Button, Card, ResultRow } from "../ui";
 
@@ -40,6 +41,7 @@ async function copyOrShare(label: string, value: string): Promise<string> {
 }
 
 export function AdminPanel({ serverUrl, authToken, currentUser, customFetch }: AdminPanelProps) {
+  const styles = useThemedStyles(createStyles);
   const { width } = useWindowDimensions();
   const isDesktop = width >= DESKTOP_BREAKPOINT;
 
@@ -308,68 +310,69 @@ export function AdminPanel({ serverUrl, authToken, currentUser, customFetch }: A
   );
 }
 
-const styles = StyleSheet.create({
-  root: { gap: spacing.lg },
-  row: { gap: spacing.lg },
-  rowDesktop: { flexDirection: "row", alignItems: "flex-start" },
-  column: { flex: 1 },
-  sectionTitle: { fontSize: 18, fontWeight: "700", color: colors.text },
-  muted: { fontSize: 13, lineHeight: 19, color: colors.textMuted },
-  mutedSmall: { fontSize: 12, color: colors.textMuted },
-  metrics: { gap: spacing.sm },
-  list: { gap: spacing.sm },
-  calloutBox: {
-    padding: spacing.md,
-    borderRadius: radii.md,
-    backgroundColor: colors.accentSoft,
-    borderWidth: 1,
-    borderColor: colors.accent,
-    gap: spacing.xs,
-  },
-  calloutLabel: { fontSize: 13, fontWeight: "700", color: colors.accentPressed },
-  calloutValue: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: colors.text,
-    padding: spacing.sm,
-    borderRadius: radii.sm,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-  },
-  inlineActions: { flexDirection: "row", flexWrap: "wrap", gap: spacing.xs },
-  userRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    flexWrap: "wrap",
-    gap: spacing.sm,
-    padding: spacing.md,
-    borderRadius: radii.md,
-    backgroundColor: colors.surfaceSubtle,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  userInfo: { flex: 1, minWidth: 200, gap: 4 },
-  badgeRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 6 },
-  userName: { fontSize: 15, fontWeight: "700", color: colors.text },
-  adminPill: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: radii.pill,
-    backgroundColor: colors.accentSoft,
-    borderWidth: 1,
-    borderColor: colors.accent,
-  },
-  adminPillText: { fontSize: 11, fontWeight: "700", color: colors.accentPressed },
-  statusPill: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: radii.pill,
-  },
-  statusPillActive: { backgroundColor: colors.successSoft },
-  statusPillDisabled: { backgroundColor: colors.errorSoft },
-  statusPillText: { fontSize: 11, fontWeight: "700" },
-  statusPillTextActive: { color: colors.success },
-  statusPillTextDisabled: { color: colors.error },
-});
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    root: { gap: spacing.lg },
+    row: { gap: spacing.lg },
+    rowDesktop: { flexDirection: "row", alignItems: "flex-start" },
+    column: { flex: 1 },
+    sectionTitle: { fontSize: 18, fontWeight: "700", color: colors.text },
+    muted: { fontSize: 13, lineHeight: 19, color: colors.textMuted },
+    mutedSmall: { fontSize: 12, color: colors.textMuted },
+    metrics: { gap: spacing.sm },
+    list: { gap: spacing.sm },
+    calloutBox: {
+      padding: spacing.md,
+      borderRadius: radii.md,
+      backgroundColor: colors.accentSoft,
+      borderWidth: 1,
+      borderColor: colors.accent,
+      gap: spacing.xs,
+    },
+    calloutLabel: { fontSize: 13, fontWeight: "700", color: colors.accentPressed },
+    calloutValue: {
+      fontSize: 13,
+      fontWeight: "600",
+      color: colors.text,
+      padding: spacing.sm,
+      borderRadius: radii.sm,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.borderStrong,
+    },
+    inlineActions: { flexDirection: "row", flexWrap: "wrap", gap: spacing.xs },
+    userRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      flexWrap: "wrap",
+      gap: spacing.sm,
+      padding: spacing.md,
+      borderRadius: radii.md,
+      backgroundColor: colors.surfaceSubtle,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    userInfo: { flex: 1, minWidth: 200, gap: 4 },
+    badgeRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 6 },
+    userName: { fontSize: 15, fontWeight: "700", color: colors.text },
+    adminPill: {
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      borderRadius: radii.pill,
+      backgroundColor: colors.accentSoft,
+      borderWidth: 1,
+      borderColor: colors.accent,
+    },
+    adminPillText: { fontSize: 11, fontWeight: "700", color: colors.accentPressed },
+    statusPill: {
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      borderRadius: radii.pill,
+    },
+    statusPillActive: { backgroundColor: colors.successSoft },
+    statusPillDisabled: { backgroundColor: colors.errorSoft },
+    statusPillText: { fontSize: 11, fontWeight: "700" },
+    statusPillTextActive: { color: colors.success },
+    statusPillTextDisabled: { color: colors.error },
+  });

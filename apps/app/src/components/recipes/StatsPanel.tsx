@@ -2,8 +2,9 @@
 import { type Fit, units } from "@brew-bruvs/brew-math";
 import { StyleSheet, Text, View } from "react-native";
 import type { CatalogStyle } from "../../api/catalog";
+import { useThemedStyles } from "../../state/theme";
 import { useUnits } from "../../state/units";
-import { colors, radii, spacing } from "../../theme";
+import { radii, spacing, type ThemeColors } from "../../theme";
 import { formatFixed } from "../calculators/parseNumber";
 import { Banner, Card } from "../ui";
 import type { LiveStatsResult } from "./liveStats";
@@ -87,6 +88,7 @@ interface StatMeterProps {
 }
 
 function StatMeter({ label, value, range, fit, testID, fitTestID }: StatMeterProps) {
+  const styles = useThemedStyles(createStyles);
   const badgeText = fitLabel(fit);
   return (
     <View
@@ -134,6 +136,7 @@ export interface StatsPanelProps {
 }
 
 export function StatsPanel({ live, style }: StatsPanelProps) {
+  const styles = useThemedStyles(createStyles);
   const { unitSystem } = useUnits();
 
   const colorRange =
@@ -221,56 +224,57 @@ export function StatsPanel({ live, style }: StatsPanelProps) {
   );
 }
 
-const styles = StyleSheet.create({
-  header: { gap: 2 },
-  title: { fontSize: 18, fontWeight: "700", color: colors.text },
-  styleSubtitle: { fontSize: 13, color: colors.textMuted },
-  list: { gap: spacing.sm },
-  swatch: {
-    height: 28,
-    borderRadius: radii.sm,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-  },
-  statRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: spacing.md,
-    paddingVertical: 10,
-    borderRadius: radii.md,
-    backgroundColor: colors.surfaceSubtle,
-    gap: spacing.sm,
-  },
-  statLeft: { flex: 1, gap: 2 },
-  statLabel: { fontSize: 14, fontWeight: "600", color: colors.text },
-  statRange: { fontSize: 12, color: colors.textMuted },
-  statRight: { alignItems: "flex-end", gap: 4 },
-  statValue: {
-    fontSize: 17,
-    fontWeight: "700",
-    color: colors.text,
-    fontVariant: ["tabular-nums"],
-  },
-  fitBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: radii.pill,
-  },
-  fitInside: {
-    backgroundColor: colors.successSoft,
-  },
-  fitWarn: {
-    backgroundColor: colors.accentSoft,
-  },
-  fitBadgeText: {
-    fontSize: 11,
-    fontWeight: "700",
-  },
-  fitInsideText: {
-    color: colors.success,
-  },
-  fitWarnText: {
-    color: colors.accentPressed,
-  },
-});
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    header: { gap: 2 },
+    title: { fontSize: 18, fontWeight: "700", color: colors.text },
+    styleSubtitle: { fontSize: 13, color: colors.textMuted },
+    list: { gap: spacing.sm },
+    swatch: {
+      height: 28,
+      borderRadius: radii.sm,
+      borderWidth: 1,
+      borderColor: colors.borderStrong,
+    },
+    statRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: spacing.md,
+      paddingVertical: 10,
+      borderRadius: radii.md,
+      backgroundColor: colors.surfaceSubtle,
+      gap: spacing.sm,
+    },
+    statLeft: { flex: 1, gap: 2 },
+    statLabel: { fontSize: 14, fontWeight: "600", color: colors.text },
+    statRange: { fontSize: 12, color: colors.textMuted },
+    statRight: { alignItems: "flex-end", gap: 4 },
+    statValue: {
+      fontSize: 17,
+      fontWeight: "700",
+      color: colors.text,
+      fontVariant: ["tabular-nums"],
+    },
+    fitBadge: {
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      borderRadius: radii.pill,
+    },
+    fitInside: {
+      backgroundColor: colors.successSoft,
+    },
+    fitWarn: {
+      backgroundColor: colors.accentSoft,
+    },
+    fitBadgeText: {
+      fontSize: 11,
+      fontWeight: "700",
+    },
+    fitInsideText: {
+      color: colors.success,
+    },
+    fitWarnText: {
+      color: colors.accentPressed,
+    },
+  });

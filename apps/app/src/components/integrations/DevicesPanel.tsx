@@ -16,8 +16,9 @@ import {
   useRotateDeviceToken,
 } from "../../api/integrations";
 import { canPerformOnOwner, formatOwnerLabel } from "../../state/permissions";
+import { useThemedStyles } from "../../state/theme";
 import { useUnits } from "../../state/units";
-import { colors, DESKTOP_BREAKPOINT, radii, spacing } from "../../theme";
+import { DESKTOP_BREAKPOINT, radii, spacing, type ThemeColors } from "../../theme";
 import { formatBatchStatus, formatDateTime, formatTemperature } from "../batches/batchFlows";
 import { Banner, Button, Card, SegmentedControl, TextField } from "../ui";
 import { copyOrShareSecret } from "./clipboard";
@@ -100,6 +101,7 @@ function DeviceRow({
   revoking: boolean;
   customFetch?: typeof fetch;
 }) {
+  const styles = useThemedStyles(createStyles);
   const { unitSystem } = useUnits();
   const [confirmRevoke, setConfirmRevoke] = useState(false);
 
@@ -257,6 +259,7 @@ export function DevicesPanel({
   onCreateBatch,
   customFetch,
 }: DevicesPanelProps) {
+  const styles = useThemedStyles(createStyles);
   const { width } = useWindowDimensions();
   const isDesktop = width >= DESKTOP_BREAKPOINT;
   const queryClient = useQueryClient();
@@ -651,144 +654,145 @@ export function DevicesPanel({
   );
 }
 
-const styles = StyleSheet.create({
-  root: { gap: spacing.lg },
-  stack: { gap: spacing.lg },
-  layout: { gap: spacing.lg },
-  layoutDesktop: { flexDirection: "row", alignItems: "flex-start" },
-  formColumn: { flex: 1 },
-  listColumn: { flex: 1.25, gap: spacing.lg },
-  sectionTitle: { fontSize: 18, fontWeight: "700", color: colors.text },
-  muted: { fontSize: 13, lineHeight: 19, color: colors.textMuted },
-  mutedSmall: { fontSize: 12, lineHeight: 17, color: colors.textMuted },
-  fieldGroup: { gap: spacing.xs },
-  fieldLabel: { fontSize: 14, fontWeight: "600", color: colors.text },
-  pillWrap: { flexDirection: "row", flexWrap: "wrap", gap: spacing.xs },
-  choicePill: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: radii.pill,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    backgroundColor: colors.surface,
-  },
-  choicePillActive: {
-    backgroundColor: colors.accentSoft,
-    borderColor: colors.accent,
-  },
-  choicePillText: { fontSize: 12, fontWeight: "600", color: colors.textMuted },
-  choicePillTextActive: { color: colors.accentPressed },
-  emptyBatchBox: {
-    padding: spacing.md,
-    borderRadius: radii.md,
-    backgroundColor: colors.surfaceSubtle,
-    borderWidth: 1,
-    borderColor: colors.border,
-    gap: spacing.sm,
-  },
-  batchList: { gap: spacing.xs },
-  batchOption: {
-    padding: spacing.sm,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surfaceSubtle,
-    gap: 2,
-  },
-  batchOptionActive: {
-    borderColor: colors.accent,
-    backgroundColor: colors.accentSoft,
-  },
-  batchOptionTitle: { fontSize: 14, fontWeight: "700", color: colors.text },
-  batchOptionTitleActive: { color: colors.accentPressed },
-  secretCard: {
-    backgroundColor: colors.accentSoft,
-    borderColor: colors.accent,
-  },
-  secretTitle: { fontSize: 15, fontWeight: "700", color: colors.accentPressed },
-  secretLabel: { fontSize: 12, fontWeight: "700", color: colors.accentPressed },
-  secretValue: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: colors.text,
-    padding: spacing.sm,
-    borderRadius: radii.sm,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-  },
-  secretActions: { flexDirection: "row", flexWrap: "wrap", gap: spacing.xs },
-  listHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    flexWrap: "wrap",
-    gap: spacing.sm,
-  },
-  listHeaderText: { flex: 1, minWidth: 180, gap: 2 },
-  deviceList: { gap: spacing.md },
-  deviceCard: {
-    padding: spacing.md,
-    borderRadius: radii.md,
-    backgroundColor: colors.surfaceSubtle,
-    borderWidth: 1,
-    borderColor: colors.border,
-    gap: spacing.sm,
-  },
-  deviceHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    flexWrap: "wrap",
-    gap: spacing.sm,
-  },
-  deviceTitleCol: { flex: 1, minWidth: 180, gap: 4 },
-  badgeRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 6 },
-  deviceName: { fontSize: 16, fontWeight: "700", color: colors.text },
-  kindBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: radii.pill,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-  },
-  kindBadgeText: { fontSize: 11, fontWeight: "700", color: colors.textMuted },
-  colorBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: radii.pill,
-    backgroundColor: colors.accentSoft,
-    borderWidth: 1,
-    borderColor: colors.accent,
-  },
-  colorBadgeText: { fontSize: 11, fontWeight: "700", color: colors.accentPressed },
-  statusBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: radii.pill,
-  },
-  statusBadgeSeen: { backgroundColor: colors.successSoft },
-  statusBadgeWaiting: { backgroundColor: colors.surface },
-  statusBadgeText: { fontSize: 12, fontWeight: "700" },
-  statusBadgeTextSeen: { color: colors.success },
-  statusBadgeTextWaiting: { color: colors.textMuted },
-  readingBox: {
-    padding: spacing.sm,
-    borderRadius: radii.sm,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  readingSummary: { gap: 6 },
-  readingLabel: { fontSize: 12, fontWeight: "700", color: colors.textMuted },
-  metricsRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: spacing.xs },
-  metricPill: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: radii.pill,
-    backgroundColor: colors.accentSoft,
-  },
-  metricText: { fontSize: 13, fontWeight: "700", color: colors.accentPressed },
-  deviceActions: { flexDirection: "row", flexWrap: "wrap", gap: spacing.xs },
-});
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    root: { gap: spacing.lg },
+    stack: { gap: spacing.lg },
+    layout: { gap: spacing.lg },
+    layoutDesktop: { flexDirection: "row", alignItems: "flex-start" },
+    formColumn: { flex: 1 },
+    listColumn: { flex: 1.25, gap: spacing.lg },
+    sectionTitle: { fontSize: 18, fontWeight: "700", color: colors.text },
+    muted: { fontSize: 13, lineHeight: 19, color: colors.textMuted },
+    mutedSmall: { fontSize: 12, lineHeight: 17, color: colors.textMuted },
+    fieldGroup: { gap: spacing.xs },
+    fieldLabel: { fontSize: 14, fontWeight: "600", color: colors.text },
+    pillWrap: { flexDirection: "row", flexWrap: "wrap", gap: spacing.xs },
+    choicePill: {
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+      borderRadius: radii.pill,
+      borderWidth: 1,
+      borderColor: colors.borderStrong,
+      backgroundColor: colors.surface,
+    },
+    choicePillActive: {
+      backgroundColor: colors.accentSoft,
+      borderColor: colors.accent,
+    },
+    choicePillText: { fontSize: 12, fontWeight: "600", color: colors.textMuted },
+    choicePillTextActive: { color: colors.accentPressed },
+    emptyBatchBox: {
+      padding: spacing.md,
+      borderRadius: radii.md,
+      backgroundColor: colors.surfaceSubtle,
+      borderWidth: 1,
+      borderColor: colors.border,
+      gap: spacing.sm,
+    },
+    batchList: { gap: spacing.xs },
+    batchOption: {
+      padding: spacing.sm,
+      borderRadius: radii.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surfaceSubtle,
+      gap: 2,
+    },
+    batchOptionActive: {
+      borderColor: colors.accent,
+      backgroundColor: colors.accentSoft,
+    },
+    batchOptionTitle: { fontSize: 14, fontWeight: "700", color: colors.text },
+    batchOptionTitleActive: { color: colors.accentPressed },
+    secretCard: {
+      backgroundColor: colors.accentSoft,
+      borderColor: colors.accent,
+    },
+    secretTitle: { fontSize: 15, fontWeight: "700", color: colors.accentPressed },
+    secretLabel: { fontSize: 12, fontWeight: "700", color: colors.accentPressed },
+    secretValue: {
+      fontSize: 13,
+      fontWeight: "600",
+      color: colors.text,
+      padding: spacing.sm,
+      borderRadius: radii.sm,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.borderStrong,
+    },
+    secretActions: { flexDirection: "row", flexWrap: "wrap", gap: spacing.xs },
+    listHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "flex-start",
+      flexWrap: "wrap",
+      gap: spacing.sm,
+    },
+    listHeaderText: { flex: 1, minWidth: 180, gap: 2 },
+    deviceList: { gap: spacing.md },
+    deviceCard: {
+      padding: spacing.md,
+      borderRadius: radii.md,
+      backgroundColor: colors.surfaceSubtle,
+      borderWidth: 1,
+      borderColor: colors.border,
+      gap: spacing.sm,
+    },
+    deviceHeader: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "flex-start",
+      flexWrap: "wrap",
+      gap: spacing.sm,
+    },
+    deviceTitleCol: { flex: 1, minWidth: 180, gap: 4 },
+    badgeRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: 6 },
+    deviceName: { fontSize: 16, fontWeight: "700", color: colors.text },
+    kindBadge: {
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      borderRadius: radii.pill,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.borderStrong,
+    },
+    kindBadgeText: { fontSize: 11, fontWeight: "700", color: colors.textMuted },
+    colorBadge: {
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      borderRadius: radii.pill,
+      backgroundColor: colors.accentSoft,
+      borderWidth: 1,
+      borderColor: colors.accent,
+    },
+    colorBadgeText: { fontSize: 11, fontWeight: "700", color: colors.accentPressed },
+    statusBadge: {
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      borderRadius: radii.pill,
+    },
+    statusBadgeSeen: { backgroundColor: colors.successSoft },
+    statusBadgeWaiting: { backgroundColor: colors.surface },
+    statusBadgeText: { fontSize: 12, fontWeight: "700" },
+    statusBadgeTextSeen: { color: colors.success },
+    statusBadgeTextWaiting: { color: colors.textMuted },
+    readingBox: {
+      padding: spacing.sm,
+      borderRadius: radii.sm,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    readingSummary: { gap: 6 },
+    readingLabel: { fontSize: 12, fontWeight: "700", color: colors.textMuted },
+    metricsRow: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: spacing.xs },
+    metricPill: {
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      borderRadius: radii.pill,
+      backgroundColor: colors.accentSoft,
+    },
+    metricText: { fontSize: 13, fontWeight: "700", color: colors.accentPressed },
+    deviceActions: { flexDirection: "row", flexWrap: "wrap", gap: spacing.xs },
+  });

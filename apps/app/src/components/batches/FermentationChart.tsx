@@ -2,8 +2,9 @@
 import { abvStandard } from "@brew-bruvs/brew-math";
 import { Platform, StyleSheet, Text, View } from "react-native";
 import type { Reading } from "../../api/batches";
+import { useTheme, useThemedStyles } from "../../state/theme";
 import { useUnits } from "../../state/units";
-import { colors, radii, spacing } from "../../theme";
+import { radii, spacing, type ThemeColors } from "../../theme";
 import { buildChartSeries, formatShortDate } from "./batchFlows";
 
 export interface FermentationChartProps {
@@ -19,10 +20,11 @@ const PAD_BOTTOM = 34;
 const PLOT_W = CHART_WIDTH - PAD_LEFT - PAD_RIGHT;
 const PLOT_H = CHART_HEIGHT - PAD_TOP - PAD_BOTTOM;
 
-const GRAVITY_COLOR = colors.accent;
-const TEMP_COLOR = "#0F766E";
-
 export function FermentationChart({ readings }: FermentationChartProps) {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(createStyles);
+  const GRAVITY_COLOR = colors.accent;
+  const TEMP_COLOR = colors.chartTemp;
   const { unitSystem } = useUnits();
   const series = buildChartSeries(readings, unitSystem);
   const { gravityPoints, tempPoints } = series;
@@ -346,133 +348,134 @@ export function FermentationChart({ readings }: FermentationChartProps) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    gap: spacing.sm,
-  },
-  emptyBox: {
-    padding: spacing.lg,
-    borderRadius: radii.md,
-    backgroundColor: colors.surfaceSubtle,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: "center",
-    gap: spacing.xs,
-  },
-  emptyTitle: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: colors.text,
-  },
-  emptyText: {
-    fontSize: 13,
-    color: colors.textMuted,
-    textAlign: "center",
-  },
-  summaryRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: spacing.sm,
-  },
-  statChip: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: radii.md,
-    backgroundColor: colors.surfaceSubtle,
-    borderWidth: 1,
-    borderColor: colors.border,
-    minWidth: 100,
-    gap: 2,
-  },
-  statLabel: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: colors.textMuted,
-    textTransform: "uppercase",
-  },
-  statValue: {
-    fontSize: 18,
-    fontWeight: "800",
-    color: colors.accentPressed,
-    fontVariant: ["tabular-nums"],
-  },
-  legendRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: spacing.md,
-  },
-  legendItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  legendDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 99,
-  },
-  legendText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: colors.textMuted,
-  },
-  svgWrapper: {
-    backgroundColor: colors.surface,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.xs,
-    overflow: "hidden",
-  },
-  nativePlot: {
-    flexDirection: "row",
-    alignItems: "stretch",
-    height: 180,
-    backgroundColor: colors.surface,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.sm,
-    gap: spacing.xs,
-  },
-  nativeAxisCol: {
-    justifyContent: "space-between",
-    paddingVertical: 4,
-  },
-  nativeAxisText: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: GRAVITY_COLOR,
-    fontVariant: ["tabular-nums"],
-  },
-  nativeCanvas: {
-    flex: 1,
-    position: "relative",
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.sm,
-    backgroundColor: colors.surfaceSubtle,
-  },
-  nativePointGravity: {
-    position: "absolute",
-    width: 12,
-    height: 12,
-    marginLeft: -6,
-    marginBottom: -6,
-    borderRadius: 6,
-    backgroundColor: GRAVITY_COLOR,
-    borderWidth: 2,
-    borderColor: colors.surface,
-  },
-  nativePointTemp: {
-    position: "absolute",
-    width: 10,
-    height: 10,
-    marginLeft: -5,
-    marginBottom: -5,
-    borderRadius: 5,
-    backgroundColor: colors.surface,
-    borderWidth: 2.5,
-    borderColor: TEMP_COLOR,
-  },
-});
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    container: {
+      gap: spacing.sm,
+    },
+    emptyBox: {
+      padding: spacing.lg,
+      borderRadius: radii.md,
+      backgroundColor: colors.surfaceSubtle,
+      borderWidth: 1,
+      borderColor: colors.border,
+      alignItems: "center",
+      gap: spacing.xs,
+    },
+    emptyTitle: {
+      fontSize: 15,
+      fontWeight: "700",
+      color: colors.text,
+    },
+    emptyText: {
+      fontSize: 13,
+      color: colors.textMuted,
+      textAlign: "center",
+    },
+    summaryRow: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: spacing.sm,
+    },
+    statChip: {
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      borderRadius: radii.md,
+      backgroundColor: colors.surfaceSubtle,
+      borderWidth: 1,
+      borderColor: colors.border,
+      minWidth: 100,
+      gap: 2,
+    },
+    statLabel: {
+      fontSize: 11,
+      fontWeight: "600",
+      color: colors.textMuted,
+      textTransform: "uppercase",
+    },
+    statValue: {
+      fontSize: 18,
+      fontWeight: "800",
+      color: colors.accentPressed,
+      fontVariant: ["tabular-nums"],
+    },
+    legendRow: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: spacing.md,
+    },
+    legendItem: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+    },
+    legendDot: {
+      width: 10,
+      height: 10,
+      borderRadius: 99,
+    },
+    legendText: {
+      fontSize: 12,
+      fontWeight: "600",
+      color: colors.textMuted,
+    },
+    svgWrapper: {
+      backgroundColor: colors.surface,
+      borderRadius: radii.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: spacing.xs,
+      overflow: "hidden",
+    },
+    nativePlot: {
+      flexDirection: "row",
+      alignItems: "stretch",
+      height: 180,
+      backgroundColor: colors.surface,
+      borderRadius: radii.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: spacing.sm,
+      gap: spacing.xs,
+    },
+    nativeAxisCol: {
+      justifyContent: "space-between",
+      paddingVertical: 4,
+    },
+    nativeAxisText: {
+      fontSize: 11,
+      fontWeight: "600",
+      color: colors.accent,
+      fontVariant: ["tabular-nums"],
+    },
+    nativeCanvas: {
+      flex: 1,
+      position: "relative",
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radii.sm,
+      backgroundColor: colors.surfaceSubtle,
+    },
+    nativePointGravity: {
+      position: "absolute",
+      width: 12,
+      height: 12,
+      marginLeft: -6,
+      marginBottom: -6,
+      borderRadius: 6,
+      backgroundColor: colors.accent,
+      borderWidth: 2,
+      borderColor: colors.surface,
+    },
+    nativePointTemp: {
+      position: "absolute",
+      width: 10,
+      height: 10,
+      marginLeft: -5,
+      marginBottom: -5,
+      borderRadius: 5,
+      backgroundColor: colors.surface,
+      borderWidth: 2.5,
+      borderColor: colors.chartTemp,
+    },
+  });

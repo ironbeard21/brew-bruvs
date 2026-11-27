@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
 import type { Recipe } from "../../api/recipes";
-import { colors, radii } from "../../theme";
+import { useThemedStyles } from "../../state/theme";
+import { radii, type ThemeColors } from "../../theme";
 import { Card } from "../ui";
 
 export interface RecipeCreditCardProps {
@@ -14,6 +15,7 @@ export interface RecipeCreditCardProps {
  * (AGENTS.md Rule 5: imported recipes keep their credit and it can never be removed).
  */
 export function RecipeCreditCard({ recipe, onOpenOriginal }: RecipeCreditCardProps) {
+  const styles = useThemedStyles(createStyles);
   if (!recipe.credit && !recipe.forkedFrom) {
     return null;
   }
@@ -85,41 +87,42 @@ export function RecipeCreditCard({ recipe, onOpenOriginal }: RecipeCreditCardPro
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.surfaceSubtle,
-    borderColor: colors.borderStrong,
-  },
-  heading: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: colors.accentPressed,
-    textTransform: "uppercase",
-    letterSpacing: 0.4,
-  },
-  section: {
-    gap: 4,
-    paddingTop: 2,
-  },
-  label: {
-    fontWeight: "700",
-    color: colors.text,
-  },
-  line: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: colors.text,
-  },
-  link: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: colors.accent,
-    textDecorationLine: "underline",
-  },
-  meta: {
-    fontSize: 12,
-    color: colors.textMuted,
-    marginTop: 2,
-    borderRadius: radii.sm,
-  },
-});
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    card: {
+      backgroundColor: colors.surfaceSubtle,
+      borderColor: colors.borderStrong,
+    },
+    heading: {
+      fontSize: 14,
+      fontWeight: "700",
+      color: colors.accentPressed,
+      textTransform: "uppercase",
+      letterSpacing: 0.4,
+    },
+    section: {
+      gap: 4,
+      paddingTop: 2,
+    },
+    label: {
+      fontWeight: "700",
+      color: colors.text,
+    },
+    line: {
+      fontSize: 14,
+      lineHeight: 20,
+      color: colors.text,
+    },
+    link: {
+      fontSize: 14,
+      fontWeight: "600",
+      color: colors.accent,
+      textDecorationLine: "underline",
+    },
+    meta: {
+      fontSize: 12,
+      color: colors.textMuted,
+      marginTop: 2,
+      borderRadius: radii.sm,
+    },
+  });
