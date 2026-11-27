@@ -1,8 +1,67 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 import type { components } from "@brew-bruvs/api-contract";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { type QueryClient, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useRef } from "react";
 import { Platform } from "react-native";
 import { formatApiError, getApiClient } from "./client";
+
+const SERVER_PUBLIC_QUERY_KEYS = new Set([
+  "server-health",
+  "auth-status",
+  "auth-me",
+  "catalog-search",
+  "catalog-sources",
+  "catalog-item",
+]);
+
+function isCallerScopedServerQuery(queryKey: readonly unknown[], serverUrl: string): boolean {
+  return queryKey[1] === serverUrl && !SERVER_PUBLIC_QUERY_KEYS.has(String(queryKey[0]));
+}
+
+/**
+ * Drops every caller-scoped cached query for `serverUrl` (including `recipe-detail`,
+ * `batch-detail` with per-caller `can` flags, lists, shares, breweries, inventory,
+ * equipment, and integrations) so permissions never linger across a sign-in change.
+ * When `resetActive` is true (used after the new session has rendered), active
+ * mounted queries are also reset and refetched for the new caller.
+ */
+export function clearServerUserQueries(
+  queryClient: QueryClient,
+  serverUrl: string,
+  options?: { resetActive?: boolean },
+): void {
+  const predicate = (query: { queryKey: readonly unknown[] }) =>
+    isCallerScopedServerQuery(query.queryKey, serverUrl);
+  if (options?.resetActive) {
+    queryClient.removeQueries({ predicate, type: "inactive" });
+    void queryClient.resetQueries({ predicate, type: "active" });
+    return;
+  }
+  queryClient.removeQueries({ predicate });
+}
+
+/**
+ * Watches `(serverUrl, userId)` once the session check settles and clears
+ * caller-scoped queries (resetting active ones) whenever the signed-in user
+ * changes on the same server.
+ */
+export function useSyncCallerCache(
+  serverUrl: string | null,
+  userId: string | null,
+  isPending: boolean,
+): void {
+  const queryClient = useQueryClient();
+  const prevRef = useRef<{ serverUrl: string; userId: string | null } | null>(null);
+
+  useEffect(() => {
+    if (!serverUrl || isPending) return;
+    const prev = prevRef.current;
+    prevRef.current = { serverUrl, userId };
+    if (prev && prev.serverUrl === serverUrl && prev.userId !== userId) {
+      clearServerUserQueries(queryClient, serverUrl, { resetActive: true });
+    }
+  }, [serverUrl, isPending, userId, queryClient]);
+}
 
 export type AuthUser = components["schemas"]["User"];
 export type AuthStatus = components["schemas"]["AuthStatus"];
@@ -203,6 +262,7 @@ export function useSetupAdmin(
     mutationFn: (input: SetupInput) => setupAdminAccount(serverUrl, input, customFetch),
     onSuccess: async (res) => {
       await onSignedIn(res);
+      clearServerUserQueries(queryClient, serverUrl);
       queryClient.setQueryData(["auth-me", serverUrl], res.user);
       await queryClient.invalidateQueries({ queryKey: ["auth-status", serverUrl] });
     },
@@ -219,14 +279,11 @@ export function useLogin(
     mutationFn: (input: LoginInput) => loginWithPassword(serverUrl, input, customFetch),
     onSuccess: async (res) => {
       await onSignedIn(res);
+      clearServerUserQueries(queryClient, serverUrl);
       queryClient.setQueryData(["auth-me", serverUrl], res.user);
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["breweries", serverUrl] }),
-        queryClient.invalidateQueries({ queryKey: ["my-brewery-invites", serverUrl] }),
-        queryClient.invalidateQueries({ queryKey: ["recipes", serverUrl] }),
-        queryClient.invalidateQueries({ queryKey: ["batches", serverUrl] }),
-        queryClient.invalidateQueries({ queryKey: ["inventory", serverUrl] }),
-      ]);
+      await queryClient.invalidateQueries({
+        predicate: (query) => isCallerScopedServerQuery(query.queryKey, serverUrl),
+      });
     },
   });
 }
@@ -241,14 +298,11 @@ export function useSignup(
     mutationFn: (input: SignupInput) => signupWithPassword(serverUrl, input, customFetch),
     onSuccess: async (res) => {
       await onSignedIn(res);
+      clearServerUserQueries(queryClient, serverUrl);
       queryClient.setQueryData(["auth-me", serverUrl], res.user);
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["breweries", serverUrl] }),
-        queryClient.invalidateQueries({ queryKey: ["my-brewery-invites", serverUrl] }),
-        queryClient.invalidateQueries({ queryKey: ["recipes", serverUrl] }),
-        queryClient.invalidateQueries({ queryKey: ["batches", serverUrl] }),
-        queryClient.invalidateQueries({ queryKey: ["inventory", serverUrl] }),
-      ]);
+      await queryClient.invalidateQueries({
+        predicate: (query) => isCallerScopedServerQuery(query.queryKey, serverUrl),
+      });
     },
   });
 }
@@ -265,13 +319,7 @@ export function useLogout(
     onSuccess: async () => {
       await onSignedOut();
       queryClient.setQueryData(["auth-me", serverUrl], null);
-      queryClient.removeQueries({ queryKey: ["breweries", serverUrl] });
-      queryClient.removeQueries({ queryKey: ["brewery-detail", serverUrl] });
-      queryClient.removeQueries({ queryKey: ["brewery-invites", serverUrl] });
-      queryClient.removeQueries({ queryKey: ["my-brewery-invites", serverUrl] });
-      queryClient.removeQueries({ queryKey: ["inventory", serverUrl] });
-      queryClient.removeQueries({ queryKey: ["low-stock", serverUrl] });
-      queryClient.removeQueries({ queryKey: ["shopping-list", serverUrl] });
+      clearServerUserQueries(queryClient, serverUrl);
     },
   });
 }

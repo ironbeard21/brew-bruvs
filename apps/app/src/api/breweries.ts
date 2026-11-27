@@ -279,7 +279,11 @@ export function useSetBreweryRole(
     onSuccess: async (detail) => {
       if (!serverUrl) return;
       queryClient.setQueryData(["brewery-detail", serverUrl, breweryId], detail);
-      await queryClient.invalidateQueries({ queryKey: ["breweries", serverUrl] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["breweries", serverUrl] }),
+        queryClient.invalidateQueries({ queryKey: ["recipe-detail", serverUrl] }),
+        queryClient.invalidateQueries({ queryKey: ["batch-detail", serverUrl] }),
+      ]);
     },
   });
 }
@@ -311,6 +315,8 @@ export function useRemoveBreweryMember(
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["brewery-detail", serverUrl, breweryId] }),
         queryClient.invalidateQueries({ queryKey: ["breweries", serverUrl] }),
+        queryClient.invalidateQueries({ queryKey: ["recipe-detail", serverUrl] }),
+        queryClient.invalidateQueries({ queryKey: ["batch-detail", serverUrl] }),
       ]);
     },
   });
@@ -346,6 +352,8 @@ export function useTransferBrewery(
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["breweries", serverUrl] }),
         queryClient.invalidateQueries({ queryKey: ["brewery-invites", serverUrl, breweryId] }),
+        queryClient.invalidateQueries({ queryKey: ["recipe-detail", serverUrl] }),
+        queryClient.invalidateQueries({ queryKey: ["batch-detail", serverUrl] }),
       ]);
     },
   });
@@ -444,7 +452,9 @@ export function useAcceptBreweryInvite(
         queryClient.invalidateQueries({ queryKey: ["breweries", serverUrl] }),
         queryClient.invalidateQueries({ queryKey: ["my-brewery-invites", serverUrl] }),
         queryClient.invalidateQueries({ queryKey: ["recipes", serverUrl] }),
+        queryClient.invalidateQueries({ queryKey: ["recipe-detail", serverUrl] }),
         queryClient.invalidateQueries({ queryKey: ["batches", serverUrl] }),
+        queryClient.invalidateQueries({ queryKey: ["batch-detail", serverUrl] }),
         queryClient.invalidateQueries({ queryKey: ["inventory", serverUrl] }),
         queryClient.invalidateQueries({ queryKey: ["equipment-items", serverUrl] }),
         queryClient.invalidateQueries({ queryKey: ["brewery-activity", serverUrl, detail.id] }),
