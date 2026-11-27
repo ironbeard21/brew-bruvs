@@ -10,7 +10,7 @@
     "dev": "expo start --web",
     "dev:ios": "expo start --ios",
     "dev:android": "expo start --android",
-    "typecheck": "tsc --noEmit -p .",
+    "typecheck": "tsc --noEmit -p . && tsc --noEmit -p tsconfig.e2e.json",
     "test": "vitest run",
     "test:e2e": "if [ -z \"${PLAYWRIGHT_BASE_URL:-}\" ]; then pnpm run build || exit $?; fi; playwright test"
   },
